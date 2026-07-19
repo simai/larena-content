@@ -3,7 +3,7 @@
   "package": "larena/content",
   "launch_record_ref": "specs/implementation-planning/launch-records/content-clean-pre-codegen-baseline.json",
   "specs_repo": "simai/larena-specs",
-  "specs_commit": "a9af274343c53fbbf5977d7153f8615ccf1c4140",
+  "specs_commit": "27132cec11971ea6b4ea615c9816611838f4ac48",
   "base_commit": "e7faae0f8ccd6128a52aee80824adeaa61cdf106",
   "selected_features": [],
   "allowed_files": [
@@ -53,12 +53,12 @@
   ],
   "evidence_path": "docs/project-management/evidence/data-content/batch-0/content-clean-baseline/",
   "graph_sync_proposal_path": "docs/project-management/evidence/data-content/batch-0/content-clean-baseline/graph-sync-proposal.json",
-  "status": "repository_prepared_pending_review",
+  "status": "repository_prepared_review_accepted",
   "coding_started": false,
   "repository_enforcement_installed": true,
-  "review_completed": false,
+  "review_completed": true,
   "next_transition": "create_feature_launch_record_before_coding",
   "repository_reset_pre_codegen": true,
   "repository_created_locally": true,
-  "remote_push_status": "anchor_pushed_baseline_pending"
+  "remote_push_status": "pushed_to_origin_main"
 }
