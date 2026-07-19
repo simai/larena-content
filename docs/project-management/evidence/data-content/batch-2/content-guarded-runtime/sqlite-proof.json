@@ -37,11 +37,18 @@
     "tampered but rehashed Storage public value",
     "duplicate Access or Content denial emission"
   ],
+  "sqlite_only_receipt": {
+    "suite": "full exact-vendor suite without the MySQL opt-in",
+    "tests": 165,
+    "assertions": 731,
+    "duration_seconds": 3.337,
+    "result": "pass"
+  },
   "aggregate_receipt": {
     "suite": "full exact-vendor suite including opted-in real MySQL",
-    "tests": 167,
-    "assertions": 758,
-    "duration_seconds": 61.601,
+    "tests": 168,
+    "assertions": 768,
+    "duration_seconds": 43.471,
     "result": "pass"
   }
 }

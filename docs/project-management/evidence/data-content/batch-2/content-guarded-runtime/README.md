@@ -29,10 +29,16 @@ Platform v1 runtime:
 - file-backed SQLite, disposable marker-owned MySQL, fresh OS-process restart,
   migration rollback/reapply, atomicity and stale-head concurrency evidence.
 
-The final author reproduction on the current tree passed `167 tests / 758
+The final author reproduction on the current tree passed `168 tests / 768
 assertions`, including the real MySQL group, with PHPStan level 8 reporting no
 errors. Detailed commands and bounded proofs are linked from the files in this
 directory.
+
+A clean-clone acceptance also exposed and closed one checkpoint-portability
+defect: accepted launch receipts no longer contain checkout-specific absolute
+paths. The package validator and a dedicated contract regression preserve the
+relative ignored action-gate provenance reference and the committed toolchain
+receipt in every fresh clone.
 
 This package guarded-runtime checkpoint is accepted by independent
 reverse-outcome review with P0=0, P1=0 and one bounded P2. The P2 concerns the

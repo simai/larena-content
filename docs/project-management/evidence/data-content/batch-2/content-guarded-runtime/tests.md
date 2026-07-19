@@ -12,7 +12,9 @@ Pinned execution context:
 Final author reproduction on the current Content tree:
 
 - full exact-vendor PHPUnit, with the real MySQL opt-in enabled:
-  `167 tests, 758 assertions`, all passing in `61.601s`;
+  `168 tests, 768 assertions`, all passing in `43.471s`;
+- full exact-vendor PHPUnit without the MySQL opt-in:
+  `165 tests, 731 assertions`, all passing in `3.337s`;
 - PHPStan level 8 with a `1G` memory limit: `No errors`;
 - PHP lint: `123 PHP files`, all passing;
 - package validator, Composer strict validation, scope check and
@@ -21,9 +23,15 @@ Final author reproduction on the current Content tree:
   directory after verification.
 
 The exact-vendor PHPUnit run used an explicit bootstrap at
-`/private/tmp/larena-content-platform-v1/vendor-exact/autoload.php`. This
-prevents the repository's pre-existing development vendor checkout from
-silently replacing the revisions recorded in `composer.lock`.
+an isolated vendor installation created strictly from `composer.lock`. This
+prevents a pre-existing development vendor checkout from silently replacing
+the recorded revisions. The absolute temporary path is intentionally not part
+of the accepted launch receipt.
+
+Fresh-clone quality-gate acceptance verifies that accepted launch metadata is
+portable: its action-gate receipt is a relative ignored provenance reference,
+and its runtime-toolchain receipt is this committed file rather than a local
+generated report.
 
 MySQL acceptance was explicitly opted in with
 `LARENA_CONTENT_MYSQL_TEST=1` and an absolute

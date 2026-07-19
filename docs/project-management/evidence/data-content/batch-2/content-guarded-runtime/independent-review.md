@@ -22,11 +22,16 @@ before this verdict:
   persisted enum values and tampered-but-rehashed typed Storage values.
 - create used a non-canonical lock order and invalid publication projections
   were not classified as one post-Access Content denial.
+- the initially accepted launch metadata embedded absolute paths from its
+  author checkout, so `quality:gate` was not reproducible in a clean clone.
+  The accepted receipt is now clone-portable and protected by a contract
+  regression.
 
 Each blocking finding now has a regression test. The independently reproduced
 current gate is:
 
-- full suite with real MySQL opt-in: 167 tests, 758 assertions, PASS;
+- full suite with real MySQL opt-in: 168 tests, 768 assertions, PASS;
+- full suite without MySQL opt-in: 165 tests, 731 assertions, PASS;
 - PHPStan level 8: 0 errors;
 - PHP syntax lint: 123 files, PASS;
 - package validator, scope check and `git diff --check`: PASS;

@@ -265,11 +265,27 @@ if (is_array($allowedFiles)) {
 
 $actionGate = $launchContext['action_gate'] ?? [];
 $actionGatePath = is_array($actionGate) ? ($actionGate['evidence_ref'] ?? null) : null;
+$checkpointAccepted = ($launchContext['status'] ?? null) === 'guarded_runtime_checkpoint_accepted'
+    && ($launchContext['review_completed'] ?? null) === true
+    && ($launchContext['independent_review_verdict'] ?? null) === 'pass';
 if (!is_array($actionGate) || ($actionGate['status'] ?? null) !== 'success') {
     $errors[] = 'package action gate must remain successful.';
+} elseif (
+    $checkpointAccepted
+    && (
+        !is_string($actionGatePath)
+        || preg_match(
+            '/\Asource\/output\/action-gates\/action-gate-report-[0-9]{14}\.json\z/D',
+            $actionGatePath,
+        ) !== 1
+    )
+) {
+    $errors[] = 'accepted checkpoint must retain a clone-portable ignored action-gate provenance reference.';
 } elseif (!is_string($actionGatePath) || !is_file($actionGatePath)) {
-    $errors[] = 'package action gate evidence_ref must resolve to the local ignored report.';
-} else {
+    if (!$checkpointAccepted) {
+        $errors[] = 'package action gate evidence_ref must resolve to the local ignored report.';
+    }
+} elseif (!$checkpointAccepted) {
     $actionGateReport = read_json_file($actionGatePath, $errors);
     if (
         ($actionGateReport['status'] ?? null) !== 'success'
@@ -283,9 +299,20 @@ $runtimeToolchain = $launchContext['runtime_toolchain'] ?? [];
 $runtimeReportPath = is_array($runtimeToolchain) ? ($runtimeToolchain['report_ref'] ?? null) : null;
 if (!is_array($runtimeToolchain) || ($runtimeToolchain['status'] ?? null) !== 'ok') {
     $errors[] = 'runtime toolchain must have status=ok.';
+} elseif (
+    $checkpointAccepted
+    && (
+        $runtimeReportPath !== EVIDENCE_PATH . 'tests.md'
+        || !is_file($runtimeReportPath)
+        || ($runtimeToolchain['php_version'] ?? null) !== '8.4.20'
+    )
+) {
+    $errors[] = 'accepted checkpoint runtime toolchain must resolve to the portable committed test receipt.';
 } elseif (!is_string($runtimeReportPath) || !is_file($runtimeReportPath)) {
-    $errors[] = 'runtime toolchain report_ref must resolve to an exact report.';
-} else {
+    if (!$checkpointAccepted) {
+        $errors[] = 'runtime toolchain report_ref must resolve to an exact report.';
+    }
+} elseif (!$checkpointAccepted) {
     $runtimeReport = read_json_file($runtimeReportPath, $errors);
     if (
         ($runtimeReport['status'] ?? null) !== 'ok'

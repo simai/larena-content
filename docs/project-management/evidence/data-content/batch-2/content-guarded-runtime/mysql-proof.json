@@ -48,9 +48,9 @@
   },
   "aggregate_receipt": {
     "suite": "full exact-vendor suite with real MySQL opt-in",
-    "tests": 167,
-    "assertions": 758,
-    "duration_seconds": 61.601,
+    "tests": 168,
+    "assertions": 768,
+    "duration_seconds": 43.471,
     "result": "pass"
   }
 }

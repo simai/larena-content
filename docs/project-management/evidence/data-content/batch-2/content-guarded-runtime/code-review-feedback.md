@@ -32,8 +32,11 @@ Resolved during author and reverse-outcome review preparation:
   marker, server-identity preflight and verified `finally` cleanup.
 - restart evidence now crosses an actual PHP OS-process boundary rather than
   merely constructing a second object in the same process.
+- accepted launch metadata no longer embeds checkout-specific absolute action
+  gate or generated-report paths; a clean-clone contract now preserves the
+  relative provenance reference and committed toolchain receipt.
 
-Final author reproduction is green at `167 tests / 758 assertions`, PHPStan
+Final author reproduction is green at `168 tests / 768 assertions`, PHPStan
 level 8 with no errors, lint of 123 PHP files, package validation, scope and
 diff checks.
 

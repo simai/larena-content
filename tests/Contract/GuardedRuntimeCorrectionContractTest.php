@@ -139,6 +139,37 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
         );
     }
 
+    public function testAcceptedLaunchReceiptsAreClonePortable(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $context = json_decode(
+            (string) file_get_contents($root.'/.larena/launch-context.json'),
+            true,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertIsArray($context);
+        $actionGate = $context['action_gate'] ?? null;
+        $toolchain = $context['runtime_toolchain'] ?? null;
+        self::assertIsArray($actionGate);
+        self::assertIsArray($toolchain);
+        $actionGateRef = $actionGate['evidence_ref'] ?? null;
+        $toolchainRef = $toolchain['report_ref'] ?? null;
+        self::assertIsString($actionGateRef);
+        self::assertIsString($toolchainRef);
+        self::assertFalse(str_starts_with($actionGateRef, '/'));
+        self::assertMatchesRegularExpression(
+            '/\Asource\/output\/action-gates\/action-gate-report-[0-9]{14}\.json\z/D',
+            $actionGateRef,
+        );
+        self::assertSame(
+            'docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/tests.md',
+            $toolchainRef,
+        );
+        self::assertFileExists($root.'/'.$toolchainRef);
+        self::assertSame('pushed_exact_remote_parity', $context['remote_push_status'] ?? null);
+    }
+
     /**
      * @return array{public_id: string, display_name: string, mime_type: string, extension: string, size_bytes: int, alt_text: string|null}
      */

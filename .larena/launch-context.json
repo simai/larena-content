@@ -238,21 +238,21 @@
   "action_gate": {
     "status": "success",
     "phase": "preflight",
-    "evidence_ref": "/Users/rim/Documents/GitHub/larena-workspace/packages/content/source/output/action-gates/action-gate-report-20260719174719.json"
+    "evidence_ref": "source/output/action-gates/action-gate-report-20260719180549.json"
   },
   "git_boundary_gate": {
     "status": "covered_by_fresh_action_gate_success",
     "phase": "preflight",
-    "evidence_ref": "/Users/rim/Documents/GitHub/larena-workspace/packages/content/source/output/action-gates/action-gate-report-20260719174719.json"
+    "evidence_ref": "source/output/action-gates/action-gate-report-20260719180549.json"
   },
   "runtime_toolchain": {
     "status": "ok",
-    "report_ref": "/private/tmp/larena-content-platform-v1/larena-specs/generated/reports/runtime-toolchain-gate-validation.json",
+    "report_ref": "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/tests.md",
     "php_path": "/Applications/ServBay/package/php/8.4/8.4.20/bin/php",
     "php_version": "8.4.20",
     "composer_path": "/Applications/ServBay/bin/composer",
     "composer_version": "2.7.1"
   },
   "next_transition": "commit_push_then_root_exact_integration",
-  "remote_push_status": "branch_not_pushed"
+  "remote_push_status": "pushed_exact_remote_parity"
 }
