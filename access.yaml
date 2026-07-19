@@ -1,0 +1,57 @@
+schema: larena.access.descriptor.v1
+package: larena/content
+operations:
+  - code: content.type.list
+    risk: high
+    audit: denial
+  - code: content.type.read
+    risk: high
+    audit: denial
+  - code: content.type.create
+    risk: critical
+    audit: always
+  - code: content.item.list
+    risk: high
+    audit: denial
+  - code: content.item.read
+    risk: high
+    audit: denial
+  - code: content.item.create
+    risk: high
+    audit: always
+  - code: content.item.update
+    risk: high
+    audit: always
+  - code: content.item.restore
+    risk: critical
+    audit: always
+  - code: content.revision.list
+    risk: high
+    audit: denial
+  - code: content.revision.read
+    risk: high
+    audit: denial
+  - code: content.item.publish
+    risk: critical
+    audit: always
+  - code: content.item.unpublish
+    risk: critical
+    audit: always
+  - code: content.attachment.list
+    risk: high
+    audit: denial
+  - code: content.attachment.attach
+    risk: high
+    audit: always
+  - code: content.attachment.detach
+    risk: high
+    audit: always
+  - code: content.attachment.reorder
+    risk: high
+    audit: always
+  - code: content.public.read
+    risk: normal
+    audit: denial
+nonclaims:
+  production_ready: false
+  all_packages_ready: false

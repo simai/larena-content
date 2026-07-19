@@ -1,0 +1,62 @@
+{
+  "schema": "larena.content.dependency_api_map.v1",
+  "specs_commit": "790ba64b651dc47d416417262a385c26f097bbc7",
+  "dependencies": {
+    "larena/access": {
+      "revision": "a98308d62bf39671c9e02b0f7d82065dd50eaf1f",
+      "used_contract": "Larena\\Access\\Contracts\\ActorOperationAuthorizer",
+      "boundary": "protected Content operations are authorized before existence disclosure"
+    },
+    "larena/audit": {
+      "revision": "34dbed932a6c1f2e0312f9b8d3642d35c5a8b83c",
+      "used_contract": "Larena\\Audit\\Contracts\\AuditEventDescriptor",
+      "boundary": "Content declares sanitized event descriptors; Audit owns persistence"
+    },
+    "larena/core": {
+      "revision": "46f3bbc8baba0262117bc9b9519713ee21b1d981",
+      "used_contract": "development dependency closure",
+      "boundary": "no Core runtime mutation in this checkpoint"
+    },
+    "larena/dataview": {
+      "revision": "b84e964b4ed78e1ca08a46c88e7651b02744ee47",
+      "used_contract": "Larena\\Dataview\\Contracts\\DataviewSourceProvider",
+      "boundary": "read-only, access-scoped presentation with ownsCanonicalRecords=false"
+    },
+    "larena/filesystem": {
+      "revision": "ff0c0e355a9c5a59cd0d9a592dcb84c95fd7fb18",
+      "used_contract": "ContentLogicalFileInspector anti-corruption port",
+      "boundary": "Content references logical files and never owns blobs or delivery URLs"
+    },
+    "larena/layout": {
+      "revision": "cb5bdadf588cb8480972279bea3888500dbf9d6e",
+      "used_contract": "transitive UI closure",
+      "boundary": "no Layout ownership or frontend implementation"
+    },
+    "larena/licensing": {
+      "revision": "52d1215a25369cca17d5170bbfcae82d1f6c86d2",
+      "used_contract": "development dependency closure",
+      "boundary": "no Licensing runtime mutation in this checkpoint"
+    },
+    "larena/property": {
+      "revision": "92b6e915fc4c85239171dbbff6c3cb15d046cc99",
+      "used_contract": "Larena\\Property\\Runtime\\PropertyTypeRegistry::normalizeAndValidate",
+      "boundary": "Property normalizes frozen scalar field types; Content owns field visibility and projection policy"
+    },
+    "larena/search": {
+      "revision": "e7206b2491991790edd2858c993d142184c749ef",
+      "used_contract": "Larena\\Search\\Contracts\\ReindexSource and SearchProjection",
+      "boundary": "Content supplies public projections; Search owns index persistence and queries"
+    },
+    "larena/storage": {
+      "revision": "c2b3d03ee0c576a67aaad978dc2943b9e64c1237",
+      "used_contract": "Larena\\Storage\\Contracts\\VersionedStorage",
+      "boundary": "Storage owns typed values and immutable schema/record versions"
+    },
+    "larena/ui": {
+      "revision": "07fff2579344d7c77a28716a74071fb53f0bbfc9",
+      "used_contract": "transitive Access/Audit closure",
+      "boundary": "no UI or frontend implementation"
+    }
+  },
+  "exact_dependency_count": 11
+}

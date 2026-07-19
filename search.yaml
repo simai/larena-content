@@ -1,0 +1,33 @@
+schema: larena.search.package-source.v1
+package: larena/content
+index_owner: larena/search
+sources:
+  - provider_id: content.published_items
+    owner_package: larena/content
+    access_scope: public
+    includes_private_payload: false
+    source_ref: item_ref
+    source_revision: content_revision
+    locator: /content/{type_key}/{slug}?locale={locale}
+    projection_fields:
+      - provider_id
+      - source_ref
+      - source_revision
+      - title
+      - locator
+      - snippet
+      - locale
+      - access_scope
+      - searchable_text
+      - payload
+    payload_fields:
+      - type_key
+      - slug
+      - locale
+      - content_revision
+      - projection_version
+    attachments_in_payload: false
+nonclaims:
+  external_adapter_ready: false
+  production_ready: false
+  all_packages_ready: false

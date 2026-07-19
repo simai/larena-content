@@ -1,0 +1,79 @@
+schema: larena.audit.package-events.v1
+package: larena/content
+storage_owner: larena/audit
+retention: security
+atomic_completion: true
+events:
+  - type: content.type.created
+    category: content_schema
+    severity: security
+  - type: content.item.created
+    category: content_lifecycle
+    severity: security
+  - type: content.item.updated
+    category: content_lifecycle
+    severity: security
+  - type: content.item.restored
+    category: content_lifecycle
+    severity: security
+  - type: content.item.published
+    category: content_lifecycle
+    severity: security
+  - type: content.item.unpublished
+    category: content_lifecycle
+    severity: security
+  - type: content.attachment.attached
+    category: content_attachment
+    severity: security
+  - type: content.attachment.detached
+    category: content_attachment
+    severity: security
+  - type: content.attachment.reordered
+    category: content_attachment
+    severity: security
+  - type: content.operation.denied
+    category: content_security
+    severity: security
+allowed_payload_fields:
+  - operation
+  - reason_code
+  - actor_type
+  - actor_ref
+  - type_key
+  - item_ref
+  - logical_file_ref
+  - expected_revision
+  - current_revision
+  - new_revision
+  - status
+  - visibility
+  - field_count
+  - attachment_count
+  - correlation_id
+  - timestamp
+forbidden_payload_fields:
+  - values
+  - raw_value
+  - typed_values
+  - raw_values
+  - body
+  - content
+  - fields
+  - file_bytes
+  - filesystem_path
+  - storage_path
+  - storage_key
+  - signed_url
+  - credentials
+  - authorization
+  - password
+  - token
+  - cookie
+  - session
+  - secret
+  - api_key
+  - private_metadata
+  - request_headers
+nonclaims:
+  production_ready: false
+  all_packages_ready: false

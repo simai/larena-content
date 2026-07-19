@@ -1,0 +1,26 @@
+{
+  "schema": "simai.graph_sync_proposal.v1",
+  "proposal_id": "larena-content-interface-checkpoint-2026-07-19",
+  "owner": "larena",
+  "source_package": "larena/content",
+  "source_specs_commit": "790ba64b651dc47d416417262a385c26f097bbc7",
+  "proposed_capabilities": [
+    "content.type_registry.contract",
+    "content.item_lifecycle.contract",
+    "content.revision_history.contract",
+    "content.slug_routing.contract",
+    "content.attachment_binding.contract",
+    "content.publication_projection.contract",
+    "content.search_projection.contract"
+  ],
+  "readiness": "interface_checkpoint_only",
+  "evidence_ref": "docs/project-management/evidence/data-content/batch-1/content-interface-first/",
+  "canonical_update_allowed": false,
+  "apply_requested": false,
+  "nonclaims": {
+    "runtime_ready": false,
+    "production_ready": false,
+    "frontend_ready": false,
+    "all_packages_ready": false
+  }
+}

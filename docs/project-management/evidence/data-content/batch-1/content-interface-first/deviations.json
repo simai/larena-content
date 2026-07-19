@@ -1,0 +1,19 @@
+{
+  "schema": "larena.content.interface_deviations.v1",
+  "batch": "batch-1-content-interface-first",
+  "deviations": [
+    {
+      "id": "content.interface.composer_exact_source_metadata",
+      "severity": "bounded",
+      "decision": "The package development repository declares root-only Composer package repositories for the accepted Larena dependency closure while normal package requirements remain dev-main.",
+      "reason": "The accepted package revisions do not have release tags and branch aliases alone do not reproduce the exact dependency closure.",
+      "guard": "composer.lock and DependencyCompatibilityContractTest require all eleven exact source revisions; repository metadata is not inherited by downstream Composer roots.",
+      "follow_up": "The isolated Root candidate must own and verify its own exact revision composition."
+    }
+  ],
+  "runtime_scope_expanded": false,
+  "canonical_specs_changed_by_package": false,
+  "production_readiness_claimed": false,
+  "frontend_readiness_claimed": false,
+  "all_packages_readiness_claimed": false
+}

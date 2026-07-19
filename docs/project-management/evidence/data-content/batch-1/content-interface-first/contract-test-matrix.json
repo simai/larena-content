@@ -1,0 +1,69 @@
+{
+  "schema": "larena.content.contract_test_matrix.v1",
+  "features": {
+    "content.type_registry": {
+      "tests": [
+        "tests/Contract/ContentTypeContractTest.php",
+        "tests/Contract/ContentContractFixtureCoverageTest.php"
+      ],
+      "positive_fixture": "article_and_event_share_one_type_contract",
+      "negative_fixture": "unknown_property_type_fails_closed"
+    },
+    "content.item_lifecycle": {
+      "tests": [
+        "tests/Contract/ContentItemContractTest.php",
+        "tests/Contract/ServiceInterfaceContractTest.php"
+      ],
+      "positive_fixture": "create_read_list_update",
+      "negative_fixture": "stale_expected_revision_has_no_partial_success"
+    },
+    "content.revision_history": {
+      "tests": [
+        "tests/Contract/ContentRevisionContractTest.php",
+        "tests/Contract/ServiceInterfaceContractTest.php"
+      ],
+      "positive_fixture": "immutable_edit_and_restore_append_revisions",
+      "negative_fixture": "implicit_mutable_storage_head_is_forbidden"
+    },
+    "content.slug_routing": {
+      "tests": [
+        "tests/Contract/ContentSlugContractTest.php",
+        "tests/Contract/ContentIdentityContractTest.php"
+      ],
+      "positive_fixture": "type_and_locale_scoped_route",
+      "negative_fixture": "cross_mode_slug_collision_fails_closed"
+    },
+    "content.attachment_binding": {
+      "tests": [
+        "tests/Contract/ContentAttachmentContractTest.php",
+        "tests/Contract/PublishedContentProjectionContractTest.php"
+      ],
+      "positive_fixture": "logical_file_reference_only",
+      "negative_fixture": "private_or_unavailable_file_is_omitted"
+    },
+    "content.publication_projection": {
+      "tests": [
+        "tests/Contract/PublishedContentProjectionContractTest.php",
+        "tests/Contract/ContentItemContractTest.php"
+      ],
+      "positive_fixture": "exact_published_public_fields_only",
+      "negative_fixture": "draft_private_admin_and_stale_values_are_absent"
+    },
+    "content.search_projection": {
+      "tests": [
+        "tests/Contract/ContentSearchProjectionContractTest.php",
+        "tests/Contract/DependencyCompatibilityContractTest.php"
+      ],
+      "positive_fixture": "published_projection_maps_to_search_contract",
+      "negative_fixture": "unpublish_and_rename_remove_stale_documents"
+    }
+  },
+  "cross_cutting": {
+    "access": "tests/Contract/AccessDescriptorContractTest.php",
+    "audit": "tests/Contract/AuditDescriptorContractTest.php",
+    "dataview_ownership": "tests/Contract/DataviewBoundaryContractTest.php",
+    "exact_revisions_and_owner_apis": "tests/Contract/DependencyCompatibilityContractTest.php",
+    "fixture_completeness": "tests/Contract/ContentContractFixtureCoverageTest.php"
+  },
+  "runtime_acceptance_deferred": true
+}

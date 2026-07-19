@@ -10,8 +10,291 @@
     }
   ],
   "require": {
+    "larena/access": "dev-main",
+    "larena/audit": "dev-main",
+    "larena/dataview": "dev-main",
+    "larena/filesystem": "dev-main",
+    "larena/property": "dev-main",
+    "larena/search": "dev-main",
+    "larena/storage": "dev-main",
     "php": "^8.3"
   },
+  "repositories": [
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/access",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/console": "^13.0",
+          "illuminate/database": "^13.0",
+          "illuminate/http": "^13.0",
+          "illuminate/routing": "^13.0",
+          "illuminate/support": "^13.0",
+          "larena/audit": "dev-main",
+          "larena/ui": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Access\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-access.git",
+          "reference": "a98308d62bf39671c9e02b0f7d82065dd50eaf1f"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/audit",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/database": "^13.0",
+          "illuminate/routing": "^13.0",
+          "illuminate/support": "^13.0",
+          "illuminate/view": "^13.0",
+          "larena/ui": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Audit\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-audit.git",
+          "reference": "34dbed932a6c1f2e0312f9b8d3642d35c5a8b83c"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/core",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/console": "^13.0",
+          "illuminate/database": "^13.0",
+          "illuminate/support": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/licensing": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Core\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-core.git",
+          "reference": "46f3bbc8baba0262117bc9b9519713ee21b1d981"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/dataview",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Dataview\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-dataview.git",
+          "reference": "b84e964b4ed78e1ca08a46c88e7651b02744ee47"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/filesystem",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/database": "^13.0",
+          "illuminate/filesystem": "^13.0",
+          "illuminate/http": "^13.0",
+          "illuminate/routing": "^13.0",
+          "illuminate/support": "^13.0",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Filesystem\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-filesystem.git",
+          "reference": "ff0c0e355a9c5a59cd0d9a592dcb84c95fd7fb18"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/layout",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Layout\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-layout.git",
+          "reference": "cb5bdadf588cb8480972279bea3888500dbf9d6e"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/licensing",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Licensing\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-licensing.git",
+          "reference": "52d1215a25369cca17d5170bbfcae82d1f6c86d2"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/property",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/console": "^13.0",
+          "illuminate/http": "^13.0",
+          "illuminate/support": "^13.0",
+          "illuminate/view": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/core": "dev-main",
+          "larena/licensing": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Property\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-property.git",
+          "reference": "92b6e915fc4c85239171dbbff6c3cb15d046cc99"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/search",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/console": "^13.0",
+          "illuminate/database": "^13.0",
+          "illuminate/support": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Search\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-search.git",
+          "reference": "e7206b2491991790edd2858c993d142184c749ef"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/storage",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/database": "^13.0",
+          "illuminate/support": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/property": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Storage\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-storage.git",
+          "reference": "c2b3d03ee0c576a67aaad978dc2943b9e64c1237"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/ui",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "larena/dataview": "dev-main",
+          "larena/layout": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Ui\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-ui.git",
+          "reference": "07fff2579344d7c77a28716a74071fb53f0bbfc9"
+        }
+      }
+    }
+  ],
   "autoload": {
     "psr-4": {
       "Larena\\Content\\": "src/"
@@ -23,16 +306,21 @@
     }
   },
   "require-dev": {
-    "phpstan/phpstan": "^2.0"
+    "larena/core": "dev-main",
+    "larena/licensing": "dev-main",
+    "larena/ui": "dev-main",
+    "phpstan/phpstan": "^2.0",
+    "phpunit/phpunit": "^12.5",
+    "symfony/yaml": "^7.3"
   },
   "scripts": {
-    "test": "php scripts/test-placeholder.php",
-    "test:unit": "php scripts/test-placeholder.php",
-    "lint": "php scripts/lint.php",
-    "analyse": "php scripts/analyse.php",
-    "validate:larena": "php scripts/validate-larena-package.php",
-    "evidence:check": "php scripts/check-evidence.php",
-    "scope:check": "php tools/larena-scope-check.php",
+    "test": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist",
+    "test:unit": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=contract",
+    "lint": "@php scripts/lint.php",
+    "analyse": "@php vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --no-progress",
+    "validate:larena": "@php scripts/validate-larena-package.php",
+    "evidence:check": "@php scripts/check-evidence.php",
+    "scope:check": "@php tools/larena-scope-check.php",
     "quality:gate": [
       "@validate:larena",
       "@lint",
@@ -49,6 +337,6 @@
       "php": "8.3.31"
     }
   },
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
   "prefer-stable": true
 }

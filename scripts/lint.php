@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 $files = [];
-foreach (['scripts', 'tools'] as $path) {
+foreach (['src', 'tests', 'scripts', 'tools'] as $path) {
     if (!is_dir($path)) {
         continue;
     }
@@ -16,7 +16,7 @@ foreach (['scripts', 'tools'] as $path) {
 }
 sort($files);
 foreach ($files as $file) {
-    passthru('php -l ' . escapeshellarg($file), $exitCode);
+    passthru(escapeshellarg(PHP_BINARY).' -l '.escapeshellarg($file), $exitCode);
     if ($exitCode !== 0) {
         exit($exitCode);
     }
