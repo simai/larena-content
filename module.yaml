@@ -1,0 +1,18 @@
+package: larena/content
+title: Larena Content
+status: repository_prepared
+cluster: data-content
+batch: batch-0-clean-pre-codegen-baseline
+features:
+  - content.type_registry
+  - content.item_lifecycle
+  - content.revision_history
+  - content.slug_routing
+  - content.attachment_binding
+  - content.publication_projection
+  - content.search_projection
+runtime:
+  php: "^8.3"
+  laravel: "^13.0"
+evidence:
+  path: docs/project-management/evidence/data-content/batch-0/content-clean-baseline/
