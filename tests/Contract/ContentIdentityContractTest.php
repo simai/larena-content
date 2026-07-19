@@ -20,7 +20,7 @@ final class ContentIdentityContractTest extends TestCase
         $itemRef = ContentItemRef::fromUuid('018f6d52-4ef8-7bc2-9c71-3f2f4c164001');
         $locale = new ContentLocale('en-us');
         $slug = new ContentSlug('stable-content-slug');
-        $actor = new ActorContext('user', 'user:1', 'request-018f6d52');
+        $actor = new ActorContext('user', 'user:admin_identity:1', 'request-018f6d52');
 
         self::assertSame('content.type.news.article', $typeKey->storageSchemaRef());
         self::assertSame('018f6d52-4ef8-7bc2-9c71-3f2f4c164001', $itemRef->uuid());
@@ -55,5 +55,26 @@ final class ContentIdentityContractTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         new $class($value);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function invalidActorProvider(): iterable
+    {
+        yield 'non-user actor type' => ['system', 'user:admin_identity:1'];
+        yield 'generic user reference' => ['user', 'user:1'];
+        yield 'zero admin identity' => ['user', 'user:admin_identity:0'];
+        yield 'leading-zero admin identity' => ['user', 'user:admin_identity:01'];
+        yield 'negative admin identity' => ['user', 'user:admin_identity:-1'];
+        yield 'wrong identity family' => ['user', 'user:account:1'];
+    }
+
+    #[DataProvider('invalidActorProvider')]
+    public function testProtectedActorIdentityFailsClosed(string $actorType, string $actorRef): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new ActorContext($actorType, $actorRef, 'request-018f6d52');
     }
 }

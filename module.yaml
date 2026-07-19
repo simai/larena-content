@@ -1,8 +1,8 @@
 package: larena/content
 title: Larena Content
-status: interface_checkpoint_accepted
+status: guarded_runtime_candidate
 cluster: data-content
-batch: batch-1-content-interface-first
+batch: batch-2-content-guarded-runtime
 features:
   - content.type_registry
   - content.item_lifecycle
@@ -15,7 +15,7 @@ runtime:
   php: "^8.3"
   laravel: "^13.0"
 evidence:
-  path: docs/project-management/evidence/data-content/batch-1/content-interface-first/
+  path: docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/
 nonclaims:
   runtime_ready: false
   production_ready: false

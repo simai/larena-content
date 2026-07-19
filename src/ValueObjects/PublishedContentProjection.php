@@ -65,9 +65,8 @@ final readonly class PublishedContentProjection
 
         $attachmentIdentities = [];
         $normalizedPublicAttachments = [];
-        $previousPosition = -1;
 
-        foreach ($publicAttachments as $attachment) {
+        foreach ($publicAttachments as $expectedPublicPosition => $attachment) {
             if (!$attachment instanceof PublicContentAttachment) {
                 throw new \InvalidArgumentException(
                     'Published Content projections may contain only public-safe attachment value objects.',
@@ -86,15 +85,14 @@ final readonly class PublishedContentProjection
                 throw new \InvalidArgumentException('Published Content attachments must be unique by file and role.');
             }
 
-            if ($attachment->position <= $previousPosition) {
+            if ($attachment->position !== $expectedPublicPosition) {
                 throw new \InvalidArgumentException(
-                    'Published Content attachments must have unique ascending positions.',
+                    'Published Content attachment positions must be contiguous from zero after filtering.',
                 );
             }
 
             $attachmentIdentities[$identity] = true;
             $normalizedPublicAttachments[] = $attachment;
-            $previousPosition = $attachment->position;
         }
 
         $this->typeKey = $typeVersion->typeKey;

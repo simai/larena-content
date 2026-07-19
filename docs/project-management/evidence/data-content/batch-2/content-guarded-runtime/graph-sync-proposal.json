@@ -1,0 +1,37 @@
+{
+  "schema": "simai.graph_sync_proposal.v1",
+  "proposal_id": "larena-content-guarded-runtime-2026-07-19",
+  "owner": "larena",
+  "source_package": "larena/content",
+  "source_specs_commit": "2c3c3106a4afb98925dbf8192cfaadb57ca4d4a9",
+  "source_package_base_commit": "11fbc66eb23523549f061f8210d3f195f614ce55",
+  "evidence_ref": "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/",
+  "readiness": "guarded_runtime_checkpoint_accepted_pending_canonical_graph_apply",
+  "proposed_capabilities": [
+    "content.type_registry.guarded_runtime",
+    "content.item_lifecycle.guarded_runtime",
+    "content.revision_history.guarded_runtime",
+    "content.slug_routing.guarded_runtime",
+    "content.attachment_binding.guarded_runtime",
+    "content.publication_projection.guarded_runtime",
+    "content.search_projection.guarded_runtime"
+  ],
+  "proposed_evidence": {
+    "sqlite": "sqlite-proof.json",
+    "mysql": "mysql-proof.json",
+    "restart": "restart-proof.json",
+    "migration_rollback": "migration-rollback.json",
+    "atomicity": "atomicity-proof.json",
+    "concurrency": "concurrency-proof.json",
+    "independent_review": "independent-review.md"
+  },
+  "canonical_update_allowed": false,
+  "apply_requested": false,
+  "nonclaims": {
+    "production_ready": false,
+    "frontend_ready": false,
+    "release_or_update_server_ready": false,
+    "all_packages_ready": false
+  },
+  "next_owner_action": "Review this proposal through the canonical graph owner process after the package checkpoint is committed and Root exact-revision integration is independently accepted."
+}

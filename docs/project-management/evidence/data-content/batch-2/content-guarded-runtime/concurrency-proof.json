@@ -1,0 +1,40 @@
+{
+  "schema": "larena.content.guarded_runtime_concurrency_proof.v1",
+  "result": "pass",
+  "cas_model": "expected Content head revision plus owner Storage compare-and-swap",
+  "sqlite": {
+    "test_ref": "tests/Integration/ContentConcurrencySqliteTest.php",
+    "database": "one file-backed SQLite database",
+    "independent_connections": 2,
+    "observed_expected_head": 1,
+    "winner_revision": 2,
+    "stale_writer_expected_revision": 1,
+    "stale_writer_observed_revision": 2,
+    "committed_content_revisions": 2,
+    "committed_storage_versions": 2,
+    "result": "pass"
+  },
+  "mysql": {
+    "test_ref": "tests/Integration/ContentConcurrencyMySqlTest.php",
+    "database": "one marker-owned disposable MySQL database",
+    "independent_connections": 2,
+    "observed_expected_head": 1,
+    "winner_revision": 2,
+    "stale_writer_expected_revision": 1,
+    "stale_writer_observed_revision": 2,
+    "committed_content_revisions": 2,
+    "committed_storage_versions": 2,
+    "result": "pass"
+  },
+  "verified": [
+    "both runtime instances read the same initial head",
+    "first writer advances Content and Storage to revision 2",
+    "second writer using expected revision 1 receives ContentConflict",
+    "losing slug and typed values are not committed",
+    "second connection observes the winner"
+  ],
+  "limits": [
+    "the proof uses independent connections and a deterministic stale-head interleaving",
+    "it does not claim a distributed multi-node load test"
+  ]
+}

@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Larena\Content\ValueObjects;
 
 use DateTimeImmutable;
+use JsonException;
 
 final readonly class ContentTypeVersion
 {
+    public const int MAX_FIELDS = 100;
+
+    public const int MAX_CANONICAL_JSON_BYTES = 16_384;
+
     /**
      * Public-safe type metadata keys frozen for Content Platform v1.
      *
@@ -55,7 +60,11 @@ final readonly class ContentTypeVersion
             throw new \InvalidArgumentException('Content schema hashes must be lowercase SHA-256 values.');
         }
 
-        if ($fieldDefinitions === [] || !array_is_list($fieldDefinitions)) {
+        if (
+            $fieldDefinitions === []
+            || !array_is_list($fieldDefinitions)
+            || count($fieldDefinitions) > self::MAX_FIELDS
+        ) {
             throw new \InvalidArgumentException('A Content type version requires an ordered field definition list.');
         }
 
@@ -73,6 +82,10 @@ final readonly class ContentTypeVersion
 
         $this->fieldDefinitions = $normalizedFieldDefinitions;
         $projectionContract->assertExactFieldDefinitions($normalizedFieldDefinitions);
+        self::assertCanonicalJsonBound(
+            $projectionContract->toArray(),
+            'Content projection contracts',
+        );
         self::assertSafeMetadata($safeMetadata);
         self::assertSafeReference($createdBy, 'creator reference');
         self::assertSafeReference($correlationId, 'correlation id');
@@ -84,14 +97,76 @@ final readonly class ContentTypeVersion
     private static function assertSafeMetadata(array $metadata): void
     {
         foreach ($metadata as $key => $value) {
-            if (
-                !in_array($key, self::SAFE_METADATA_KEYS, true)
-                || ($value !== null && !is_scalar($value))
-            ) {
+            if (!in_array($key, self::SAFE_METADATA_KEYS, true)) {
                 throw new \InvalidArgumentException(
                     'Content type metadata must use the frozen public-safe v1 allowlist.',
                 );
             }
+
+            if ($key === 'sort') {
+                $validType = $value === null || is_int($value);
+            } elseif ($key === 'hidden') {
+                $validType = $value === null || is_bool($value);
+            } else {
+                $validType = $value === null || is_string($value);
+            }
+
+            if (!$validType) {
+                throw new \InvalidArgumentException(
+                    'Content type metadata values must match the exact frozen key types.',
+                );
+            }
+
+            if (is_string($value)) {
+                self::assertSafeMetadataText($value);
+            }
+        }
+
+        self::assertCanonicalJsonBound($metadata, 'Content safe type metadata');
+    }
+
+    private static function assertSafeMetadataText(string $value): void
+    {
+        if (
+            preg_match('//u', $value) !== 1
+            || preg_match('/[\x{0000}-\x{001F}\x{007F}-\x{009F}]/u', $value) === 1
+            || preg_match(
+                '/(?:<\?(?:php|=)?|<\s*script\b|javascript\s*:|data\s*:\s*text\/html|(?:^|[\s<])on[a-z]+\s*=)/iu',
+                $value,
+            ) === 1
+        ) {
+            throw new \InvalidArgumentException(
+                'Content safe type metadata must be inert valid UTF-8 text.',
+            );
+        }
+    }
+
+    /**
+     * @param array<array-key, mixed> $value
+     */
+    private static function assertCanonicalJsonBound(array $value, string $label): void
+    {
+        $canonical = $value;
+
+        if (!array_is_list($canonical)) {
+            ksort($canonical, SORT_STRING);
+        }
+
+        try {
+            $json = json_encode(
+                $canonical,
+                JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION,
+            );
+        } catch (JsonException $exception) {
+            throw new \InvalidArgumentException(sprintf('%s must be canonical JSON.', $label), 0, $exception);
+        }
+
+        if (strlen($json) > self::MAX_CANONICAL_JSON_BYTES) {
+            throw new \InvalidArgumentException(sprintf(
+                '%s may contain at most %d canonical JSON bytes.',
+                $label,
+                self::MAX_CANONICAL_JSON_BYTES,
+            ));
         }
     }
 

@@ -8,6 +8,8 @@ use Larena\Content\Enums\ContentFieldVisibility;
 
 final readonly class ContentFieldDefinition
 {
+    public const int MAX_STRING_CODE_POINTS = 65_536;
+
     /** @var array<string, int> */
     public array $constraints;
 
@@ -41,6 +43,22 @@ final readonly class ContentFieldDefinition
     {
         return $this->isPublic()
             && in_array($this->propertyType, ['string', 'integer', 'boolean'], true);
+    }
+
+    public static function assertStringValueWithinFrozenBound(string $value): void
+    {
+        if (preg_match('//u', $value) !== 1) {
+            throw new \InvalidArgumentException('Content string values must be valid UTF-8.');
+        }
+
+        $codePoints = preg_match_all('/./us', $value);
+
+        if ($codePoints === false || $codePoints > self::MAX_STRING_CODE_POINTS) {
+            throw new \InvalidArgumentException(sprintf(
+                'Content string values may contain at most %d Unicode code points.',
+                self::MAX_STRING_CODE_POINTS,
+            ));
+        }
     }
 
     /**
@@ -80,6 +98,7 @@ final readonly class ContentFieldDefinition
 
         if (
             ($propertyType === 'string' && (($minimum !== null && $minimum < 0) || ($maximum !== null && $maximum < 0)))
+            || ($propertyType === 'string' && $maximum !== null && $maximum > self::MAX_STRING_CODE_POINTS)
             || ($minimum !== null && $maximum !== null && $minimum > $maximum)
         ) {
             throw new \InvalidArgumentException('Content field constraint bounds are invalid.');

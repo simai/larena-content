@@ -1,0 +1,99 @@
+{
+  "schema": "larena.content.guarded_runtime_file_map.v1",
+  "batch": "batch-2-content-guarded-runtime",
+  "package": "larena/content",
+  "specs_commit": "2c3c3106a4afb98925dbf8192cfaadb57ca4d4a9",
+  "package_base_commit": "11fbc66eb23523549f061f8210d3f195f614ce55",
+  "content_owned_table_count": 6,
+  "content_owned_tables": [
+    "larena_content_types",
+    "larena_content_type_versions",
+    "larena_content_items",
+    "larena_content_item_revisions",
+    "larena_content_item_revision_attachments",
+    "larena_content_routes"
+  ],
+  "dataview_owns_canonical_records": false,
+  "runtime": {
+    "migration": [
+      "database/migrations/2026_07_19_000001_create_larena_content_tables.php"
+    ],
+    "public_route": [
+      "routes/public.php",
+      "src/Http/Controllers/PublishedContentController.php"
+    ],
+    "composition": [
+      "src/Providers/ContentServiceProvider.php"
+    ],
+    "persistence": [
+      "src/Database/ContentOwnedTableShapeGuard.php",
+      "src/Persistence/DatabaseContentRepository.php"
+    ],
+    "services": [
+      "src/Services/DatabaseContentTypeService.php",
+      "src/Services/DatabaseContentItemService.php",
+      "src/Services/DatabasePublishedContentReader.php"
+    ],
+    "owner_adapters": [
+      "src/Access/ContentAuthorizer.php",
+      "src/Audit/ContentAuditEmitter.php",
+      "src/Dataview/DefaultContentDataviewSourceFactory.php",
+      "src/Dataview/MaterializedContentDataviewSourceProvider.php",
+      "src/Filesystem/FilesystemContentLogicalFileInspector.php",
+      "src/Runtime/ContentSchemaMapper.php",
+      "src/Search/DatabaseContentSearchSourceProvider.php",
+      "src/Storage/ContentStorageGateway.php"
+    ],
+    "transaction_and_projection_guards": [
+      "src/Runtime/ContentParticipantGuard.php",
+      "src/Runtime/PublishedContentProjectionBuilder.php",
+      "src/Runtime/ContentInputGuard.php",
+      "src/Runtime/ContentCanonicalJson.php"
+    ]
+  },
+  "contracts": {
+    "service_interfaces": [
+      "src/Contracts/ContentTypeService.php",
+      "src/Contracts/ContentItemService.php",
+      "src/Contracts/PublishedContentReader.php",
+      "src/Contracts/ContentSearchSourceProvider.php",
+      "src/Contracts/ContentDataviewSourceFactory.php",
+      "src/Contracts/ContentDataviewSourceProvider.php",
+      "src/Contracts/ContentLogicalFileInspector.php"
+    ],
+    "access_catalog": "src/Access/ContentAccessOperationCatalog.php",
+    "audit_catalog": "src/Audit/ContentAuditEventCatalog.php",
+    "search_contract": "src/Search/ContentSearchContract.php",
+    "dataview_contract": "src/Dataview/ContentDataviewContract.php"
+  },
+  "tests": {
+    "support": [
+      "tests/Support/ContentRuntimeHarness.php",
+      "tests/Support/ContentPlatformScenario.php",
+      "tests/Support/ContentTestDatabase.php"
+    ],
+    "contract_directory": "tests/Contract",
+    "unit_directory": "tests/Unit",
+    "feature_directory": "tests/Feature",
+    "integration": [
+      "tests/Integration/ContentPlatformSQLiteTest.php",
+      "tests/Integration/ContentPlatformMySqlTest.php",
+      "tests/Integration/ContentRuntimeMySqlTest.php",
+      "tests/Integration/ContentFreshProcessRestartTest.php",
+      "tests/Integration/ContentMigrationShapeTest.php",
+      "tests/Integration/ContentFailureAtomicityTest.php",
+      "tests/Integration/ContentConcurrencySqliteTest.php",
+      "tests/Integration/ContentConcurrencyMySqlTest.php"
+    ]
+  },
+  "evidence_directory": "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/",
+  "forbidden_runtime_present": false,
+  "excluded_surfaces": [
+    "admin UI",
+    "frontend",
+    "Root application composition",
+    "larena.test mutation",
+    "release deployment",
+    "update server"
+  ]
+}

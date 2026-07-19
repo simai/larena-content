@@ -30,6 +30,7 @@ final readonly class PublicContentAttachment
     public static function fromInspection(
         ContentAttachmentReference $reference,
         ContentLogicalFileInspection $inspection,
+        ?int $publicPosition = null,
     ): self {
         if ($reference->logicalFileRef !== $inspection->logicalFileRef) {
             throw new \InvalidArgumentException(
@@ -48,7 +49,7 @@ final readonly class PublicContentAttachment
             sourceRevision: $reference->revision,
             logicalFileRef: $inspection->logicalFileRef,
             role: $reference->role,
-            position: $reference->position,
+            position: $publicPosition ?? $reference->position,
             metadata: $inspection->safeMetadata,
         );
     }

@@ -1,0 +1,46 @@
+{
+  "schema": "larena.content.guarded_runtime_deviations.v1",
+  "package": "larena/content",
+  "specs_commit": "2c3c3106a4afb98925dbf8192cfaadb57ca4d4a9",
+  "canonical_specs_changed_by_package": false,
+  "production_readiness_claimed": false,
+  "frontend_readiness_claimed": false,
+  "release_or_update_server_readiness_claimed": false,
+  "all_packages_readiness_claimed": false,
+  "bounded_deviations": [
+    {
+      "id": "composer-root-pin-carrier",
+      "status": "accepted_for_package_checkpoint",
+      "description": "The package root uses Composer package-repository source references while direct requirements retain the dev-main constraint.",
+      "guard": "composer.lock and the exact-vendor bootstrap pin the eleven accepted revisions for package verification; Root integration must preserve equivalent exact revisions."
+    },
+    {
+      "id": "mysql-local-secret-carrier",
+      "status": "accepted_for-local-acceptance",
+      "description": "Real MySQL verification requires an explicitly selected local ignored file outside committed evidence.",
+      "guard": "The test rejects tracked, non-ignored, non-local-host or group/world-readable carriers and never records credential values."
+    },
+    {
+      "id": "public-json-read-only",
+      "status": "bounded-v1-surface",
+      "description": "The package exposes one anonymous sessionless JSON read route rather than an HTML frontend or public write API.",
+      "guard": "Private, draft, corrupt and infrastructure-failed projections return the same not-public response."
+    },
+    {
+      "id": "search-provider-lifetime",
+      "status": "non-blocking-p2-before-long-running-readiness",
+      "description": "The Search source registry retains a provider whose dependencies are scoped.",
+      "guard": "Resolve with a Search owner factory or lazy-provider contract before any long-running-runtime or production-readiness claim."
+    }
+  ],
+  "unimplemented_by_design": [
+    "type evolution",
+    "archive or review workflow",
+    "Filesystem upload or mutation",
+    "external Search or outbox",
+    "admin UI and frontend",
+    "Docara adapter",
+    "Root application cutover",
+    "release or deployment"
+  ]
+}

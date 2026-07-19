@@ -49,9 +49,6 @@ operations:
   - code: content.attachment.reorder
     risk: high
     audit: always
-  - code: content.public.read
-    risk: normal
-    audit: denial
 nonclaims:
   production_ready: false
   all_packages_ready: false

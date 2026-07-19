@@ -1,0 +1,47 @@
+{
+  "schema": "larena.content.guarded_runtime_sqlite_proof.v1",
+  "result": "pass",
+  "database": {
+    "driver": "sqlite",
+    "mode": "fresh file-backed database",
+    "in_memory_only": false
+  },
+  "test_refs": [
+    "tests/Integration/ContentPlatformSQLiteTest.php",
+    "tests/Integration/ContentMigrationShapeTest.php",
+    "tests/Integration/ContentFreshProcessRestartTest.php",
+    "tests/Integration/ContentFailureAtomicityTest.php",
+    "tests/Integration/ContentConcurrencySqliteTest.php",
+    "tests/Support/ContentRuntimeHarness.php",
+    "tests/Support/ContentPlatformScenario.php"
+  ],
+  "verified": [
+    "fresh migrations create exactly six Content-owned tables",
+    "article and event use unrelated typed schemas",
+    "typed values remain in Storage rather than Content tables",
+    "draft update and restore append immutable revisions",
+    "publication public projection and Search projection agree",
+    "Dataview is Access-scoped, bounded to 100 rows and owns no canonical records",
+    "unpublish removes public visibility and records a newer Search tombstone",
+    "fresh OS-process composition observes persisted Content, Storage, Search and Access state",
+    "empty rollback and reapply are reproducible",
+    "two independent connections produce one CAS winner from one expected head",
+    "Search, Storage and Audit participant failure paths roll back canonical mutations"
+  ],
+  "negative_regressions": [
+    "missing or count-mismatched attachment rows",
+    "101-row persisted attachment overflow",
+    "invalid persisted status or visibility",
+    "null publication timestamp",
+    "corrupted Content Storage schema pointer",
+    "tampered but rehashed Storage public value",
+    "duplicate Access or Content denial emission"
+  ],
+  "aggregate_receipt": {
+    "suite": "full exact-vendor suite including opted-in real MySQL",
+    "tests": 167,
+    "assertions": 758,
+    "duration_seconds": 61.601,
+    "result": "pass"
+  }
+}

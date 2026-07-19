@@ -1,0 +1,123 @@
+{
+  "schema": "larena.content.guarded_runtime_dependency_api_map.v1",
+  "package": "larena/content",
+  "specs_commit": "2c3c3106a4afb98925dbf8192cfaadb57ca4d4a9",
+  "exact_dependency_count": 11,
+  "dependencies": {
+    "larena/access": {
+      "revision": "8c0e75897fe422a8f4d97fc012f1d095ffdba3b2",
+      "role": "authorization owner",
+      "used_apis": [
+        "ActorOperationAuthorizer::assertAllowed",
+        "PersistentGlobalRoleQueryScopeProvider::scope",
+        "AccessOperationRegistry::register"
+      ],
+      "boundary": "Access owns grant decisions and access.operation.denied; Content does not duplicate Access denials."
+    },
+    "larena/audit": {
+      "revision": "ab2546b1a0fdd577faba895755a3d6c44f0f9da8",
+      "role": "audit persistence owner",
+      "used_apis": [
+        "ConnectionBoundAuditEventPipeline::connection",
+        "ConnectionBoundAuditEventPipeline::route",
+        "AuditEvent::create"
+      ],
+      "boundary": "Content emits redacted descriptors and payloads through the connection-bound owner pipeline inside the caller transaction."
+    },
+    "larena/core": {
+      "revision": "46f3bbc8baba0262117bc9b9519713ee21b1d981",
+      "role": "exact transitive Composer closure",
+      "used_apis": [
+        "Composer development dependency closure only"
+      ],
+      "boundary": "No Content runtime table or service is delegated to Core in this batch."
+    },
+    "larena/dataview": {
+      "revision": "b84e964b4ed78e1ca08a46c88e7651b02744ee47",
+      "role": "presentation projection contract owner",
+      "used_apis": [
+        "DataviewSourceProvider::descriptor",
+        "DataviewSourceProvider::rows",
+        "DataviewSourceDescriptor"
+      ],
+      "boundary": "Content supplies request-local scalar presentation rows after Access-scoped listing; Dataview owns no canonical records and exposes no mutation."
+    },
+    "larena/filesystem": {
+      "revision": "6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f",
+      "role": "logical file and blob owner",
+      "used_apis": [
+        "PersistentLogicalFileInspector::inspect",
+        "PersistentLogicalFileInspection",
+        "FileLifecycleClass",
+        "FileVisibility"
+      ],
+      "boundary": "Content stores logical references and consumes only the safe inspection allowlist; it does not upload, mutate, delete, sign or publish blobs."
+    },
+    "larena/layout": {
+      "revision": "cb5bdadf588cb8480972279bea3888500dbf9d6e",
+      "role": "exact transitive Composer closure",
+      "used_apis": [
+        "Composer development dependency closure only"
+      ],
+      "boundary": "No Layout runtime or presentation ownership is introduced by this backend batch."
+    },
+    "larena/licensing": {
+      "revision": "52d1215a25369cca17d5170bbfcae82d1f6c86d2",
+      "role": "exact transitive Composer closure",
+      "used_apis": [
+        "Composer development dependency closure only"
+      ],
+      "boundary": "No license or entitlement decision is implemented in Content."
+    },
+    "larena/property": {
+      "revision": "92b6e915fc4c85239171dbbff6c3cb15d046cc99",
+      "role": "typed property contract owner",
+      "used_apis": [
+        "PropertyTypeRegistry::resolve",
+        "PropertyTypeRegistry::normalizeAndValidate"
+      ],
+      "boundary": "Content maps frozen exact Property versions and performs owner-compatible preflight; Property and Storage remain authoritative for typed normalization."
+    },
+    "larena/search": {
+      "revision": "e7206b2491991790edd2858c993d142184c749ef",
+      "role": "search index and reindex protocol owner",
+      "used_apis": [
+        "DatabaseSearchIndex::connection",
+        "DatabaseSearchIndex::upsert",
+        "DatabaseSearchIndex::remove",
+        "SearchSourceRegistry::register",
+        "SourceProvider::declare",
+        "ReindexSource::readBatch"
+      ],
+      "boundary": "Content produces the content.published_items projection from the same fail-closed public reader; Search owns index records and tombstones."
+    },
+    "larena/storage": {
+      "revision": "7645c0124999eeab6150edc0b0b949adc17be310",
+      "role": "typed value and immutable record owner",
+      "used_apis": [
+        "VersionedStorage::connection",
+        "VersionedStorage::registerSchemaVersion",
+        "VersionedStorage::create",
+        "VersionedStorage::compareAndSwap",
+        "VersionedStorage::schemaVersion",
+        "VersionedStorage::readAdminVersion",
+        "VersionedStorage::readAdminCurrentVersion",
+        "VersionedStorage::projectPublicVersion"
+      ],
+      "boundary": "Storage owns typed values and immutable versions. Content stores only exact owner references and independently verifies returned identity, schema, revision, actor and correlation metadata."
+    },
+    "larena/ui": {
+      "revision": "07fff2579344d7c77a28716a74071fb53f0bbfc9",
+      "role": "exact transitive Composer closure",
+      "used_apis": [
+        "Composer development dependency closure only"
+      ],
+      "boundary": "No admin UI, frontend component or asset behavior is introduced by this backend batch."
+    }
+  },
+  "verification": {
+    "lock_source": "composer.lock",
+    "contract_test": "tests/Contract/DependencyCompatibilityContractTest.php",
+    "result": "pass"
+  }
+}

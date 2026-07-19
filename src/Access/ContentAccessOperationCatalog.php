@@ -34,7 +34,6 @@ final class ContentAccessOperationCatalog
         ['code' => 'content.attachment.attach', 'label' => 'attachment_attach', 'target' => 'content.attachment:all', 'grant' => 'attach', 'risk' => 'high'],
         ['code' => 'content.attachment.detach', 'label' => 'attachment_detach', 'target' => 'content.attachment:all', 'grant' => 'detach', 'risk' => 'high'],
         ['code' => 'content.attachment.reorder', 'label' => 'attachment_reorder', 'target' => 'content.attachment:all', 'grant' => 'reorder', 'risk' => 'high'],
-        ['code' => 'content.public.read', 'label' => 'public_read', 'target' => 'content.public:all', 'grant' => 'read', 'risk' => 'normal'],
     ];
 
     /**

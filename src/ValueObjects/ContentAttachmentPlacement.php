@@ -18,12 +18,13 @@ final readonly class ContentAttachmentPlacement
 
     public static function assertLogicalFileRef(string $logicalFileRef): void
     {
-        if (
-            $logicalFileRef === ''
-            || strlen($logicalFileRef) > 191
-            || preg_match('/[\x00-\x1F\x7F]/', $logicalFileRef) === 1
-        ) {
-            throw new \InvalidArgumentException('Invalid logical Filesystem reference.');
+        if (preg_match(
+            '/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/D',
+            $logicalFileRef,
+        ) !== 1) {
+            throw new \InvalidArgumentException(
+                'Logical Filesystem references must be canonical lowercase bare UUIDs.',
+            );
         }
     }
 

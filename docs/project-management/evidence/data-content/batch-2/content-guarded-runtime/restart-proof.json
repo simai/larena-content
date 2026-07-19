@@ -1,0 +1,35 @@
+{
+  "schema": "larena.content.guarded_runtime_restart_proof.v1",
+  "result": "pass",
+  "test_ref": "tests/Integration/ContentFreshProcessRestartTest.php",
+  "database": "file-backed SQLite",
+  "process_boundary": {
+    "fresh_os_process": true,
+    "launcher": "proc_open",
+    "php_binary": "same PHP_BINARY as the test runner",
+    "autoload": "resolved from the exact installed larena/storage owner class",
+    "first_runtime_closed_before_worker": true,
+    "worker_exit_code": 0
+  },
+  "safe_receipt": {
+    "ok": true,
+    "item_ref_matches": true,
+    "published_revision": 2,
+    "search_hits": 1,
+    "access_assignments": 2,
+    "storage_records": 2
+  },
+  "verified": [
+    "Content item head survives fresh composition",
+    "anonymous published projection survives fresh composition",
+    "Search document is queryable after restart",
+    "Access assignments remain persisted",
+    "Storage records remain persisted"
+  ],
+  "not_recorded": [
+    "typed field payloads",
+    "file payloads",
+    "credentials",
+    "actor secrets"
+  ]
+}

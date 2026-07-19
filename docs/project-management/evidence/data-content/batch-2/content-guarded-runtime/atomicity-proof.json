@@ -1,0 +1,49 @@
+{
+  "schema": "larena.content.guarded_runtime_atomicity_proof.v1",
+  "result": "pass",
+  "transaction_contract": {
+    "content_storage_search_audit_same_connection_required": true,
+    "connection_identity_checked_before_mutation": true,
+    "canonical_transaction_owner": "Content service",
+    "denial_audit_failure_is_sanitized": true,
+    "audit_recursion": false
+  },
+  "test_refs": [
+    "tests/Feature/ContentAtomicityRuntimeTest.php",
+    "tests/Integration/ContentFailureAtomicityTest.php",
+    "tests/Integration/ContentRuntimeMySqlTest.php",
+    "tests/Support/ContentRuntimeHarness.php"
+  ],
+  "failure_probes": [
+    {
+      "participant": "Search",
+      "operation": "publication upsert",
+      "expected": "Content head, revision, route, Search and Audit remain at pre-operation state",
+      "sqlite": "pass",
+      "mysql": "pass"
+    },
+    {
+      "participant": "Audit",
+      "operation": "Content mutation event",
+      "expected": "Content, Storage and Search mutation rolls back",
+      "sqlite": "pass"
+    },
+    {
+      "participant": "Storage",
+      "operation": "typed value write",
+      "expected": "Content head and revision do not advance",
+      "sqlite": "pass"
+    },
+    {
+      "participant": "Audit",
+      "operation": "post-Access Content domain denial",
+      "expected": "sanitized integration failure and no canonical mutation or partial denial event",
+      "sqlite": "pass"
+    }
+  ],
+  "public_read_failure_boundary": {
+    "corrupt_or_infrastructure_projection_maps_to_uniform_not_public": true,
+    "denial_audit_written": false,
+    "state_healed_during_read": false
+  }
+}

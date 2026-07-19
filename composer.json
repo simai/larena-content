@@ -44,7 +44,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-access.git",
-          "reference": "a98308d62bf39671c9e02b0f7d82065dd50eaf1f"
+          "reference": "8c0e75897fe422a8f4d97fc012f1d095ffdba3b2"
         }
       }
     },
@@ -70,7 +70,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-audit.git",
-          "reference": "34dbed932a6c1f2e0312f9b8d3642d35c5a8b83c"
+          "reference": "ab2546b1a0fdd577faba895755a3d6c44f0f9da8"
         }
       }
     },
@@ -144,7 +144,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-filesystem.git",
-          "reference": "ff0c0e355a9c5a59cd0d9a592dcb84c95fd7fb18"
+          "reference": "6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f"
         }
       }
     },
@@ -267,7 +267,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-storage.git",
-          "reference": "c2b3d03ee0c576a67aaad978dc2943b9e64c1237"
+          "reference": "7645c0124999eeab6150edc0b0b949adc17be310"
         }
       }
     },
@@ -315,9 +315,16 @@
   },
   "scripts": {
     "test": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist",
-    "test:unit": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=contract",
+    "test:contract": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=contract",
+    "test:unit": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=unit",
+    "test:feature": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --testsuite=feature",
+    "test:sqlite": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --exclude-group=mysql",
+    "test:mysql": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --group=mysql",
+    "test:concurrency": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --filter=Concurrency",
+    "test:http": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --filter=Http",
+    "test:rollback": "@php vendor/bin/phpunit --configuration=phpunit.xml.dist --filter=Migration",
     "lint": "@php scripts/lint.php",
-    "analyse": "@php vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --no-progress",
+    "analyse": "@php vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --no-progress --memory-limit=1G",
     "validate:larena": "@php scripts/validate-larena-package.php",
     "evidence:check": "@php scripts/check-evidence.php",
     "scope:check": "@php tools/larena-scope-check.php",
@@ -329,6 +336,13 @@
       "@evidence:check",
       "@scope:check"
     ]
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Larena\\Content\\Providers\\ContentServiceProvider"
+      ]
+    }
   },
   "config": {
     "sort-packages": true,

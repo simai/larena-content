@@ -58,19 +58,15 @@ final class ContentContractFixtureCoverageTest extends TestCase
         self::assertStringNotContainsString('logical_file_ref', json_encode($search, JSON_THROW_ON_ERROR));
     }
 
-    public function test_interface_batch_contains_no_runtime_or_persistence_surface(): void
+    public function test_guarded_runtime_batch_contains_no_admin_or_frontend_surface(): void
     {
         $root = dirname(__DIR__, 2);
 
         foreach ([
-            'config',
-            'database',
-            'routes',
-            'src/Database',
-            'src/Persistence',
-            'src/Providers',
-            'src/Runtime',
-            'src/Services',
+            'routes/admin.php',
+            'resources/views',
+            'resources/js',
+            'src/Http/Controllers/Admin',
         ] as $forbidden) {
             self::assertFileDoesNotExist($root.'/'.$forbidden);
         }

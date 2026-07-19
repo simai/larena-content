@@ -30,6 +30,16 @@ final class PublishedContentProjectionContractTest extends TestCase
 {
     private const string RECORD_ID = 'record-018f6d524ef87bc29c713f2f4c164001';
 
+    private const string FIRST_LOGICAL_FILE_ID = '018f6d52-4ef8-7bc2-9c71-3f2f4c164010';
+
+    private const string SECOND_LOGICAL_FILE_ID = '018f6d52-4ef8-7bc2-9c71-3f2f4c164011';
+
+    private const string STALE_LOGICAL_FILE_ID = '018f6d52-4ef8-7bc2-9c71-3f2f4c164012';
+
+    private const string OTHER_LOGICAL_FILE_ID = '018f6d52-4ef8-7bc2-9c71-3f2f4c164013';
+
+    private const string HERO_LOGICAL_FILE_ID = '018f6d52-4ef8-7bc2-9c71-3f2f4c164014';
+
     public function testProjectionSerializesOnlyFrozenPublicSurface(): void
     {
         $projection = $this->projection([
@@ -109,9 +119,32 @@ final class PublishedContentProjectionContractTest extends TestCase
             revision: $this->publishedRevision(attachmentCount: 2),
             storageProjection: $this->storageProjection(['title' => 'Title']),
             publicAttachments: [
-                $this->publicAttachment('filesystem:logical:first', 'gallery', 1),
-                $this->publicAttachment('filesystem:logical:second', 'gallery', 1),
+                $this->publicAttachment(self::FIRST_LOGICAL_FILE_ID, 'gallery', 1),
+                $this->publicAttachment(self::SECOND_LOGICAL_FILE_ID, 'gallery', 1),
             ],
+        );
+    }
+
+    public function testProjectionRejectsProtectedAttachmentPositionGaps(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->projectionWithAttachments([
+            $this->publicAttachment(self::FIRST_LOGICAL_FILE_ID, 'gallery', 0),
+            $this->publicAttachment(self::SECOND_LOGICAL_FILE_ID, 'gallery', 2),
+        ]);
+    }
+
+    public function testFilteredAttachmentsCanBeReindexedWithoutLeakingProtectedGaps(): void
+    {
+        $projection = $this->projectionWithAttachments([
+            $this->publicAttachment(self::FIRST_LOGICAL_FILE_ID, 'gallery', 0, publicPosition: 0),
+            $this->publicAttachment(self::SECOND_LOGICAL_FILE_ID, 'gallery', 2, publicPosition: 1),
+        ]);
+
+        self::assertSame(
+            [0, 1],
+            array_column($projection->toArray()['public_attachments'], 'position'),
         );
     }
 
@@ -277,7 +310,7 @@ final class PublishedContentProjectionContractTest extends TestCase
             revision: $this->publishedRevision(attachmentCount: 1),
             storageProjection: $this->storageProjection(['title' => 'Title']),
             publicAttachments: [
-                $this->publicAttachment('filesystem:logical:stale', 'hero', 0, sourceRevision: 2),
+                $this->publicAttachment(self::STALE_LOGICAL_FILE_ID, 'hero', 0, sourceRevision: 2),
             ],
         );
     }
@@ -293,7 +326,7 @@ final class PublishedContentProjectionContractTest extends TestCase
             storageProjection: $this->storageProjection(['title' => 'Title']),
             publicAttachments: [
                 $this->publicAttachment(
-                    'filesystem:logical:other',
+                    self::OTHER_LOGICAL_FILE_ID,
                     'hero',
                     0,
                     sourceItemRef: ContentItemRef::fromUuid('11111111-1111-1111-1111-111111111111'),
@@ -313,7 +346,7 @@ final class PublishedContentProjectionContractTest extends TestCase
             revision: $this->publishedRevision(),
             storageProjection: $this->storageProjection($fields),
             publicAttachments: [
-                $this->publicAttachment('filesystem:logical:018f6d52', 'hero', 0),
+                $this->publicAttachment(self::HERO_LOGICAL_FILE_ID, 'hero', 0),
             ],
         );
     }
@@ -403,7 +436,7 @@ final class PublishedContentProjectionContractTest extends TestCase
 
         for ($position = 0; $position < $count; ++$position) {
             $attachments[] = $this->publicAttachment(
-                sprintf('filesystem:logical:%03d', $position),
+                sprintf('018f6d52-4ef8-7bc2-9c71-%012d', $position + 100),
                 'gallery',
                 $position,
             );
@@ -418,6 +451,7 @@ final class PublishedContentProjectionContractTest extends TestCase
         int $position,
         int $sourceRevision = 3,
         ?ContentItemRef $sourceItemRef = null,
+        ?int $publicPosition = null,
     ): PublicContentAttachment {
         return PublicContentAttachment::fromInspection(
             reference: new ContentAttachmentReference(
@@ -432,8 +466,17 @@ final class PublishedContentProjectionContractTest extends TestCase
                 exists: true,
                 available: true,
                 public: true,
-                safeMetadata: ['mime_type' => 'image/png'],
+                safeMetadata: [
+                    'public_id' => $logicalFileRef,
+                    'display_name' => 'Projected image',
+                    'mime_type' => 'image/png',
+                    'extension' => 'png',
+                    'size_bytes' => 42,
+                    'alt_text' => null,
+                ],
+                persistent: true,
             ),
+            publicPosition: $publicPosition,
         );
     }
 

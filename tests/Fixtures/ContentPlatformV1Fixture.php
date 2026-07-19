@@ -30,6 +30,8 @@ final class ContentPlatformV1Fixture
 {
     private const string ARTICLE_RECORD_ID = 'record-018f62c69d277d19b9b17cddfbd9a3e1';
 
+    private const string ARTICLE_HERO_LOGICAL_FILE_ID = '018f62c6-9d27-7d19-b9b1-7cddfbd9a3e2';
+
     /**
      * @return list<ContentFieldDefinition>
      */
@@ -121,19 +123,23 @@ final class ContentPlatformV1Fixture
                         itemRef: ContentItemRef::fromUuid('018f62c6-9d27-7d19-b9b1-7cddfbd9a3e1'),
                         revision: 3,
                         position: 0,
-                        logicalFileRef: 'logical-file:018f62c6-9d27-7d19-b9b1-7cddfbd9a3e2',
+                        logicalFileRef: self::ARTICLE_HERO_LOGICAL_FILE_ID,
                         role: 'hero',
                     ),
                     inspection: new ContentLogicalFileInspection(
-                        logicalFileRef: 'logical-file:018f62c6-9d27-7d19-b9b1-7cddfbd9a3e2',
+                        logicalFileRef: self::ARTICLE_HERO_LOGICAL_FILE_ID,
                         exists: true,
                         available: true,
                         public: true,
                         safeMetadata: [
+                            'public_id' => '018f62c6-9d27-7d19-b9b1-7cddfbd9a3e3',
                             'display_name' => 'Hero image',
                             'mime_type' => 'image/png',
+                            'extension' => 'png',
                             'size_bytes' => 1024,
+                            'alt_text' => null,
                         ],
+                        persistent: true,
                     ),
                 ),
             ],

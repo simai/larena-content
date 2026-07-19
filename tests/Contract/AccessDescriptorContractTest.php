@@ -27,13 +27,12 @@ final class AccessDescriptorContractTest extends TestCase
         'content.attachment.attach',
         'content.attachment.detach',
         'content.attachment.reorder',
-        'content.public.read',
     ];
 
     public function test_catalog_contains_exact_frozen_operations(): void
     {
         self::assertSame(self::EXPECTED_CODES, ContentAccessOperationCatalog::codes());
-        self::assertCount(17, ContentAccessOperationCatalog::operations());
+        self::assertCount(16, ContentAccessOperationCatalog::operations());
 
         foreach (ContentAccessOperationCatalog::operations() as $operation) {
             self::assertSame('larena/content', $operation->ownerPackage);
@@ -43,6 +42,7 @@ final class AccessDescriptorContractTest extends TestCase
         }
 
         self::assertFalse(ContentAccessOperationCatalog::contains('content.item.delete'));
+        self::assertFalse(ContentAccessOperationCatalog::contains('content.public.read'));
     }
 
     public function test_yaml_and_php_catalogs_are_identical(): void

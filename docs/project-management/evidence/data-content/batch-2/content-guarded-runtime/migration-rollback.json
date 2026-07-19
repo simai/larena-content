@@ -1,0 +1,61 @@
+{
+  "schema": "larena.content.guarded_runtime_migration_rollback.v1",
+  "result": "pass",
+  "migration": "database/migrations/2026_07_19_000001_create_larena_content_tables.php",
+  "owned_table_count": 6,
+  "sqlite_test_ref": "tests/Integration/ContentMigrationShapeTest.php",
+  "mysql_test_ref": "tests/Integration/ContentPlatformMySqlTest.php",
+  "accepted_transitions": [
+    {
+      "from": "no Content tables",
+      "to": "all six exact tables",
+      "result": "pass"
+    },
+    {
+      "from": "all six exact tables with a sentinel row",
+      "to": "same topology and retained sentinel",
+      "operation": "up idempotency",
+      "result": "pass"
+    },
+    {
+      "from": "all six exact empty tables",
+      "to": "no Content tables",
+      "operation": "down",
+      "result": "pass"
+    },
+    {
+      "from": "post-down empty state",
+      "to": "all six exact tables",
+      "operation": "reapply up",
+      "result": "pass"
+    },
+    {
+      "from": "exact-shaped completely empty partial topology",
+      "to": "rebuilt all-six topology",
+      "operation": "guarded repair",
+      "result": "pass"
+    }
+  ],
+  "refused_transitions": [
+    {
+      "state": "non-empty partial topology",
+      "failure": "before first DDL",
+      "result": "pass"
+    },
+    {
+      "state": "incompatible owned-table columns or indexes",
+      "failure": "before first DDL",
+      "result": "pass"
+    },
+    {
+      "state": "rollback would drop Content-owned rows",
+      "failure": "before table drop",
+      "result": "pass"
+    }
+  ],
+  "limits": [
+    "proof applies to disposable acceptance databases",
+    "no live database rollback was attempted",
+    "no data-destructive repair is claimed"
+  ]
+}

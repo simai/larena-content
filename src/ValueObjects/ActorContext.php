@@ -11,19 +11,17 @@ final readonly class ActorContext
         public string $actorRef,
         public string $correlationId,
     ) {
-        self::assertIdentifier($actorType, 64, 'actor type');
-        self::assertSafeReference($actorRef, 'actor reference');
-        self::assertSafeReference($correlationId, 'correlation id');
-    }
-
-    private static function assertIdentifier(string $value, int $maximumLength, string $label): void
-    {
-        if (
-            strlen($value) > $maximumLength
-            || preg_match('/\A[a-z][a-z0-9._-]*\z/D', $value) !== 1
-        ) {
-            throw new \InvalidArgumentException(sprintf('Invalid Content %s.', $label));
+        if ($actorType !== 'user') {
+            throw new \InvalidArgumentException('Content protected operations require actor type user.');
         }
+
+        if (preg_match('/\Auser:admin_identity:[1-9][0-9]*\z/D', $actorRef) !== 1) {
+            throw new \InvalidArgumentException(
+                'Content actor references must use user:admin_identity:<positive integer>.',
+            );
+        }
+
+        self::assertSafeReference($correlationId, 'correlation id');
     }
 
     private static function assertSafeReference(string $value, string $label): void

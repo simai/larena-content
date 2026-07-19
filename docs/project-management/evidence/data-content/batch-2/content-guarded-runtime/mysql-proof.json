@@ -1,0 +1,56 @@
+{
+  "schema": "larena.content.guarded_runtime_mysql_proof.v1",
+  "result": "pass",
+  "database": {
+    "driver": "mysql",
+    "host_scope": "local-only allowlist",
+    "database_name_pattern": "larena_content_v1_test_<12 lowercase hex characters>",
+    "database_preexisted": false,
+    "strict_mode": true,
+    "engine": "InnoDB",
+    "server_identity_hash_recorded_in_test_runtime": true
+  },
+  "credential_boundary": {
+    "explicit_opt_in_required": true,
+    "absolute_env_file_required": true,
+    "env_file_inside_git_worktree": true,
+    "env_file_ignored": true,
+    "env_file_untracked": true,
+    "env_file_group_or_world_permissions": false,
+    "credential_values_recorded_in_evidence": false
+  },
+  "cleanup_guard": {
+    "strict_database_name_allowlist": true,
+    "per_run_marker_table": "_larena_content_test_marker",
+    "marker_row_verified_before_drop": true,
+    "drop_uses_if_exists": false,
+    "residual_matching_schemas": 0,
+    "residual_matching_blob_directories": 0
+  },
+  "test_refs": [
+    "tests/Integration/ContentPlatformMySqlTest.php",
+    "tests/Integration/ContentRuntimeMySqlTest.php",
+    "tests/Integration/ContentConcurrencyMySqlTest.php",
+    "tests/Integration/ContentRuntimeMySqlTestSupport.php"
+  ],
+  "verified": [
+    "complete exact topology is an idempotent migration no-op and retains a sentinel row",
+    "empty down removes all six Content tables and up reapplies the exact topology",
+    "article and event corpus persists through the accepted owner packages",
+    "second database connection reads Content and public state",
+    "Search trigger failure rolls back Content revision, head and Search document changes",
+    "two independent MySQL connections produce one CAS winner and one stale-head conflict"
+  ],
+  "targeted_receipt": {
+    "tests": 3,
+    "assertions": 37,
+    "result": "pass"
+  },
+  "aggregate_receipt": {
+    "suite": "full exact-vendor suite with real MySQL opt-in",
+    "tests": 167,
+    "assertions": 758,
+    "duration_seconds": 61.601,
+    "result": "pass"
+  }
+}

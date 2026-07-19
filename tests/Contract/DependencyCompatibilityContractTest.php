@@ -25,16 +25,16 @@ use ReflectionMethod;
 final class DependencyCompatibilityContractTest extends TestCase
 {
     private const EXACT_REVISIONS = [
-        'larena/access' => 'a98308d62bf39671c9e02b0f7d82065dd50eaf1f',
-        'larena/audit' => '34dbed932a6c1f2e0312f9b8d3642d35c5a8b83c',
+        'larena/access' => '8c0e75897fe422a8f4d97fc012f1d095ffdba3b2',
+        'larena/audit' => 'ab2546b1a0fdd577faba895755a3d6c44f0f9da8',
         'larena/core' => '46f3bbc8baba0262117bc9b9519713ee21b1d981',
         'larena/dataview' => 'b84e964b4ed78e1ca08a46c88e7651b02744ee47',
-        'larena/filesystem' => 'ff0c0e355a9c5a59cd0d9a592dcb84c95fd7fb18',
+        'larena/filesystem' => '6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f',
         'larena/layout' => 'cb5bdadf588cb8480972279bea3888500dbf9d6e',
         'larena/licensing' => '52d1215a25369cca17d5170bbfcae82d1f6c86d2',
         'larena/property' => '92b6e915fc4c85239171dbbff6c3cb15d046cc99',
         'larena/search' => 'e7206b2491991790edd2858c993d142184c749ef',
-        'larena/storage' => 'c2b3d03ee0c576a67aaad978dc2943b9e64c1237',
+        'larena/storage' => '7645c0124999eeab6150edc0b0b949adc17be310',
         'larena/ui' => '07fff2579344d7c77a28716a74071fb53f0bbfc9',
     ];
 
