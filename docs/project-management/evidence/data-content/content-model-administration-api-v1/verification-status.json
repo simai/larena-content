@@ -1,0 +1,27 @@
+{
+  "schema": "larena.content_model_administration_api_v1_verification.v1",
+  "status": "content_owner_verification_ready",
+  "package": "larena/content",
+  "specs_commit": "b5ea1bc2386544d4a6f4e4af4ce172a28988f0be",
+  "base_commit": "4f19197636b3878ac0732f0229cd898291bdd3cc",
+  "transport_operations": 20,
+  "content_access_operations": 18,
+  "content_audit_events": 12,
+  "content_owned_tables": 6,
+  "fresh_clean_install": "pass",
+  "lint": "pass",
+  "phpstan": "pass",
+  "non_mysql_suite": {
+    "result": "pass",
+    "tests": 188,
+    "assertions": 1321
+  },
+  "package_quality_gate": "pass",
+  "independent_review": "pending",
+  "root_acceptance": "pending",
+  "active_runtime_changed": false,
+  "production_ready": false,
+  "frontend_ready": false,
+  "release_ready": false,
+  "all_packages_ready": false
+}

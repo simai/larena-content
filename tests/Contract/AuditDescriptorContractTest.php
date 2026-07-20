@@ -17,6 +17,8 @@ final class AuditDescriptorContractTest extends TestCase
 {
     private const EXPECTED_TYPES = [
         'content.type.created',
+        'content.type.version.previewed',
+        'content.type.versioned',
         'content.item.created',
         'content.item.updated',
         'content.item.restored',
@@ -67,6 +69,10 @@ final class AuditDescriptorContractTest extends TestCase
         'status',
         'visibility',
         'field_count',
+        'item_count',
+        'source_version',
+        'target_version',
+        'added_optional_count',
         'attachment_count',
         'correlation_id',
         'timestamp',

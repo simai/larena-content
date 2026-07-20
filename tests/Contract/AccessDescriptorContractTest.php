@@ -14,6 +14,8 @@ final class AccessDescriptorContractTest extends TestCase
         'content.type.list',
         'content.type.read',
         'content.type.create',
+        'content.type.version.preview',
+        'content.type.version.create',
         'content.item.list',
         'content.item.read',
         'content.item.create',
@@ -32,7 +34,7 @@ final class AccessDescriptorContractTest extends TestCase
     public function test_catalog_contains_exact_frozen_operations(): void
     {
         self::assertSame(self::EXPECTED_CODES, ContentAccessOperationCatalog::codes());
-        self::assertCount(16, ContentAccessOperationCatalog::operations());
+        self::assertCount(18, ContentAccessOperationCatalog::operations());
 
         foreach (ContentAccessOperationCatalog::operations() as $operation) {
             self::assertSame('larena/content', $operation->ownerPackage);

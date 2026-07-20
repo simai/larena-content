@@ -12,9 +12,12 @@
   "require": {
     "larena/access": "dev-main",
     "larena/audit": "dev-main",
+    "larena/auth": "dev-main",
+    "larena/core": "dev-main",
     "larena/dataview": "dev-main",
     "larena/filesystem": "dev-main",
     "larena/property": "dev-main",
+    "larena/rest": "dev-main",
     "larena/search": "dev-main",
     "larena/storage": "dev-main",
     "php": "^8.3"
@@ -45,6 +48,193 @@
           "type": "git",
           "url": "https://github.com/simai/larena-access.git",
           "reference": "8c0e75897fe422a8f4d97fc012f1d095ffdba3b2"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/admin",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/console": "^13.0",
+          "illuminate/http": "^13.0",
+          "illuminate/routing": "^13.0",
+          "illuminate/support": "^13.0",
+          "illuminate/view": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/cockpit": "dev-main",
+          "larena/core": "dev-main",
+          "larena/dataview": "dev-main",
+          "larena/layout": "dev-main",
+          "larena/licensing": "dev-main",
+          "larena/link": "dev-main",
+          "larena/storage": "dev-main",
+          "larena/ui": "dev-main",
+          "larena/update": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Admin\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-admin.git",
+          "reference": "540e171625cd6a58e8ced00a085abfb45d9ad781"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/auth",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/console": "^13.0",
+          "illuminate/contracts": "^13.0",
+          "illuminate/database": "^13.0",
+          "illuminate/http": "^13.0",
+          "illuminate/routing": "^13.0",
+          "illuminate/support": "^13.0",
+          "larena/access": "dev-main",
+          "larena/admin": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/core": "dev-main",
+          "larena/dataview": "dev-main",
+          "larena/rest": "dev-main",
+          "larena/ui": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Auth\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-auth.git",
+          "reference": "63bac556b36a25fe16885601aefe174d5d712c3a"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/cockpit",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/http": "^13.0",
+          "illuminate/support": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/core": "dev-main",
+          "larena/licensing": "dev-main",
+          "larena/link": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Cockpit\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-cockpit.git",
+          "reference": "d8074d30727d5c124928b8e47466f063eb746dbf"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/link",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/database": "^13.0",
+          "illuminate/http": "^13.0",
+          "illuminate/support": "^13.0",
+          "illuminate/view": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/core": "dev-main",
+          "larena/licensing": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Link\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-link.git",
+          "reference": "affc02abad5f3be568ae02c3678abe51d14575a9"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/rest",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/contracts": "^13.0",
+          "illuminate/database": "^13.0",
+          "illuminate/http": "^13.0",
+          "illuminate/routing": "^13.0",
+          "illuminate/session": "^13.0",
+          "illuminate/support": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/core": "dev-main",
+          "php": "^8.3",
+          "symfony/yaml": "^7.4|^8.0"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Rest\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-rest.git",
+          "reference": "174dc005002a5ba0e77f906d3e9143ce89a5fd2b"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "larena/update",
+        "version": "dev-main",
+        "type": "library",
+        "require": {
+          "illuminate/http": "^13.0",
+          "illuminate/support": "^13.0",
+          "illuminate/view": "^13.0",
+          "larena/access": "dev-main",
+          "larena/audit": "dev-main",
+          "larena/core": "dev-main",
+          "larena/licensing": "dev-main",
+          "php": "^8.3"
+        },
+        "autoload": {
+          "psr-4": {
+            "Larena\\Update\\": "src/"
+          }
+        },
+        "source": {
+          "type": "git",
+          "url": "https://github.com/simai/larena-update.git",
+          "reference": "4c56bb8d26b6259ae71e58512ccadc2529accfec"
         }
       }
     },
@@ -241,7 +431,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-search.git",
-          "reference": "e7206b2491991790edd2858c993d142184c749ef"
+          "reference": "9f5c1cf5d2b112751328520eee34826c19dd2535"
         }
       }
     },
@@ -306,7 +496,6 @@
     }
   },
   "require-dev": {
-    "larena/core": "dev-main",
     "larena/licensing": "dev-main",
     "larena/ui": "dev-main",
     "phpstan/phpstan": "^2.0",

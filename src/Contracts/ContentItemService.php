@@ -6,6 +6,7 @@ namespace Larena\Content\Contracts;
 
 use Larena\Content\ValueObjects\ActorContext;
 use Larena\Content\ValueObjects\ContentAttachmentPlacement;
+use Larena\Content\ValueObjects\ContentAttachmentPage;
 use Larena\Content\ValueObjects\ContentAttachmentReference;
 use Larena\Content\ValueObjects\ContentItem;
 use Larena\Content\ValueObjects\ContentItemPage;
@@ -80,6 +81,11 @@ interface ContentItemService
         int $revision,
         ActorContext $actor,
     ): array;
+
+    public function currentAttachments(
+        ContentItemRef $itemRef,
+        ActorContext $actor,
+    ): ContentAttachmentPage;
 
     public function attach(
         ContentItemRef $itemRef,

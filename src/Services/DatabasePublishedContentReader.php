@@ -172,6 +172,12 @@ final readonly class DatabasePublishedContentReader implements PublishedContentR
             (string) $row['storage_schema_ref'],
             (int) $row['storage_schema_version'],
         ));
+        if (!hash_equals((string) $row['schema_hash'], $schema->definitionHash)) {
+            throw new ContentIntegrationFailed(
+                'content',
+                'type_version_storage_hash_mismatch',
+            );
+        }
         $fields = $this->schemas->fieldDefinitions($schema);
 
         return new ContentTypeVersion(

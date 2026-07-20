@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3afbae02139cbc4dbf89d74cce9535a0",
+    "content-hash": "a4f75deacbab771d46ccab832f180fd7",
     "packages": [
         {
             "name": "brick/math",
@@ -1856,6 +1856,40 @@
             }
         },
         {
+            "name": "larena/admin",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/simai/larena-admin.git",
+                "reference": "540e171625cd6a58e8ced00a085abfb45d9ad781"
+            },
+            "require": {
+                "illuminate/console": "^13.0",
+                "illuminate/http": "^13.0",
+                "illuminate/routing": "^13.0",
+                "illuminate/support": "^13.0",
+                "illuminate/view": "^13.0",
+                "larena/access": "dev-main",
+                "larena/audit": "dev-main",
+                "larena/cockpit": "dev-main",
+                "larena/core": "dev-main",
+                "larena/dataview": "dev-main",
+                "larena/layout": "dev-main",
+                "larena/licensing": "dev-main",
+                "larena/link": "dev-main",
+                "larena/storage": "dev-main",
+                "larena/ui": "dev-main",
+                "larena/update": "dev-main",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Larena\\Admin\\": "src/"
+                }
+            }
+        },
+        {
             "name": "larena/audit",
             "version": "dev-main",
             "source": {
@@ -1875,6 +1909,62 @@
             "autoload": {
                 "psr-4": {
                     "Larena\\Audit\\": "src/"
+                }
+            }
+        },
+        {
+            "name": "larena/auth",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/simai/larena-auth.git",
+                "reference": "63bac556b36a25fe16885601aefe174d5d712c3a"
+            },
+            "require": {
+                "illuminate/console": "^13.0",
+                "illuminate/contracts": "^13.0",
+                "illuminate/database": "^13.0",
+                "illuminate/http": "^13.0",
+                "illuminate/routing": "^13.0",
+                "illuminate/support": "^13.0",
+                "larena/access": "dev-main",
+                "larena/admin": "dev-main",
+                "larena/audit": "dev-main",
+                "larena/core": "dev-main",
+                "larena/dataview": "dev-main",
+                "larena/rest": "dev-main",
+                "larena/ui": "dev-main",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Larena\\Auth\\": "src/"
+                }
+            }
+        },
+        {
+            "name": "larena/cockpit",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/simai/larena-cockpit.git",
+                "reference": "d8074d30727d5c124928b8e47466f063eb746dbf"
+            },
+            "require": {
+                "illuminate/http": "^13.0",
+                "illuminate/support": "^13.0",
+                "larena/access": "dev-main",
+                "larena/audit": "dev-main",
+                "larena/core": "dev-main",
+                "larena/licensing": "dev-main",
+                "larena/link": "dev-main",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Larena\\Cockpit\\": "src/"
                 }
             }
         },
@@ -1980,6 +2070,32 @@
             }
         },
         {
+            "name": "larena/link",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/simai/larena-link.git",
+                "reference": "affc02abad5f3be568ae02c3678abe51d14575a9"
+            },
+            "require": {
+                "illuminate/database": "^13.0",
+                "illuminate/http": "^13.0",
+                "illuminate/support": "^13.0",
+                "illuminate/view": "^13.0",
+                "larena/access": "dev-main",
+                "larena/audit": "dev-main",
+                "larena/core": "dev-main",
+                "larena/licensing": "dev-main",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Larena\\Link\\": "src/"
+                }
+            }
+        },
+        {
             "name": "larena/property",
             "version": "dev-main",
             "source": {
@@ -2006,12 +2122,40 @@
             }
         },
         {
+            "name": "larena/rest",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/simai/larena-rest.git",
+                "reference": "174dc005002a5ba0e77f906d3e9143ce89a5fd2b"
+            },
+            "require": {
+                "illuminate/contracts": "^13.0",
+                "illuminate/database": "^13.0",
+                "illuminate/http": "^13.0",
+                "illuminate/routing": "^13.0",
+                "illuminate/session": "^13.0",
+                "illuminate/support": "^13.0",
+                "larena/access": "dev-main",
+                "larena/audit": "dev-main",
+                "larena/core": "dev-main",
+                "php": "^8.3",
+                "symfony/yaml": "^7.4|^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Larena\\Rest\\": "src/"
+                }
+            }
+        },
+        {
             "name": "larena/search",
             "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/simai/larena-search.git",
-                "reference": "e7206b2491991790edd2858c993d142184c749ef"
+                "reference": "9f5c1cf5d2b112751328520eee34826c19dd2535"
             },
             "require": {
                 "illuminate/console": "^13.0",
@@ -2068,6 +2212,31 @@
             "autoload": {
                 "psr-4": {
                     "Larena\\Ui\\": "src/"
+                }
+            }
+        },
+        {
+            "name": "larena/update",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/simai/larena-update.git",
+                "reference": "4c56bb8d26b6259ae71e58512ccadc2529accfec"
+            },
+            "require": {
+                "illuminate/http": "^13.0",
+                "illuminate/support": "^13.0",
+                "illuminate/view": "^13.0",
+                "larena/access": "dev-main",
+                "larena/audit": "dev-main",
+                "larena/core": "dev-main",
+                "larena/licensing": "dev-main",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Larena\\Update\\": "src/"
                 }
             }
         },
@@ -4995,6 +5164,82 @@
             "time": "2026-06-08T20:24:16+00:00"
         },
         {
+            "name": "symfony/yaml",
+            "version": "v7.4.14",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/yaml.git",
+                "reference": "f8f328665ace2370d1e10645b807ba1646dc7dcc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/f8f328665ace2370d1e10645b807ba1646dc7dcc",
+                "reference": "f8f328665ace2370d1e10645b807ba1646dc7dcc",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.2",
+                "symfony/deprecation-contracts": "^2.5|^3",
+                "symfony/polyfill-ctype": "^1.8"
+            },
+            "conflict": {
+                "symfony/console": "<6.4"
+            },
+            "require-dev": {
+                "symfony/console": "^6.4|^7.0|^8.0"
+            },
+            "bin": [
+                "Resources/bin/yaml-lint"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\Yaml\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Loads and dumps YAML files",
+            "homepage": "https://symfony.com",
+            "support": {
+                "source": "https://github.com/symfony/yaml/tree/v7.4.14"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nicolas-grekas",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2026-06-08T20:24:16+00:00"
+        },
+        {
             "name": "voku/portable-ascii",
             "version": "2.1.1",
             "source": {
@@ -6766,82 +7011,6 @@
             "time": "2024-10-20T05:08:20+00:00"
         },
         {
-            "name": "symfony/yaml",
-            "version": "v7.4.14",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/yaml.git",
-                "reference": "f8f328665ace2370d1e10645b807ba1646dc7dcc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/f8f328665ace2370d1e10645b807ba1646dc7dcc",
-                "reference": "f8f328665ace2370d1e10645b807ba1646dc7dcc",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=8.2",
-                "symfony/deprecation-contracts": "^2.5|^3",
-                "symfony/polyfill-ctype": "^1.8"
-            },
-            "conflict": {
-                "symfony/console": "<6.4"
-            },
-            "require-dev": {
-                "symfony/console": "^6.4|^7.0|^8.0"
-            },
-            "bin": [
-                "Resources/bin/yaml-lint"
-            ],
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Symfony\\Component\\Yaml\\": ""
-                },
-                "exclude-from-classmap": [
-                    "/Tests/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Fabien Potencier",
-                    "email": "fabien@symfony.com"
-                },
-                {
-                    "name": "Symfony Community",
-                    "homepage": "https://symfony.com/contributors"
-                }
-            ],
-            "description": "Loads and dumps YAML files",
-            "homepage": "https://symfony.com",
-            "support": {
-                "source": "https://github.com/symfony/yaml/tree/v7.4.14"
-            },
-            "funding": [
-                {
-                    "url": "https://symfony.com/sponsor",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/fabpot",
-                    "type": "github"
-                },
-                {
-                    "url": "https://github.com/nicolas-grekas",
-                    "type": "github"
-                },
-                {
-                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
-                    "type": "tidelift"
-                }
-            ],
-            "time": "2026-06-08T20:24:16+00:00"
-        },
-        {
             "name": "theseer/tokenizer",
             "version": "2.0.1",
             "source": {
@@ -6897,12 +7066,14 @@
     "stability-flags": {
         "larena/access": 20,
         "larena/audit": 20,
+        "larena/auth": 20,
+        "larena/core": 20,
         "larena/dataview": 20,
         "larena/filesystem": 20,
         "larena/property": 20,
+        "larena/rest": 20,
         "larena/search": 20,
         "larena/storage": 20,
-        "larena/core": 20,
         "larena/licensing": 20,
         "larena/ui": 20
     },

@@ -21,6 +21,8 @@ final class ContentAccessOperationCatalog
         ['code' => 'content.type.list', 'label' => 'type_list', 'target' => 'content.type:all', 'grant' => 'list', 'risk' => 'high'],
         ['code' => 'content.type.read', 'label' => 'type_read', 'target' => 'content.type:all', 'grant' => 'read', 'risk' => 'high'],
         ['code' => 'content.type.create', 'label' => 'type_create', 'target' => 'content.type:all', 'grant' => 'create', 'risk' => 'critical'],
+        ['code' => 'content.type.version.preview', 'label' => 'type_version_preview', 'target' => 'content.type:all', 'grant' => 'read', 'risk' => 'critical'],
+        ['code' => 'content.type.version.create', 'label' => 'type_version_create', 'target' => 'content.type:all', 'grant' => 'update', 'risk' => 'critical'],
         ['code' => 'content.item.list', 'label' => 'item_list', 'target' => 'content.item:all', 'grant' => 'list', 'risk' => 'high'],
         ['code' => 'content.item.read', 'label' => 'item_read', 'target' => 'content.item:all', 'grant' => 'read', 'risk' => 'high'],
         ['code' => 'content.item.create', 'label' => 'item_create', 'target' => 'content.item:all', 'grant' => 'create', 'risk' => 'high'],

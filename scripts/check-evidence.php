@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-const CONTENT_EVIDENCE_SPECS_COMMIT = '2c3c3106a4afb98925dbf8192cfaadb57ca4d4a9';
-const CONTENT_EVIDENCE_PATH = 'docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/';
+const CONTENT_EVIDENCE_SPECS_COMMIT = 'b5ea1bc2386544d4a6f4e4af4ce172a28988f0be';
+const CONTENT_EVIDENCE_BASE_COMMIT = '4f19197636b3878ac0732f0229cd898291bdd3cc';
+const CONTENT_EVIDENCE_PATH = 'docs/project-management/evidence/data-content/content-model-administration-api-v1/';
 
 /**
  * @return array<string, mixed>
@@ -22,19 +23,6 @@ function evidence_json(string $path): array
     }
 
     return $decoded;
-}
-
-/**
- * @param array<mixed> $value
- */
-function evidence_contains_secret(array $value): bool
-{
-    $encoded = json_encode(
-        $value,
-        JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
-    );
-
-    return evidence_text_contains_secret($encoded);
 }
 
 function evidence_text_contains_secret(string $contents): bool
@@ -58,7 +46,33 @@ function evidence_text_contains_secret(string $contents): bool
     return false;
 }
 
+/**
+ * @param array<string, string> $expected
+ * @param array<string, mixed> $actual
+ * @param list<string> $errors
+ */
+function evidence_compare_revision_map(
+    array $expected,
+    array $actual,
+    array &$errors,
+): void {
+    ksort($expected, SORT_STRING);
+    ksort($actual, SORT_STRING);
+
+    if ($actual !== $expected) {
+        $errors[] = 'dependency-revisions.json must contain the exact accepted Larena closure.';
+    }
+}
+
 $errors = [];
+$requiredFiles = [
+    'README.md',
+    'implementation-summary.md',
+    'tests.md',
+    'dependency-revisions.json',
+    'verification-status.json',
+    'graph-sync-proposal.json',
+];
 
 try {
     $context = evidence_json('.larena/launch-context.json');
@@ -68,172 +82,143 @@ try {
 }
 
 $evidencePath = rtrim((string) ($context['evidence_path'] ?? ''), '/') . '/';
-$proposalPath = (string) ($context['graph_sync_proposal_path'] ?? '');
 if (($context['specs_commit'] ?? null) !== CONTENT_EVIDENCE_SPECS_COMMIT) {
-    $errors[] = 'launch-context specs_commit is not the guarded-runtime launch commit.';
+    $errors[] = 'launch-context specs_commit is not the exact API v1 Specs commit.';
+}
+if (($context['base_commit'] ?? null) !== CONTENT_EVIDENCE_BASE_COMMIT) {
+    $errors[] = 'launch-context base_commit is not the accepted Content starting revision.';
 }
 if ($evidencePath !== CONTENT_EVIDENCE_PATH) {
-    $errors[] = 'launch-context evidence_path is not the exact batch-2 path.';
+    $errors[] = 'launch-context evidence_path is not the exact API v1 evidence path.';
 }
-if ($proposalPath !== CONTENT_EVIDENCE_PATH . 'graph-sync-proposal.json') {
-    $errors[] = 'graph_sync_proposal_path must be the exact batch-2 proposal path.';
+if (
+    ($context['graph_sync_proposal_path'] ?? null)
+    !== CONTENT_EVIDENCE_PATH . 'graph-sync-proposal.json'
+) {
+    $errors[] = 'graph_sync_proposal_path must resolve inside the API v1 evidence bundle.';
+}
+if (($context['status'] ?? null) !== 'implementation_verification_ready') {
+    $errors[] = 'launch-context status must remain implementation_verification_ready.';
+}
+if (($context['review_completed'] ?? null) !== false) {
+    $errors[] = 'implementation evidence must not pre-author an independent review.';
+}
+if (($context['independent_review_verdict'] ?? null) !== 'pending') {
+    $errors[] = 'independent review must remain explicitly pending.';
 }
 
-$requiredFiles = [
-    'README.md',
-    'implementation-summary.md',
-    'tests.md',
-    'smoke.md',
-    'file-map.json',
-    'dependency-api-map.json',
-    'sqlite-proof.json',
-    'mysql-proof.json',
-    'restart-proof.json',
-    'migration-rollback.md',
-    'migration-rollback.json',
-    'atomicity-proof.json',
-    'concurrency-proof.json',
-    'deviations.json',
-    'code-review-feedback.md',
-    'independent-review.md',
-    'graph-sync-proposal.json',
-];
-$missingEvidence = false;
 foreach ($requiredFiles as $required) {
-    if (!is_file($evidencePath . $required)) {
-        $missingEvidence = true;
-        $errors[] = "Missing evidence file: {$evidencePath}{$required}";
-    }
-}
-
-if (!$missingEvidence) {
-    if (($context['status'] ?? null) !== 'guarded_runtime_checkpoint_accepted') {
-        $errors[] = 'launch-context status must be guarded_runtime_checkpoint_accepted.';
-    }
-    if (($context['review_completed'] ?? null) !== true) {
-        $errors[] = 'launch-context review_completed must be true.';
-    }
-    if (($context['independent_review_verdict'] ?? null) !== 'pass') {
-        $errors[] = 'launch-context independent_review_verdict must be pass.';
-    }
-    $findings = is_array($context['independent_review_findings'] ?? null)
-        ? $context['independent_review_findings']
-        : [];
-    if (
-        ($findings['p0'] ?? null) !== 0
-        || ($findings['p1'] ?? null) !== 0
-        || !is_int($findings['p2'] ?? null)
-    ) {
-        $errors[] = 'launch-context independent findings must record P0=0, P1=0 and numeric P2.';
-    }
-}
-
-$jsonFiles = [
-    'file-map.json',
-    'dependency-api-map.json',
-    'sqlite-proof.json',
-    'mysql-proof.json',
-    'restart-proof.json',
-    'migration-rollback.json',
-    'atomicity-proof.json',
-    'concurrency-proof.json',
-    'deviations.json',
-    'graph-sync-proposal.json',
-];
-$jsonEvidence = [];
-foreach ($jsonFiles as $jsonFile) {
-    $path = $evidencePath . $jsonFile;
+    $path = CONTENT_EVIDENCE_PATH . $required;
     if (!is_file($path)) {
+        $errors[] = "Missing evidence file: {$path}";
         continue;
     }
 
-    try {
-        $document = evidence_json($path);
-        if ($document === []) {
-            $errors[] = "{$path} must not be an empty object.";
-        }
-        if (evidence_contains_secret($document)) {
-            $errors[] = "{$path} contains a forbidden secret marker.";
-        }
-        $jsonEvidence[$jsonFile] = $document;
-    } catch (Throwable $exception) {
-        $errors[] = "{$path} is invalid: {$exception->getMessage()}";
+    $contents = (string) file_get_contents($path);
+    if (evidence_text_contains_secret($contents)) {
+        $errors[] = "{$path} contains a forbidden secret marker.";
     }
 }
 
 $expectedRevisions = [
     'larena/access' => '8c0e75897fe422a8f4d97fc012f1d095ffdba3b2',
+    'larena/admin' => '540e171625cd6a58e8ced00a085abfb45d9ad781',
     'larena/audit' => 'ab2546b1a0fdd577faba895755a3d6c44f0f9da8',
+    'larena/auth' => '63bac556b36a25fe16885601aefe174d5d712c3a',
+    'larena/cockpit' => 'd8074d30727d5c124928b8e47466f063eb746dbf',
     'larena/core' => '46f3bbc8baba0262117bc9b9519713ee21b1d981',
     'larena/dataview' => 'b84e964b4ed78e1ca08a46c88e7651b02744ee47',
     'larena/filesystem' => '6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f',
     'larena/layout' => 'cb5bdadf588cb8480972279bea3888500dbf9d6e',
     'larena/licensing' => '52d1215a25369cca17d5170bbfcae82d1f6c86d2',
+    'larena/link' => 'affc02abad5f3be568ae02c3678abe51d14575a9',
     'larena/property' => '92b6e915fc4c85239171dbbff6c3cb15d046cc99',
-    'larena/search' => 'e7206b2491991790edd2858c993d142184c749ef',
+    'larena/rest' => '174dc005002a5ba0e77f906d3e9143ce89a5fd2b',
+    'larena/search' => '9f5c1cf5d2b112751328520eee34826c19dd2535',
     'larena/storage' => '7645c0124999eeab6150edc0b0b949adc17be310',
     'larena/ui' => '07fff2579344d7c77a28716a74071fb53f0bbfc9',
+    'larena/update' => '4c56bb8d26b6259ae71e58512ccadc2529accfec',
 ];
-$dependencyMap = $jsonEvidence['dependency-api-map.json'] ?? [];
-if ($dependencyMap !== []) {
-    $dependencies = is_array($dependencyMap['dependencies'] ?? null)
-        ? $dependencyMap['dependencies']
-        : [];
+
+try {
+    $revisionEvidence = evidence_json(
+        CONTENT_EVIDENCE_PATH . 'dependency-revisions.json',
+    );
     if (
-        count($dependencies) !== 11
-        || ($dependencyMap['exact_dependency_count'] ?? null) !== 11
-        || ($dependencyMap['specs_commit'] ?? null) !== CONTENT_EVIDENCE_SPECS_COMMIT
+        ($revisionEvidence['specs_commit'] ?? null) !== CONTENT_EVIDENCE_SPECS_COMMIT
+        || ($revisionEvidence['exact_dependency_count'] ?? null) !== count($expectedRevisions)
+        || ($revisionEvidence['clean_install'] ?? null) !== 'pass'
     ) {
-        $errors[] = 'dependency-api-map must identify the exact guarded-runtime eleven-package closure.';
-    } else {
-        foreach ($expectedRevisions as $package => $revision) {
-            if (($dependencies[$package]['revision'] ?? null) !== $revision) {
-                $errors[] = "dependency-api-map revision mismatch for {$package}.";
-            }
-        }
+        $errors[] = 'dependency revision evidence metadata is incomplete.';
     }
+    evidence_compare_revision_map(
+        $expectedRevisions,
+        is_array($revisionEvidence['revisions'] ?? null)
+            ? $revisionEvidence['revisions']
+            : [],
+        $errors,
+    );
+} catch (Throwable $exception) {
+    $errors[] = 'Invalid dependency revision evidence: ' . $exception->getMessage();
 }
 
-$fileMap = $jsonEvidence['file-map.json'] ?? [];
-if ($fileMap !== []) {
-    if (($fileMap['batch'] ?? null) !== 'batch-2-content-guarded-runtime') {
-        $errors[] = 'file-map must identify batch-2-content-guarded-runtime.';
-    }
-    if (($fileMap['content_owned_table_count'] ?? null) !== 6) {
-        $errors[] = 'file-map must record exactly six Content-owned tables.';
-    }
-    if (($fileMap['dataview_owns_canonical_records'] ?? null) !== false) {
-        $errors[] = 'file-map must record Dataview canonical ownership as false.';
-    }
-}
-
-$deviations = $jsonEvidence['deviations.json'] ?? [];
-if ($deviations !== []) {
+try {
+    $verification = evidence_json(
+        CONTENT_EVIDENCE_PATH . 'verification-status.json',
+    );
     foreach (
         [
-            'canonical_specs_changed_by_package',
-            'production_readiness_claimed',
-            'frontend_readiness_claimed',
-            'release_or_update_server_readiness_claimed',
-            'all_packages_readiness_claimed',
-        ] as $boundedFlag
+            'specs_commit' => CONTENT_EVIDENCE_SPECS_COMMIT,
+            'base_commit' => CONTENT_EVIDENCE_BASE_COMMIT,
+            'transport_operations' => 20,
+            'content_access_operations' => 18,
+            'content_audit_events' => 12,
+            'content_owned_tables' => 6,
+            'fresh_clean_install' => 'pass',
+            'lint' => 'pass',
+            'phpstan' => 'pass',
+            'independent_review' => 'pending',
+            'root_acceptance' => 'pending',
+            'active_runtime_changed' => false,
+            'production_ready' => false,
+            'frontend_ready' => false,
+            'release_ready' => false,
+            'all_packages_ready' => false,
+        ] as $field => $expected
     ) {
-        if (($deviations[$boundedFlag] ?? null) !== false) {
-            $errors[] = "deviations must keep {$boundedFlag}=false.";
+        if (($verification[$field] ?? null) !== $expected) {
+            $errors[] = "verification-status {$field} is not the bounded expected value.";
         }
     }
+    if (
+        !in_array(
+            $verification['package_quality_gate'] ?? null,
+            ['pending_governance_self_check', 'pass'],
+            true,
+        )
+    ) {
+        $errors[] = 'verification-status package_quality_gate has an invalid lifecycle value.';
+    }
+    if (
+        ($verification['non_mysql_suite']['result'] ?? null) !== 'pass'
+        || ($verification['non_mysql_suite']['tests'] ?? null) !== 188
+        || ($verification['non_mysql_suite']['assertions'] ?? null) !== 1321
+    ) {
+        $errors[] = 'verification-status must retain the exact current non-MySQL receipt.';
+    }
+} catch (Throwable $exception) {
+    $errors[] = 'Invalid verification status evidence: ' . $exception->getMessage();
 }
 
-$proposal = $jsonEvidence['graph-sync-proposal.json'] ?? [];
-if ($proposal !== []) {
-    if (($proposal['canonical_update_allowed'] ?? null) !== false) {
-        $errors[] = 'graph-sync-proposal must keep canonical_update_allowed=false.';
-    }
-    if (($proposal['apply_requested'] ?? null) !== false) {
-        $errors[] = 'graph-sync-proposal must remain proposal-only.';
-    }
-    if (($proposal['source_specs_commit'] ?? null) !== CONTENT_EVIDENCE_SPECS_COMMIT) {
-        $errors[] = 'graph-sync-proposal must point to the guarded-runtime Specs commit.';
+try {
+    $proposal = evidence_json(CONTENT_EVIDENCE_PATH . 'graph-sync-proposal.json');
+    if (
+        ($proposal['source_specs_commit'] ?? null) !== CONTENT_EVIDENCE_SPECS_COMMIT
+        || ($proposal['source_package_base_commit'] ?? null) !== CONTENT_EVIDENCE_BASE_COMMIT
+        || ($proposal['canonical_update_allowed'] ?? null) !== false
+        || ($proposal['apply_requested'] ?? null) !== false
+    ) {
+        $errors[] = 'graph sync proposal must remain exact, proposal-only and unapplied.';
     }
     foreach (
         [
@@ -244,65 +229,47 @@ if ($proposal !== []) {
         ] as $nonclaim
     ) {
         if (($proposal['nonclaims'][$nonclaim] ?? null) !== false) {
-            $errors[] = "graph-sync-proposal must keep {$nonclaim}=false.";
+            $errors[] = "graph sync proposal must keep {$nonclaim}=false.";
         }
+    }
+} catch (Throwable $exception) {
+    $errors[] = 'Invalid graph sync proposal: ' . $exception->getMessage();
+}
+
+$summary = is_file(CONTENT_EVIDENCE_PATH . 'implementation-summary.md')
+    ? (string) file_get_contents(CONTENT_EVIDENCE_PATH . 'implementation-summary.md')
+    : '';
+foreach (
+    [
+        'exactly 20',
+        'all 18 Content Access operations',
+        '12 Content',
+        'exactly the six',
+        'never republishes implicitly',
+    ] as $marker
+) {
+    if (!str_contains($summary, $marker)) {
+        $errors[] = "implementation summary is missing marker: {$marker}";
     }
 }
 
-$testsPath = $evidencePath . 'tests.md';
-if (is_file($testsPath)) {
-    $tests = (string) file_get_contents($testsPath);
-    foreach (
-        [
-            'composer validate --strict',
-            'composer run validate:larena',
-            'composer run lint',
-            'composer run analyse',
-            'composer run test:contract',
-            'composer run test:unit',
-            'composer run test:feature',
-            'composer run test:sqlite',
-            'composer run test:mysql',
-            'composer run test:concurrency',
-            'composer run test:http',
-            'composer run test:rollback',
-            'composer run test',
-            'composer run scope:check',
-            'git diff --check',
-        ] as $requiredCommand
-    ) {
-        if (!str_contains($tests, $requiredCommand)) {
-            $errors[] = "tests.md is missing required command: {$requiredCommand}";
-        }
-    }
-}
-
-$reviewPath = $evidencePath . 'independent-review.md';
-if (is_file($reviewPath)) {
-    $review = (string) file_get_contents($reviewPath);
-    foreach (
-        [
-            '/^Verdict: PASS$/m',
-            '/^P0: 0$/m',
-            '/^P1: 0$/m',
-            '/^P2: [0-9]+$/m',
-        ] as $pattern
-    ) {
-        if (preg_match($pattern, $review) !== 1) {
-            $errors[] = 'independent-review must record PASS with P0=0, P1=0 and numeric P2.';
-            break;
-        }
-    }
-}
-
-foreach ($requiredFiles as $required) {
-    $path = $evidencePath . $required;
-    if (
-        is_file($path)
-        && !str_ends_with($path, '.json')
-        && evidence_text_contains_secret((string) file_get_contents($path))
-    ) {
-        $errors[] = "{$path} contains a forbidden secret marker.";
+$tests = is_file(CONTENT_EVIDENCE_PATH . 'tests.md')
+    ? (string) file_get_contents(CONTENT_EVIDENCE_PATH . 'tests.md')
+    : '';
+foreach (
+    [
+        'composer install --no-interaction --prefer-dist',
+        'composer validate --strict --no-check-publish',
+        'scripts/lint.php',
+        'vendor/bin/phpstan analyse',
+        '--exclude-group=mysql',
+        '188 tests, 1321 assertions',
+        'complete package `quality:gate`',
+        'git diff --check',
+    ] as $marker
+) {
+    if (!str_contains($tests, $marker)) {
+        $errors[] = "tests evidence is missing marker: {$marker}";
     }
 }
 
@@ -313,4 +280,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-echo "Evidence contract is valid for the guarded-runtime repository state.\n";
+echo "Content Model Administration API v1 evidence contract is valid.\n";

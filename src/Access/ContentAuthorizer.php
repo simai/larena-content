@@ -18,6 +18,16 @@ final readonly class ContentAuthorizer
      */
     private const STORAGE_OPERATIONS = [
         'content.type.create' => ['storage.schema.create'],
+        'content.type.version.preview' => [
+            'storage.schema_migration.diff',
+            'storage.record.read',
+        ],
+        'content.type.version.create' => [
+            'storage.schema_migration.diff',
+            'storage.schema_migration.plan',
+            'storage.schema_migration.dispatch',
+            'storage.record.read',
+        ],
         'content.item.create' => ['storage.record.create'],
         'content.item.update' => ['storage.record.update'],
         'content.item.restore' => ['storage.record.read', 'storage.record.update'],

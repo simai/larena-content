@@ -32,21 +32,54 @@ use Larena\Content\Runtime\ContentSchemaMapper;
 use Larena\Content\Runtime\PublishedContentProjectionBuilder;
 use Larena\Content\Runtime\SystemContentClock;
 use Larena\Content\Runtime\SystemContentIdGenerator;
+use Larena\Content\Rest\ContentAdminApiOperationHandler;
+use Larena\Content\Search\ContainerContentSearchSourceFactory;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
 use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
 use Larena\Content\Storage\ContentStorageGateway;
+use Larena\Content\Storage\ContentStorageSchemaEvolutionAuthority;
 use Larena\Filesystem\Contracts\PersistentLogicalFileInspector;
 use Larena\Property\Contracts\PropertyTypeRegistry;
 use Larena\Search\Persistence\DatabaseSearchIndex;
 use Larena\Search\Runtime\SearchSourceRegistry;
+use Larena\Rest\Contracts\OperationHandlerRegistry;
+use Larena\Storage\Contracts\StorageSchemaEvolution;
 use Larena\Storage\Contracts\VersionedStorage;
+use Larena\Storage\SchemaEvolution\StorageSchemaEvolutionOwnerPolicyRegistry;
+use WeakMap;
 
 final class ContentServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $schemaEvolutionAuthority = new ContentStorageSchemaEvolutionAuthority();
+        /** @var WeakMap<StorageSchemaEvolutionOwnerPolicyRegistry, true> $protectedRegistries */
+        $protectedRegistries = new WeakMap();
+        $installOwnerPolicy = static function (
+            StorageSchemaEvolutionOwnerPolicyRegistry $registry,
+        ) use ($schemaEvolutionAuthority, $protectedRegistries): void {
+            if (isset($protectedRegistries[$registry])) {
+                return;
+            }
+            $registry->protect(
+                ownerPackage: 'larena/content',
+                validator: $schemaEvolutionAuthority->ownerValidator(),
+                schemaPrefix: 'content.type.',
+            );
+            $protectedRegistries[$registry] = true;
+        };
+        $this->app->afterResolving(
+            StorageSchemaEvolutionOwnerPolicyRegistry::class,
+            $installOwnerPolicy,
+        );
+        if ($this->app->resolved(StorageSchemaEvolutionOwnerPolicyRegistry::class)) {
+            $installOwnerPolicy(
+                $this->app->make(StorageSchemaEvolutionOwnerPolicyRegistry::class),
+            );
+        }
+
         $this->app->singleton(
             ContentClock::class,
             static fn (): ContentClock => new SystemContentClock(),
@@ -100,6 +133,9 @@ final class ContentServiceProvider extends ServiceProvider
                 $app->make(VersionedStorage::class),
                 $app->make(ContentSchemaMapper::class),
                 $app->make(ContentInputGuard::class),
+                $app->make(StorageSchemaEvolution::class),
+                $app->make(StorageSchemaEvolutionOwnerPolicyRegistry::class),
+                $schemaEvolutionAuthority,
             ),
         );
         $this->app->scoped(
@@ -138,7 +174,7 @@ final class ContentServiceProvider extends ServiceProvider
             ContentDataviewSourceFactory::class,
         );
 
-        $this->app->singleton(
+        $this->app->scoped(
             DatabaseContentSearchSourceProvider::class,
             static fn (Container $app): DatabaseContentSearchSourceProvider => new DatabaseContentSearchSourceProvider(
                 $app->make(DatabaseContentRepository::class),
@@ -149,6 +185,12 @@ final class ContentServiceProvider extends ServiceProvider
         $this->app->alias(
             DatabaseContentSearchSourceProvider::class,
             ContentSearchSourceProvider::class,
+        );
+        $this->app->singleton(
+            ContainerContentSearchSourceFactory::class,
+            static fn (Container $app): ContainerContentSearchSourceFactory => new ContainerContentSearchSourceFactory(
+                $app,
+            ),
         );
 
         $this->app->afterResolving(
@@ -181,6 +223,15 @@ final class ContentServiceProvider extends ServiceProvider
                 $this->app,
             );
         }
+
+        if ($this->app->bound(OperationHandlerRegistry::class)) {
+            ContentAdminApiOperationHandler::registerLazy(
+                $this->app->make(OperationHandlerRegistry::class),
+                fn (): ContentAdminApiOperationHandler => $this->app->make(
+                    ContentAdminApiOperationHandler::class,
+                ),
+            );
+        }
     }
 
     private static function registerAccessOperations(
@@ -199,8 +250,8 @@ final class ContentServiceProvider extends ServiceProvider
         SearchSourceRegistry $registry,
         Container $app,
     ): bool {
-        return $registry->register(
-            $app->make(DatabaseContentSearchSourceProvider::class),
+        return $registry->registerFactory(
+            $app->make(ContainerContentSearchSourceFactory::class),
         );
     }
 }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Larena\Content\Storage;
 
+use Closure;
 use Illuminate\Database\ConnectionInterface;
 use Larena\Content\Exceptions\ContentIntegrationFailed;
+use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\Runtime\ContentInputGuard;
 use Larena\Content\Runtime\ContentSchemaMapper;
 use Larena\Content\ValueObjects\ActorContext;
@@ -15,10 +17,18 @@ use Larena\Content\ValueObjects\ContentTypeKey;
 use Larena\Storage\Contracts\StoragePublicProjection;
 use Larena\Storage\Contracts\StorageRecordVersion;
 use Larena\Storage\Contracts\StorageRecordVersionRef;
+use Larena\Storage\Contracts\StorageSchemaCompatibilityReport;
+use Larena\Storage\Contracts\StorageSchemaEvolution;
+use Larena\Storage\Contracts\StorageSchemaEvolutionTransactionScope;
+use Larena\Storage\Contracts\StorageSchemaMigrationPlan;
+use Larena\Storage\Contracts\StorageSchemaMigrationResult;
 use Larena\Storage\Contracts\StorageSchemaVersion;
 use Larena\Storage\Contracts\StorageSchemaVersionRef;
 use Larena\Storage\Contracts\StorageWriteResult;
 use Larena\Storage\Contracts\VersionedStorage;
+use Larena\Storage\Exceptions\StorageRejected;
+use Larena\Storage\SchemaEvolution\StorageSchemaEvolutionOwnerPolicyRegistry;
+use Throwable;
 
 final readonly class ContentStorageGateway
 {
@@ -26,6 +36,9 @@ final readonly class ContentStorageGateway
         private VersionedStorage $storage,
         private ContentSchemaMapper $schemas,
         private ContentInputGuard $input,
+        private ?StorageSchemaEvolution $schemaEvolution = null,
+        private ?StorageSchemaEvolutionOwnerPolicyRegistry $ownerPolicies = null,
+        private ?ContentStorageSchemaEvolutionAuthority $schemaEvolutionAuthority = null,
     ) {
     }
 
@@ -70,6 +83,195 @@ final readonly class ContentStorageGateway
         }
 
         return $schema;
+    }
+
+    /**
+     * @param list<ContentFieldDefinition> $fields
+     */
+    public function analyzeTypeSchema(
+        ContentTypeKey $typeKey,
+        StorageSchemaVersionRef $source,
+        array $fields,
+        ActorContext $actor,
+    ): StorageSchemaCompatibilityReport {
+        $this->input->assertActor($actor);
+        $this->input->assertFields($fields);
+        $evolution = $this->requireSchemaEvolution();
+
+        try {
+            $report = $evolution->analyze(
+                $source,
+                $this->schemas->definition($typeKey, $fields),
+                $actor->actorRef,
+                $actor->correlationId,
+            );
+        } catch (StorageRejected $exception) {
+            throw new ContentRejected(
+                'storage_schema_evolution_rejected',
+                'Storage rejected the Content schema candidate.',
+                $exception,
+            );
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_analyze_failed',
+                $exception,
+            );
+        }
+
+        if (
+            $report->source->key() !== $source->key()
+            || $report->target->schemaId !== $source->schemaId
+            || $report->target->version !== $source->version + 1
+        ) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_report_mismatch',
+            );
+        }
+
+        return $report;
+    }
+
+    /**
+     * Opens one exact Storage owner-policy transaction scope. The caller must
+     * already be inside the shared Content transaction.
+     *
+     * @template TResult
+     * @param Closure(StorageSchemaEvolutionTransactionScope): TResult $operation
+     * @return TResult
+     */
+    public function withinSchemaEvolution(Closure $operation): mixed
+    {
+        $policies = $this->requireOwnerPolicies();
+        $evolution = $this->requireSchemaEvolution();
+
+        if (
+            $evolution->connection() !== $this->storage->connection()
+            || $evolution->connection()->transactionLevel() < 1
+        ) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_transaction_mismatch',
+            );
+        }
+
+        try {
+            return $policies->withinTransaction(
+                $evolution->connection(),
+                $operation,
+            );
+        } catch (StorageRejected $exception) {
+            throw new ContentRejected(
+                'storage_schema_evolution_orchestration_rejected',
+                'Storage rejected the Content schema orchestration boundary.',
+                $exception,
+            );
+        }
+    }
+
+    /**
+     * @param list<ContentFieldDefinition> $fields
+     */
+    public function planTypeSchema(
+        ContentTypeKey $typeKey,
+        StorageSchemaCompatibilityReport $report,
+        array $fields,
+        ActorContext $actor,
+        StorageSchemaEvolutionTransactionScope $scope,
+    ): StorageSchemaMigrationPlan {
+        $this->input->assertActor($actor);
+        $this->input->assertFields($fields);
+        $evolution = $this->requireSchemaEvolution();
+        $authority = $this->requireSchemaEvolutionAuthority();
+
+        try {
+            return $authority->withinCapability(
+                operation: 'plan',
+                actor: $actor->actorRef,
+                source: $report->source,
+                sourceHash: $report->sourceHash,
+                targetHash: $report->targetHash,
+                planRef: null,
+                planHash: null,
+                scope: $scope,
+                connection: $evolution->connection(),
+                callback: fn (object $capability): StorageSchemaMigrationPlan => $evolution->plan(
+                    $report->source,
+                    $this->schemas->definition($typeKey, $fields),
+                    $actor->actorRef,
+                    $actor->correlationId,
+                    $scope,
+                    $capability,
+                ),
+            );
+        } catch (StorageRejected $exception) {
+            throw new ContentRejected(
+                str_contains($exception->reasonCode, 'conflict')
+                    || str_contains($exception->reasonCode, 'stale')
+                    ? 'type_version_conflict'
+                    : 'storage_schema_evolution_rejected',
+                'Storage rejected the Content schema migration plan.',
+                $exception,
+            );
+        } catch (ContentRejected $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_plan_failed',
+                $exception,
+            );
+        }
+    }
+
+    public function applyTypeSchema(
+        StorageSchemaMigrationPlan $plan,
+        ActorContext $actor,
+        StorageSchemaEvolutionTransactionScope $scope,
+    ): StorageSchemaMigrationResult {
+        $this->input->assertActor($actor);
+        $evolution = $this->requireSchemaEvolution();
+        $authority = $this->requireSchemaEvolutionAuthority();
+
+        try {
+            return $authority->withinCapability(
+                operation: 'apply',
+                actor: $actor->actorRef,
+                source: $plan->source,
+                sourceHash: $plan->sourceHash,
+                targetHash: $plan->targetHash,
+                planRef: $plan->planRef,
+                planHash: $plan->planHash,
+                scope: $scope,
+                connection: $evolution->connection(),
+                callback: fn (object $capability): StorageSchemaMigrationResult => $evolution->apply(
+                    $plan->planRef,
+                    $plan->planHash,
+                    $actor->actorRef,
+                    $actor->correlationId,
+                    $scope,
+                    $capability,
+                ),
+            );
+        } catch (StorageRejected $exception) {
+            throw new ContentRejected(
+                str_contains($exception->reasonCode, 'conflict')
+                    || str_contains($exception->reasonCode, 'stale')
+                    ? 'type_version_conflict'
+                    : 'storage_schema_evolution_rejected',
+                'Storage rejected the Content schema migration apply.',
+                $exception,
+            );
+        } catch (ContentRejected $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_apply_failed',
+                $exception,
+            );
+        }
     }
 
     /**
@@ -147,7 +349,7 @@ final readonly class ContentStorageGateway
             || $expected->schemaId !== $restoreFrom->schemaId
             || $expected->schemaId !== $expectedSchema->schemaId
             || $restoreFrom->schemaId !== $restoreFromSchema->schemaId
-            || $expectedSchema->key() !== $restoreFromSchema->key()
+            || $expectedSchema->schemaId !== $restoreFromSchema->schemaId
         ) {
             throw new ContentIntegrationFailed(
                 'storage',
@@ -165,11 +367,18 @@ final readonly class ContentStorageGateway
         );
         $this->input->assertNormalizedValues($target->values);
 
+        $currentSchema = $this->schemaVersion($expectedSchema);
+        $currentFields = $this->schemas->fieldDefinitions($currentSchema);
+        $normalized = $this->schemas->normalizeValues(
+            $currentFields,
+            $target->values,
+        );
+
         $result = $this->storage->compareAndSwap(
             $itemRef->value,
             $expected,
-            $target->schema,
-            $target->values,
+            $expectedSchema,
+            $normalized,
             $actor->actorRef,
             $actor->correlationId,
         );
@@ -177,7 +386,7 @@ final readonly class ContentStorageGateway
         $this->assertWriteResult(
             $result,
             $itemRef,
-            $target->schema,
+            $expectedSchema,
             $actor,
             'update',
             $expected,
@@ -186,21 +395,66 @@ final readonly class ContentStorageGateway
         return $result;
     }
 
-    public function schemaVersion(StorageSchemaVersionRef $ref): StorageSchemaVersion
+    private function requireSchemaEvolution(): StorageSchemaEvolution
     {
-        $schema = $this->storage->schemaVersion($ref);
-
-        if (
-            $schema->ref->key() !== $ref->key()
-            || $schema->ownerPackage !== 'larena/content'
-        ) {
+        if (!$this->schemaEvolution instanceof StorageSchemaEvolution) {
             throw new ContentIntegrationFailed(
                 'storage',
-                'schema_read_result_mismatch',
+                'schema_evolution_unavailable',
             );
         }
 
-        return $schema;
+        return $this->schemaEvolution;
+    }
+
+    private function requireOwnerPolicies(): StorageSchemaEvolutionOwnerPolicyRegistry
+    {
+        if (!$this->ownerPolicies instanceof StorageSchemaEvolutionOwnerPolicyRegistry) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_owner_policy_unavailable',
+            );
+        }
+
+        return $this->ownerPolicies;
+    }
+
+    private function requireSchemaEvolutionAuthority(): ContentStorageSchemaEvolutionAuthority
+    {
+        if (!$this->schemaEvolutionAuthority instanceof ContentStorageSchemaEvolutionAuthority) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_authority_unavailable',
+            );
+        }
+
+        return $this->schemaEvolutionAuthority;
+    }
+
+    public function schemaVersion(StorageSchemaVersionRef $ref): StorageSchemaVersion
+    {
+        try {
+            $schema = $this->storage->schemaVersion($ref);
+            if (
+                $schema->ref->key() !== $ref->key()
+                || $schema->ownerPackage !== 'larena/content'
+            ) {
+                throw new ContentIntegrationFailed(
+                    'storage',
+                    'schema_read_result_mismatch',
+                );
+            }
+
+            return $schema;
+        } catch (ContentIntegrationFailed $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_version_read_failed',
+                $exception,
+            );
+        }
     }
 
     public function readAdminVersion(
@@ -208,17 +462,27 @@ final readonly class ContentStorageGateway
         ActorContext $actor,
     ): StorageRecordVersion {
         $this->input->assertActor($actor);
-        $version = $this->storage->readAdminVersion($ref, $actor->actorRef);
-        $this->input->assertNormalizedValues($version->values);
+        try {
+            $version = $this->storage->readAdminVersion($ref, $actor->actorRef);
+            $this->input->assertNormalizedValues($version->values);
 
-        if ($version->ref->key() !== $ref->key()) {
+            if ($version->ref->key() !== $ref->key()) {
+                throw new ContentIntegrationFailed(
+                    'storage',
+                    'record_read_result_mismatch',
+                );
+            }
+
+            return $version;
+        } catch (ContentIntegrationFailed $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
             throw new ContentIntegrationFailed(
                 'storage',
-                'record_read_result_mismatch',
+                'record_read_failed',
+                $exception,
             );
         }
-
-        return $version;
     }
 
     public function readAdminCurrentVersion(
@@ -227,28 +491,38 @@ final readonly class ContentStorageGateway
         ActorContext $actor,
     ): ?StorageRecordVersion {
         $this->input->assertActor($actor);
-        $version = $this->storage->readAdminCurrentVersion(
-            $schemaId,
-            $itemRef->value,
-            $actor->actorRef,
-        );
+        try {
+            $version = $this->storage->readAdminCurrentVersion(
+                $schemaId,
+                $itemRef->value,
+                $actor->actorRef,
+            );
 
-        if ($version === null) {
-            return null;
-        }
+            if ($version === null) {
+                return null;
+            }
 
-        $this->input->assertNormalizedValues($version->values);
-        if (
-            $version->ref->schemaId !== $schemaId
-            || $version->ownerRef !== $itemRef->value
-        ) {
+            $this->input->assertNormalizedValues($version->values);
+            if (
+                $version->ref->schemaId !== $schemaId
+                || $version->ownerRef !== $itemRef->value
+            ) {
+                throw new ContentIntegrationFailed(
+                    'storage',
+                    'record_read_result_mismatch',
+                );
+            }
+
+            return $version;
+        } catch (ContentIntegrationFailed $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
             throw new ContentIntegrationFailed(
                 'storage',
-                'record_read_result_mismatch',
+                'record_read_failed',
+                $exception,
             );
         }
-
-        return $version;
     }
 
     public function publicProjection(StorageRecordVersionRef $ref): StoragePublicProjection

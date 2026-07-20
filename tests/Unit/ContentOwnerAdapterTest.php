@@ -277,6 +277,28 @@ final class ContentOwnerAdapterTest extends TestCase
             ->method('readAdminVersion')
             ->with($restoreFrom, $actor->actorRef)
             ->willReturn($target);
+        $schemaMapper = new ContentSchemaMapper(PropertyTypeRegistry::builtIns());
+        $schemaDefinition = $schemaMapper->definition(
+            new ContentTypeKey('article'),
+            [new ContentFieldDefinition(
+                'title',
+                'string',
+                ContentFieldVisibility::Public,
+                true,
+            )],
+        );
+        $storage->expects(self::once())
+            ->method('schemaVersion')
+            ->with($schema)
+            ->willReturn(new StorageSchemaVersion(
+                ref: $schema,
+                ownerPackage: 'larena/content',
+                fields: $schemaDefinition['fields'],
+                definitionHash: $schemaMapper->schemaHash($schemaDefinition),
+                createdBy: 'user:admin_identity:9',
+                correlationId: 'schema-test',
+                createdAt: '2026-07-19T08:00:00.000000Z',
+            ));
         $storage->expects(self::once())
             ->method('compareAndSwap')
             ->with(
@@ -291,7 +313,7 @@ final class ContentOwnerAdapterTest extends TestCase
 
         $gateway = new ContentStorageGateway(
             $storage,
-            new ContentSchemaMapper(PropertyTypeRegistry::builtIns()),
+            $schemaMapper,
             new ContentInputGuard(),
         );
 

@@ -28,6 +28,7 @@ use Larena\Content\Runtime\PublishedContentProjectionBuilder;
 use Larena\Content\Storage\ContentStorageGateway;
 use Larena\Content\ValueObjects\ActorContext;
 use Larena\Content\ValueObjects\ContentAttachmentPlacement;
+use Larena\Content\ValueObjects\ContentAttachmentPage;
 use Larena\Content\ValueObjects\ContentAttachmentReference;
 use Larena\Content\ValueObjects\ContentItem;
 use Larena\Content\ValueObjects\ContentItemPage;
@@ -462,7 +463,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     before: $before,
                     storageRef: $storageWrite->ref(),
                     storageSchema: $storageWrite->version->schema,
-                    typeVersion: $target->typeVersion,
+                    typeVersion: $currentTypeVersion->version,
                     slug: $target->slug,
                     status: ContentStatus::Draft,
                     visibility: $target->visibility,
@@ -635,6 +636,51 @@ final readonly class DatabaseContentItemService implements ContentItemService
         }
     }
 
+    public function currentAttachments(
+        ContentItemRef $itemRef,
+        ActorContext $actor,
+    ): ContentAttachmentPage {
+        $connection = $this->preflightProtected($actor, 'content.attachment.list');
+
+        try {
+            $this->repository->assertCompleteCompatible();
+            $item = $this->repository->itemRow($itemRef->value);
+            if ($item === null) {
+                throw new ContentRejected('item_not_found');
+            }
+            $revisionNumber = (int) $item['current_revision'];
+            $revision = $this->repository->revisionRow(
+                $itemRef->value,
+                $revisionNumber,
+            );
+            if ($revision === null) {
+                throw new ContentIntegrationFailed(
+                    'content',
+                    'current_revision_missing',
+                );
+            }
+
+            return new ContentAttachmentPage(
+                $itemRef,
+                $revisionNumber,
+                $this->attachmentReferencesForRevision(
+                    $this->hydrateRevision($revision),
+                ),
+            );
+        } catch (ContentRejected $exception) {
+            $this->auditDomainDenial(
+                $connection,
+                $actor,
+                'content.attachment.list',
+                $exception,
+                $itemRef->value,
+                ['item_ref' => $itemRef->value],
+            );
+
+            throw $exception;
+        }
+    }
+
     public function attach(
         ContentItemRef $itemRef,
         int $expectedRevision,
@@ -717,6 +763,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 return $after;
             }, 3);
         } catch (ContentRejected $exception) {
+            $auditLogicalFileRef = $this->auditLogicalFileRef($logicalFileRef);
             $this->auditDomainDenial(
                 $connection,
                 $actor,
@@ -725,7 +772,9 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 $itemRef->value,
                 [
                     'item_ref' => $itemRef->value,
-                    'logical_file_ref' => $logicalFileRef,
+                    ...($auditLogicalFileRef === null
+                        ? []
+                        : ['logical_file_ref' => $auditLogicalFileRef]),
                     'expected_revision' => max(0, $expectedRevision),
                 ],
             );
@@ -1087,8 +1136,9 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 'item_ref' => $itemRef->value,
                 'expected_revision' => max(0, $expectedRevision),
             ];
-            if ($logicalFileRef !== null) {
-                $context['logical_file_ref'] = $logicalFileRef;
+            $auditLogicalFileRef = $this->auditLogicalFileRef($logicalFileRef);
+            if ($auditLogicalFileRef !== null) {
+                $context['logical_file_ref'] = $auditLogicalFileRef;
             }
             $this->auditDomainDenial(
                 $connection,
@@ -1288,24 +1338,34 @@ final readonly class DatabaseContentItemService implements ContentItemService
      */
     private function hydrateItem(array $row): ContentItem
     {
-        return new ContentItem(
-            itemRef: new ContentItemRef((string) $row['item_ref']),
-            typeKey: new ContentTypeKey((string) $row['type_key']),
-            locale: new ContentLocale((string) $row['locale']),
-            currentRevision: (int) $row['current_revision'],
-            currentSlug: new ContentSlug((string) $row['current_slug']),
-            currentStatus: ContentStatus::from((string) $row['current_status']),
-            currentVisibility: ContentVisibility::from((string) $row['current_visibility']),
-            publishedRevision: $row['published_revision'] === null
-                ? null
-                : (int) $row['published_revision'],
-            publishedSlug: $row['published_slug'] === null
-                ? null
-                : new ContentSlug((string) $row['published_slug']),
-            publishedAt: $row['published_at'] === null
-                ? null
-                : $this->dateTime((string) $row['published_at']),
-        );
+        try {
+            return new ContentItem(
+                itemRef: new ContentItemRef((string) $row['item_ref']),
+                typeKey: new ContentTypeKey((string) $row['type_key']),
+                locale: new ContentLocale((string) $row['locale']),
+                currentRevision: (int) $row['current_revision'],
+                currentSlug: new ContentSlug((string) $row['current_slug']),
+                currentStatus: ContentStatus::from((string) $row['current_status']),
+                currentVisibility: ContentVisibility::from((string) $row['current_visibility']),
+                publishedRevision: $row['published_revision'] === null
+                    ? null
+                    : (int) $row['published_revision'],
+                publishedSlug: $row['published_slug'] === null
+                    ? null
+                    : new ContentSlug((string) $row['published_slug']),
+                publishedAt: $row['published_at'] === null
+                    ? null
+                    : $this->dateTime((string) $row['published_at']),
+            );
+        } catch (ContentIntegrationFailed $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'content',
+                'persisted_item_invalid',
+                $exception,
+            );
+        }
     }
 
     /**
@@ -1313,24 +1373,34 @@ final readonly class DatabaseContentItemService implements ContentItemService
      */
     private function hydrateRevision(array $row): ContentRevision
     {
-        return new ContentRevision(
-            itemRef: new ContentItemRef((string) $row['item_ref']),
-            revision: (int) $row['revision'],
-            typeKey: new ContentTypeKey((string) $row['type_key']),
-            locale: new ContentLocale((string) $row['locale']),
-            typeVersion: (int) $row['type_version'],
-            storageSchemaRef: (string) $row['storage_schema_ref'],
-            storageSchemaVersion: (int) $row['storage_schema_version'],
-            storageRecordRef: (string) $row['storage_record_ref'],
-            storageRecordVersion: (int) $row['storage_record_version'],
-            slug: new ContentSlug((string) $row['slug']),
-            status: ContentStatus::from((string) $row['status']),
-            visibility: ContentVisibility::from((string) $row['visibility']),
-            attachmentCount: (int) $row['attachment_count'],
-            createdBy: (string) $row['created_by'],
-            correlationId: (string) $row['correlation_id'],
-            createdAt: $this->dateTime((string) $row['created_at']),
-        );
+        try {
+            return new ContentRevision(
+                itemRef: new ContentItemRef((string) $row['item_ref']),
+                revision: (int) $row['revision'],
+                typeKey: new ContentTypeKey((string) $row['type_key']),
+                locale: new ContentLocale((string) $row['locale']),
+                typeVersion: (int) $row['type_version'],
+                storageSchemaRef: (string) $row['storage_schema_ref'],
+                storageSchemaVersion: (int) $row['storage_schema_version'],
+                storageRecordRef: (string) $row['storage_record_ref'],
+                storageRecordVersion: (int) $row['storage_record_version'],
+                slug: new ContentSlug((string) $row['slug']),
+                status: ContentStatus::from((string) $row['status']),
+                visibility: ContentVisibility::from((string) $row['visibility']),
+                attachmentCount: (int) $row['attachment_count'],
+                createdBy: (string) $row['created_by'],
+                correlationId: (string) $row['correlation_id'],
+                createdAt: $this->dateTime((string) $row['created_at']),
+            );
+        } catch (ContentIntegrationFailed $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'content',
+                'persisted_revision_invalid',
+                $exception,
+            );
+        }
     }
 
     private function typeVersion(
@@ -1341,29 +1411,45 @@ final readonly class DatabaseContentItemService implements ContentItemService
         if ($row === null) {
             throw new ContentIntegrationFailed('content', 'type_version_missing');
         }
-        $storageSchema = $this->storage->schemaVersion(new StorageSchemaVersionRef(
-            (string) $row['storage_schema_ref'],
-            (int) $row['storage_schema_version'],
-        ));
-        $fields = $this->schemas->fieldDefinitions($storageSchema);
-        $projection = ContentProjectionContract::fromArray(
-            $this->decodeObject((string) $row['projection_contract']),
-            $fields,
-        );
+        try {
+            $storageSchema = $this->storage->schemaVersion(new StorageSchemaVersionRef(
+                (string) $row['storage_schema_ref'],
+                (int) $row['storage_schema_version'],
+            ));
+            if (!hash_equals((string) $row['schema_hash'], $storageSchema->definitionHash)) {
+                throw new ContentIntegrationFailed(
+                    'content',
+                    'type_version_storage_hash_mismatch',
+                );
+            }
+            $fields = $this->schemas->fieldDefinitions($storageSchema);
+            $projection = ContentProjectionContract::fromArray(
+                $this->decodeObject((string) $row['projection_contract']),
+                $fields,
+            );
 
-        return new ContentTypeVersion(
-            typeKey: $typeKey,
-            version: (int) $row['version'],
-            storageSchemaRef: (string) $row['storage_schema_ref'],
-            storageSchemaVersion: (int) $row['storage_schema_version'],
-            schemaHash: (string) $row['schema_hash'],
-            fieldDefinitions: $fields,
-            projectionContract: $projection,
-            safeMetadata: $this->decodeObject((string) $row['safe_metadata']),
-            createdBy: (string) $row['created_by'],
-            correlationId: (string) $row['correlation_id'],
-            createdAt: $this->dateTime((string) $row['created_at']),
-        );
+            return new ContentTypeVersion(
+                typeKey: $typeKey,
+                version: (int) $row['version'],
+                storageSchemaRef: (string) $row['storage_schema_ref'],
+                storageSchemaVersion: (int) $row['storage_schema_version'],
+                schemaHash: (string) $row['schema_hash'],
+                fieldDefinitions: $fields,
+                projectionContract: $projection,
+                safeMetadata: $this->decodeObject((string) $row['safe_metadata']),
+                createdBy: (string) $row['created_by'],
+                correlationId: (string) $row['correlation_id'],
+                createdAt: $this->dateTime((string) $row['created_at']),
+            );
+        } catch (ContentIntegrationFailed $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'content',
+                'persisted_type_version_invalid',
+                $exception,
+            );
+        }
     }
 
     /**
@@ -1375,16 +1461,24 @@ final readonly class DatabaseContentItemService implements ContentItemService
         int $revision,
         array $rows,
     ): array {
-        return array_map(
-            static fn (array $row): ContentAttachmentReference => new ContentAttachmentReference(
-                itemRef: $itemRef,
-                revision: $revision,
-                position: (int) $row['position'],
-                logicalFileRef: (string) $row['logical_file_ref'],
-                role: (string) $row['role'],
-            ),
-            $rows,
-        );
+        try {
+            return array_map(
+                static fn (array $row): ContentAttachmentReference => new ContentAttachmentReference(
+                    itemRef: $itemRef,
+                    revision: $revision,
+                    position: (int) $row['position'],
+                    logicalFileRef: (string) $row['logical_file_ref'],
+                    role: (string) $row['role'],
+                ),
+                $rows,
+            );
+        } catch (Throwable $exception) {
+            throw new ContentIntegrationFailed(
+                'content',
+                'persisted_attachment_invalid',
+                $exception,
+            );
+        }
     }
 
     /**
@@ -1594,6 +1688,21 @@ final readonly class DatabaseContentItemService implements ContentItemService
         if ($revision < 1) {
             throw new ContentRejected('revision_invalid');
         }
+    }
+
+    private function auditLogicalFileRef(?string $logicalFileRef): ?string
+    {
+        if ($logicalFileRef === null) {
+            return null;
+        }
+
+        try {
+            ContentAttachmentPlacement::assertLogicalFileRef($logicalFileRef);
+        } catch (\InvalidArgumentException) {
+            return null;
+        }
+
+        return $logicalFileRef;
     }
 
     private function writeSearchProjection(

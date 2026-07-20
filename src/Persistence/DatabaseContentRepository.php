@@ -184,6 +184,28 @@ final readonly class DatabaseContentRepository
     }
 
     /** @return list<array<string, bool|int|string|null>> */
+    public function typeVersionRows(
+        string $typeKey,
+        ?int $afterVersion,
+        int $limit,
+    ): array {
+        $this->assertLimit($limit);
+        $query = $this->database
+            ->table('larena_content_type_versions')
+            ->where('type_key', $typeKey)
+            ->orderBy('version');
+
+        if ($afterVersion !== null) {
+            $query->where('version', '>', $afterVersion);
+        }
+
+        return $this->many(
+            $query->limit($limit),
+            'larena_content_type_versions',
+        );
+    }
+
+    /** @return list<array<string, bool|int|string|null>> */
     public function typeRows(?string $afterTypeKey, int $limit): array
     {
         $this->assertLimit($limit);
@@ -232,6 +254,30 @@ final readonly class DatabaseContentRepository
         }
 
         $this->database->table('larena_content_type_versions')->insert($row);
+    }
+
+    public function compareAndSwapTypeHead(
+        string $typeKey,
+        int $expectedVersion,
+        int $nextVersion,
+        string $updatedAt,
+    ): bool {
+        $this->assertMutableRevision($expectedVersion);
+        $this->assertPositiveInteger($nextVersion, 'next_version');
+
+        if ($nextVersion !== $expectedVersion + 1) {
+            throw new ContentRejected('type_next_version_invalid');
+        }
+        $this->assertMutableRevision($nextVersion);
+
+        return $this->database
+            ->table('larena_content_types')
+            ->where('type_key', $typeKey)
+            ->where('current_version', $expectedVersion)
+            ->update([
+                'current_version' => $nextVersion,
+                'updated_at' => $updatedAt,
+            ]) === 1;
     }
 
     /** @return array<string, bool|int|string|null>|null */
@@ -285,6 +331,25 @@ final readonly class DatabaseContentRepository
 
         return $this->many(
             $query->limit($limit),
+            'larena_content_items',
+        );
+    }
+
+    /**
+     * Locks every current item of one type in deterministic owner order for
+     * the all-or-nothing schema migration boundary.
+     *
+     * @return list<array<string, bool|int|string|null>>
+     */
+    public function itemRowsForType(string $typeKey, bool $forUpdate = false): array
+    {
+        $query = $this->database
+            ->table('larena_content_items')
+            ->where('type_key', $typeKey)
+            ->orderBy('item_ref');
+
+        return $this->many(
+            $forUpdate ? $query->lockForUpdate() : $query,
             'larena_content_items',
         );
     }

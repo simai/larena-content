@@ -1,21 +1,23 @@
 package: larena/content
 title: Larena Content
-status: guarded_runtime_candidate
+status: implementation_candidate
 cluster: data-content
-batch: batch-2-content-guarded-runtime
+batch: content-model-administration-api-v1
 features:
   - content.type_registry
+  - content.type_schema_versioning
   - content.item_lifecycle
   - content.revision_history
   - content.slug_routing
   - content.attachment_binding
   - content.publication_projection
   - content.search_projection
+  - content.admin_api_v1
 runtime:
   php: "^8.3"
   laravel: "^13.0"
 evidence:
-  path: docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/
+  path: docs/project-management/evidence/data-content/content-model-administration-api-v1/
 nonclaims:
   runtime_ready: false
   production_ready: false

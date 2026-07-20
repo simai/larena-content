@@ -13,10 +13,15 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
 use Larena\Audit\Contracts\ConnectionBoundAuditEventPipeline;
+use Larena\Content\Contracts\ContentItemService;
 use Larena\Content\Contracts\ContentSearchSourceProvider;
+use Larena\Content\Contracts\ContentTypeService;
 use Larena\Content\Contracts\PublishedContentReader;
 use Larena\Content\Persistence\DatabaseContentRepository;
 use Larena\Content\Providers\ContentServiceProvider;
+use Larena\Content\Rest\ContentAdminApiOperationHandler;
+use Larena\Content\Rest\ContentAdminReadModel;
+use Larena\Content\Rest\ContentAdminValueCodec;
 use Larena\Content\Runtime\ContentParticipantGuard;
 use Larena\Content\Search\ContentSearchContract;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
@@ -25,10 +30,18 @@ use Larena\Content\ValueObjects\ContentLocale;
 use Larena\Content\ValueObjects\ContentSlug;
 use Larena\Content\ValueObjects\ContentTypeKey;
 use Larena\Content\ValueObjects\PublishedContentProjection;
+use Larena\Core\Contracts\OperationContext;
+use Larena\Core\Contracts\OperationDescriptor;
+use Larena\Core\Enums\OperationExecutionMode;
+use Larena\Rest\Contracts\OperationHandlerRegistry;
+use Larena\Rest\Exceptions\ApiOperationException;
+use Larena\Rest\Providers\RestServiceProvider;
+use Larena\Rest\Registry\PackageApiContractLoader;
 use Larena\Search\Runtime\SearchSourceRegistry;
 use Larena\Search\Persistence\DatabaseSearchIndex;
 use Larena\Storage\Contracts\VersionedStorage;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 final class ContentProviderBindingTest extends TestCase
 {
@@ -56,13 +69,22 @@ final class ContentProviderBindingTest extends TestCase
             'database' => ':memory:',
             'prefix' => '',
         ]);
-        $container->instance(
+        $nextConnection = (new ConnectionFactory($container))->make([
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
+        $currentConnection = $connection;
+        $sourceResolutions = 0;
+        $container->scoped(
             DatabaseContentRepository::class,
-            new DatabaseContentRepository($connection),
+            static function () use (&$currentConnection): DatabaseContentRepository {
+                return new DatabaseContentRepository($currentConnection);
+            },
         );
-        $container->instance(
+        $container->scoped(
             PublishedContentReader::class,
-            new class implements PublishedContentReader {
+            static fn (): PublishedContentReader => new class implements PublishedContentReader {
                 public function read(
                     ContentTypeKey $typeKey,
                     ContentSlug $slug,
@@ -72,23 +94,59 @@ final class ContentProviderBindingTest extends TestCase
                 }
             },
         );
-        $container->instance(
+        $container->scoped(
             ContentParticipantGuard::class,
-            $this->participants($connection),
+            function () use (&$currentConnection): ContentParticipantGuard {
+                return $this->participants($currentConnection);
+            },
+        );
+        $container->scoped(
+            DatabaseContentSearchSourceProvider::class,
+            static function (Container $app) use (&$sourceResolutions): DatabaseContentSearchSourceProvider {
+                $sourceResolutions++;
+
+                return new DatabaseContentSearchSourceProvider(
+                    $app->make(DatabaseContentRepository::class),
+                    $app->make(PublishedContentReader::class),
+                    $app->make(ContentParticipantGuard::class),
+                );
+            },
         );
 
         $registry = $container->make(SearchSourceRegistry::class);
+        self::assertSame(0, $sourceResolutions);
+        self::assertTrue($registry->has(ContentSearchContract::PROVIDER_ID));
+        self::assertSame([ContentSearchContract::PROVIDER_ID], $registry->providerIds());
+        self::assertSame(0, $sourceResolutions);
+
         $source = $registry->get(ContentSearchContract::PROVIDER_ID);
 
         self::assertInstanceOf(DatabaseContentSearchSourceProvider::class, $source);
         self::assertSame($source, $container->make(ContentSearchSourceProvider::class));
         self::assertSame('content.published_items', $source->providerId());
         self::assertSame([$source], $registry->all());
+        self::assertSame(1, $sourceResolutions);
+        self::assertSame(
+            $connection,
+            $container->make(DatabaseContentRepository::class)->connection(),
+        );
 
-        // Resolving the singleton registry again must not duplicate or replace
-        // the already registered owner source.
+        // The singleton registry keeps only the lightweight factory. Clearing
+        // scoped instances must yield a fresh provider graph rather than
+        // retaining the old connection-bound Content source.
+        $container->forgetScopedInstances();
+        $currentConnection = $nextConnection;
+        $fresh = $registry->get(ContentSearchContract::PROVIDER_ID);
+        self::assertInstanceOf(DatabaseContentSearchSourceProvider::class, $fresh);
+        self::assertNotSame($source, $fresh);
+        self::assertSame($fresh, $container->make(ContentSearchSourceProvider::class));
+        self::assertSame(2, $sourceResolutions);
+        self::assertSame(
+            $nextConnection,
+            $container->make(DatabaseContentRepository::class)->connection(),
+        );
         self::assertSame($registry, $container->make(SearchSourceRegistry::class));
-        self::assertSame([$source], $registry->all());
+        self::assertSame([$fresh], $registry->all());
     }
 
     public function testBootRegistersMigrationPathAndLoadsOnlyPublicSessionlessRoute(): void
@@ -130,6 +188,80 @@ final class ContentProviderBindingTest extends TestCase
         self::assertSame($expectedMigrationPath, $registeredMigrationPath);
     }
 
+    public function testDiscoveredContentBeforeRestOrderRegistersAndDispatchesAllTwentyHandlers(): void
+    {
+        $container = new Container();
+        $application = $this->applicationFor($container);
+        $config = $this->createStub(\Illuminate\Contracts\Config\Repository::class);
+        $config->method('get')->willReturn([]);
+        $container->instance('config', $config);
+
+        $router = new Router(new Dispatcher($container), $container);
+        $container->instance('router', $router);
+        Route::swap($router);
+        $container->singleton('migrator', static fn (): object => new class {
+            public function path(string $path): void
+            {
+            }
+        });
+
+        $content = new ContentServiceProvider($application);
+        $rest = new RestServiceProvider($application);
+
+        // This is the package-discovery order recorded by the Root cache:
+        // all providers register first, then providers boot in the same order.
+        $content->register();
+        $rest->register();
+
+        /** @var ContentAdminReadModel $reads */
+        $reads = (new ReflectionClass(ContentAdminReadModel::class))
+            ->newInstanceWithoutConstructor();
+        $container->singleton(
+            ContentAdminApiOperationHandler::class,
+            fn (): ContentAdminApiOperationHandler => new ContentAdminApiOperationHandler(
+                $this->createStub(ContentTypeService::class),
+                $this->createStub(ContentItemService::class),
+                $reads,
+                new ContentAdminValueCodec(),
+            ),
+        );
+
+        $content->boot();
+
+        $registry = $container->make(OperationHandlerRegistry::class);
+        $contract = (new PackageApiContractLoader())->loadFile(
+            dirname(__DIR__, 2) . '/api.yaml',
+            'larena/content',
+        );
+
+        self::assertCount(20, $contract->operations);
+        foreach ($contract->operations as $operation) {
+            $handler = $registry->get($operation->handlerReference);
+            self::assertIsCallable($handler);
+
+            try {
+                $handler(
+                    ['path' => [], 'query' => [], 'body' => []],
+                    new OperationDescriptor(
+                        $operation->operationKey,
+                        OperationExecutionMode::Sync,
+                    ),
+                    new OperationContext(
+                        'user:admin_identity:1',
+                        'content-before-rest-provider-order',
+                    ),
+                );
+                self::fail('The Content handler accepted a missing validated session context.');
+            } catch (ApiOperationException $exception) {
+                self::assertSame(
+                    'content_admin_api_session_context_invalid',
+                    $exception->errorCode,
+                );
+                self::assertSame(403, $exception->httpStatus);
+            }
+        }
+    }
+
     private function applicationFor(Container $container): Application
     {
         $application = $this->createStub(Application::class);
@@ -141,6 +273,11 @@ final class ContentProviderBindingTest extends TestCase
         $application->method('scoped')->willReturnCallback(
             static function (string $abstract, mixed $concrete = null) use ($container): void {
                 $container->scoped($abstract, $concrete);
+            },
+        );
+        $application->method('bind')->willReturnCallback(
+            static function (string $abstract, mixed $concrete = null) use ($container): void {
+                $container->bind($abstract, $concrete);
             },
         );
         $application->method('alias')->willReturnCallback(

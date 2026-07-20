@@ -10,6 +10,12 @@ operations:
   - code: content.type.create
     risk: critical
     audit: always
+  - code: content.type.version.preview
+    risk: critical
+    audit: always
+  - code: content.type.version.create
+    risk: critical
+    audit: always
   - code: content.item.list
     risk: high
     audit: denial

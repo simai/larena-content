@@ -9,6 +9,7 @@ use Larena\Content\Tests\Support\ContentRuntimeHarness;
 use Larena\Content\Tests\TestCase;
 use Larena\Content\Exceptions\ContentIntegrationFailed;
 use Larena\Content\Exceptions\ContentNotPublic;
+use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\ValueObjects\ContentAttachmentPlacement;
 use Larena\Content\ValueObjects\ContentLocale;
 use Larena\Content\ValueObjects\ContentSlug;
@@ -259,6 +260,66 @@ final class ContentAttachmentRuntimeTest extends TestCase
             ->table('larena_content_item_revision_attachments')
             ->where('item_ref', $item->itemRef->value)
             ->where('revision', 2)
+            ->count());
+    }
+
+    public function test_invalid_logical_file_paths_never_enter_attach_or_detach_denial_audit(): void
+    {
+        $scenario = new ContentPlatformScenario($this->runtime);
+        $scenario->createArticleType();
+        $item = $scenario->createArticle('invalid-file-audit');
+        $beforeRevisionCount = (int) $this->runtime->connection
+            ->table('larena_content_item_revisions')
+            ->where('item_ref', $item->itemRef->value)
+            ->count();
+
+        foreach (
+            [
+                'content.attachment.attach' => '/etc/passwd-attach-private-canary',
+                'content.attachment.detach' => '/etc/passwd-detach-private-canary',
+            ] as $operation => $privatePathCanary
+        ) {
+            try {
+                if ($operation === 'content.attachment.attach') {
+                    $this->runtime->items->attach(
+                        $item->itemRef,
+                        1,
+                        $privatePathCanary,
+                        'hero',
+                        $this->runtime->actor(),
+                    );
+                } else {
+                    $this->runtime->items->detach(
+                        $item->itemRef,
+                        1,
+                        $privatePathCanary,
+                        'hero',
+                        $this->runtime->actor(),
+                    );
+                }
+                self::fail("{$operation} accepted a filesystem path as a logical-file reference.");
+            } catch (ContentRejected $exception) {
+                self::assertSame('logical_file_ref_invalid', $exception->reasonCode());
+            }
+
+            $event = $this->runtime->connection
+                ->table('larena_audit_events')
+                ->where('source_package', 'larena/content')
+                ->where('event_type', 'content.operation.denied')
+                ->orderByDesc('id')
+                ->first();
+            self::assertNotNull($event);
+            $payloadJson = (string) $event->payload;
+            $payload = json_decode($payloadJson, true, 32, JSON_THROW_ON_ERROR);
+            self::assertSame($operation, $payload['operation'] ?? null);
+            self::assertSame('logical_file_ref_invalid', $payload['reason_code'] ?? null);
+            self::assertArrayNotHasKey('logical_file_ref', $payload);
+            self::assertStringNotContainsString($privatePathCanary, $payloadJson);
+        }
+
+        self::assertSame($beforeRevisionCount, (int) $this->runtime->connection
+            ->table('larena_content_item_revisions')
+            ->where('item_ref', $item->itemRef->value)
             ->count());
     }
 }

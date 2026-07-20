@@ -20,7 +20,7 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
 
     public function testFrozenCorrectionConstantsAreExplicit(): void
     {
-        self::assertCount(16, ContentAccessOperationCatalog::codes());
+        self::assertCount(18, ContentAccessOperationCatalog::codes());
         self::assertNotContains('content.public.read', ContentAccessOperationCatalog::codes());
         self::assertSame(65_536, ContentFieldDefinition::MAX_STRING_CODE_POINTS);
         self::assertSame(100, ContentTypeVersion::MAX_FIELDS);
@@ -139,7 +139,7 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
         );
     }
 
-    public function testAcceptedLaunchReceiptsAreClonePortable(): void
+    public function testCurrentImplementationReceiptsAreClonePortableAndBounded(): void
     {
         $root = dirname(__DIR__, 2);
         $context = json_decode(
@@ -153,21 +153,22 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
         $toolchain = $context['runtime_toolchain'] ?? null;
         self::assertIsArray($actionGate);
         self::assertIsArray($toolchain);
-        $actionGateRef = $actionGate['evidence_ref'] ?? null;
         $toolchainRef = $toolchain['report_ref'] ?? null;
-        self::assertIsString($actionGateRef);
         self::assertIsString($toolchainRef);
-        self::assertFalse(str_starts_with($actionGateRef, '/'));
-        self::assertMatchesRegularExpression(
-            '/\Asource\/output\/action-gates\/action-gate-report-[0-9]{14}\.json\z/D',
-            $actionGateRef,
-        );
+        self::assertSame('not_required', $actionGate['status'] ?? null);
+        self::assertArrayNotHasKey('evidence_ref', $actionGate);
+        self::assertFalse(str_starts_with($toolchainRef, '/'));
         self::assertSame(
-            'docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/tests.md',
+            'docs/project-management/evidence/data-content/content-model-administration-api-v1/tests.md',
             $toolchainRef,
         );
         self::assertFileExists($root.'/'.$toolchainRef);
-        self::assertSame('pushed_exact_remote_parity', $context['remote_push_status'] ?? null);
+        self::assertFalse($context['review_completed'] ?? true);
+        self::assertSame('pending', $context['independent_review_verdict'] ?? null);
+        self::assertSame(
+            'not_requested_in_content_owner_scope',
+            $context['remote_push_status'] ?? null,
+        );
     }
 
     /**

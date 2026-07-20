@@ -1,0 +1,24 @@
+{
+  "schema": "simai.graph_sync_proposal.v1",
+  "proposal_id": "larena-content-model-administration-api-v1-2026-07-20",
+  "owner": "larena",
+  "source_package": "larena/content",
+  "source_specs_commit": "b5ea1bc2386544d4a6f4e4af4ce172a28988f0be",
+  "source_package_base_commit": "4f19197636b3878ac0732f0229cd898291bdd3cc",
+  "evidence_ref": "docs/project-management/evidence/data-content/content-model-administration-api-v1/",
+  "readiness": "content_owner_verification_ready_pending_independent_review_and_root_acceptance",
+  "proposed_capabilities": [
+    "content.type_schema_versioning.implementation_candidate",
+    "content.admin_api_v1.implementation_candidate",
+    "content.search_projection.lazy_factory"
+  ],
+  "canonical_update_allowed": false,
+  "apply_requested": false,
+  "nonclaims": {
+    "production_ready": false,
+    "frontend_ready": false,
+    "release_or_update_server_ready": false,
+    "all_packages_ready": false
+  },
+  "next_owner_action": "Apply only after independent Content review and exact Root integration acceptance."
+}

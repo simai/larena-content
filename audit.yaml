@@ -7,6 +7,12 @@ events:
   - type: content.type.created
     category: content_schema
     severity: security
+  - type: content.type.version.previewed
+    category: content_schema
+    severity: security
+  - type: content.type.versioned
+    category: content_schema
+    severity: security
   - type: content.item.created
     category: content_lifecycle
     severity: security
@@ -48,6 +54,10 @@ allowed_payload_fields:
   - status
   - visibility
   - field_count
+  - item_count
+  - source_version
+  - target_version
+  - added_optional_count
   - attachment_count
   - correlation_id
   - timestamp

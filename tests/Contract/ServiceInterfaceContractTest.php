@@ -11,6 +11,7 @@ use Larena\Content\Contracts\ContentSearchSourceProvider;
 use Larena\Content\Contracts\ContentTypeService;
 use Larena\Content\Contracts\PublishedContentReader;
 use Larena\Content\Tests\TestCase;
+use Larena\Content\ValueObjects\ContentType;
 use Larena\Dataview\Contracts\DataviewSourceProvider;
 use Larena\Search\Contracts\ReindexSource;
 use ReflectionClass;
@@ -21,8 +22,15 @@ final class ServiceInterfaceContractTest extends TestCase
     public function test_type_service_exposes_head_and_exact_schema_version_reads(): void
     {
         self::assertSame(
-            ['create', 'list', 'read', 'version'],
+            ['create', 'createVersion', 'list', 'previewVersion', 'read', 'version', 'versions'],
             $this->publicMethodNames(ContentTypeService::class),
+        );
+        self::assertSame(
+            ContentType::class,
+            (string) (new ReflectionMethod(
+                ContentTypeService::class,
+                'createVersion',
+            ))->getReturnType(),
         );
     }
 
@@ -33,6 +41,7 @@ final class ServiceInterfaceContractTest extends TestCase
                 'attach',
                 'attachments',
                 'create',
+                'currentAttachments',
                 'detach',
                 'list',
                 'publish',

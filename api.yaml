@@ -1,0 +1,811 @@
+schema: larena.api.contract.v1
+package: larena/content
+version: 1.0.0
+operations:
+  - key: content.type_admin.list
+    method: GET
+    path: /api/v1/admin/content/types
+    handler: {operation_ref: content.type_admin.list}
+    auth: &admin_auth {channels: [admin_session]}
+    csrf: &read_csrf {required: false}
+    access: {operations: [content.type.list]}
+    request:
+      path: &empty_object {type: object, additionalProperties: false, properties: {}, required: []}
+      query:
+        type: object
+        additionalProperties: false
+        properties:
+          limit: &page_limit {type: integer, minimum: 1, maximum: 100}
+          after_type_key: &type_key_optional
+            {type: string, minLength: 1, maxLength: 64, pattern: '^[a-z][a-z0-9]*(?:[._][a-z0-9]+)*$'}
+        required: []
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          items:
+            type: array
+            items: &type_summary
+              type: object
+              additionalProperties: false
+              properties:
+                type_key: &type_key
+                  {type: string, minLength: 1, maxLength: 64, pattern: '^[a-z][a-z0-9]*(?:[._][a-z0-9]+)*$'}
+                current_version: &positive_int {type: integer, minimum: 1}
+              required: [type_key, current_version]
+          pagination: &type_pagination
+            type: object
+            additionalProperties: false
+            properties:
+              limit: *page_limit
+              after_type_key: &nullable_type_key
+                {type: [string, "null"], maxLength: 64, pattern: '^[a-z][a-z0-9]*(?:[._][a-z0-9]+)*$'}
+              next_after_type_key: *nullable_type_key
+              has_more: &boolean {type: boolean}
+            required: [limit, after_type_key, next_after_type_key, has_more]
+        required: [items, pagination]
+    execution: &read_execution {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: &read_idempotency {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: &read_rate {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.type_admin.list, summary_fields: [query.limit, query.after_type_key]}
+    lifecycle: &draft_v1 {state: draft, version: v1}
+    docs: {summary: List Content types, description: Returns a bounded page of Content type heads., tags: [Content]}
+
+  - key: content.type_admin.read
+    method: GET
+    path: /api/v1/admin/content/types/{type_key}
+    handler: {operation_ref: content.type_admin.read}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.type.read]}
+    request:
+      path: &type_path
+        type: object
+        additionalProperties: false
+        properties: {type_key: *type_key}
+        required: [type_key]
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          type: &type_detail
+            type: object
+            additionalProperties: false
+            properties:
+              type_key: *type_key
+              current_version: {type: integer, minimum: 1}
+              version: &type_version
+                type: object
+                additionalProperties: false
+                properties:
+                  type_key: *type_key
+                  version: {type: integer, minimum: 1}
+                  schema_hash: &sha256 {type: string, minLength: 64, maxLength: 64, pattern: '^[0-9a-f]{64}$'}
+                  fields:
+                    type: array
+                    items: &field_definition
+                      type: object
+                      additionalProperties: false
+                      properties:
+                        key: &field_key {type: string, minLength: 1, maxLength: 64, pattern: '^[a-z][a-z0-9_]*$'}
+                        property_type: &property_type {type: string, enum: [string, integer, boolean]}
+                        visibility: &field_visibility {type: string, enum: [public, private, admin_only]}
+                        required: *boolean
+                        constraints: &constraints
+                          type: object
+                          additionalProperties: false
+                          properties:
+                            min_length: {type: integer, minimum: 0, maximum: 65536}
+                            max_length: {type: integer, minimum: 0, maximum: 65536}
+                            min: {type: integer}
+                            max: {type: integer}
+                          required: []
+                      required: [key, property_type, visibility, required, constraints]
+                  projection: &projection
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      version: {type: integer, enum: [1]}
+                      title_field: *field_key
+                      snippet_field: &nullable_field_key
+                        {type: [string, "null"], maxLength: 64, pattern: '^[a-z][a-z0-9_]*$'}
+                      searchable_fields: {type: array, items: *field_key}
+                    required: [version, title_field, snippet_field, searchable_fields]
+                  safe_metadata: &safe_metadata
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      label: &nullable_text {type: [string, "null"], maxLength: 4096}
+                      plural_label: *nullable_text
+                      description: *nullable_text
+                      icon: *nullable_text
+                      group: *nullable_text
+                      sort: {type: [integer, "null"]}
+                      hidden: {type: [boolean, "null"]}
+                    required: []
+                  created_by: &actor_ref
+                    {type: string, minLength: 21, maxLength: 64, pattern: '^user:admin_identity:[1-9][0-9]*$'}
+                  created_at: &timestamp {type: string, minLength: 20, maxLength: 40}
+                required: [type_key, version, schema_hash, fields, projection, safe_metadata, created_by, created_at]
+            required: [type_key, current_version, version]
+        required: [type]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.type_admin.read, summary_fields: [path.type_key]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Read Content type, description: Returns the current immutable Content type version., tags: [Content]}
+
+  - key: content.type_admin.create
+    method: POST
+    path: /api/v1/admin/content/types
+    handler: {operation_ref: content.type_admin.create}
+    auth: {channels: [admin_session]}
+    csrf: &write_csrf {required: true}
+    access: {operations: [content.type.create, storage.schema.create]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: &type_create_body
+        type: object
+        additionalProperties: false
+        properties:
+          type_key: *type_key
+          fields: {type: array, items: *field_definition}
+          projection: *projection
+          safe_metadata: *safe_metadata
+        required: [type_key, fields, projection, safe_metadata]
+    response:
+      status: 201
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {type: *type_summary}
+        required: [type]
+    execution: &write_execution {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: &write_idempotency {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: &write_rate {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.type_admin.create, summary_fields: [body.type_key]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Create Content type, description: Creates Content type version one., tags: [Content]}
+
+  - key: content.type_admin.versions.list
+    method: GET
+    path: /api/v1/admin/content/types/{type_key}/versions
+    handler: {operation_ref: content.type_admin.versions.list}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.type.read]}
+    request:
+      path: *type_path
+      query:
+        type: object
+        additionalProperties: false
+        properties:
+          limit: *page_limit
+          after_version: {type: integer, minimum: 1}
+        required: []
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          items: {type: array, items: *type_version}
+          pagination: &version_pagination
+            type: object
+            additionalProperties: false
+            properties:
+              limit: *page_limit
+              after_version: &nullable_positive_int {type: [integer, "null"], minimum: 1}
+              next_after_version: *nullable_positive_int
+              has_more: *boolean
+            required: [limit, after_version, next_after_version, has_more]
+        required: [items, pagination]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.type_admin.versions.list, summary_fields: [path.type_key, query.limit, query.after_version]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: List Content type versions, description: Returns immutable schema versions., tags: [Content]}
+
+  - key: content.type_admin.versions.read
+    method: GET
+    path: /api/v1/admin/content/types/{type_key}/versions/{version}
+    handler: {operation_ref: content.type_admin.versions.read}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.type.read]}
+    request:
+      path: &type_version_path
+        type: object
+        additionalProperties: false
+        properties: {type_key: *type_key, version: {type: integer, minimum: 1}}
+        required: [type_key, version]
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {version: *type_version}
+        required: [version]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.type_admin.versions.read, summary_fields: [path.type_key, path.version]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Read Content type version, description: Returns one exact immutable schema version., tags: [Content]}
+
+  - key: content.type_admin.versions.preview
+    method: POST
+    path: /api/v1/admin/content/types/{type_key}/versions/preview
+    handler: {operation_ref: content.type_admin.versions.preview}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.type.version.preview, content.type.read, storage.schema_migration.diff, storage.record.read]}
+    request:
+      path: *type_path
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: &type_version_body
+        type: object
+        additionalProperties: false
+        properties:
+          expected_version: {type: integer, minimum: 1}
+          fields: {type: array, items: *field_definition}
+          projection: *projection
+          safe_metadata: *safe_metadata
+        required: [expected_version, fields, projection, safe_metadata]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          compatibility: &compatibility
+            type: object
+            additionalProperties: false
+            properties:
+              type_key: *type_key
+              source_version: {type: integer, minimum: 1}
+              source_schema_hash: *sha256
+              target_version: {type: integer, minimum: 1}
+              target_schema_hash: *sha256
+              compatible: *boolean
+              compatibility_class: {type: string, minLength: 1, maxLength: 64}
+              added_optional_field_count: {type: integer, minimum: 0, maximum: 100}
+              item_count: {type: integer, minimum: 0}
+              item_heads_hash: *sha256
+              storage_record_heads_hash: *sha256
+              reason_codes: {type: array, items: {type: string, minLength: 1, maxLength: 96}}
+            required: [type_key, source_version, source_schema_hash, target_version, target_schema_hash, compatible, compatibility_class, added_optional_field_count, item_count, item_heads_hash, storage_record_heads_hash, reason_codes]
+        required: [compatibility]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.type_admin.versions.preview, summary_fields: [path.type_key, body.expected_version]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Preview Content schema version, description: Verifies a full strictly additive candidate without domain mutation., tags: [Content]}
+
+  - key: content.type_admin.versions.create
+    method: POST
+    path: /api/v1/admin/content/types/{type_key}/versions
+    handler: {operation_ref: content.type_admin.versions.create}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.type.version.create, content.type.read, storage.schema_migration.diff, storage.schema_migration.plan, storage.schema_migration.dispatch, storage.record.read]}
+    request: {path: *type_path, query: {type: object, additionalProperties: false, properties: {}, required: []}, body: *type_version_body}
+    response:
+      status: 201
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {type: *type_summary}
+        required: [type]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.type_admin.versions.create, summary_fields: [path.type_key, body.expected_version]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Create Content schema version, description: Atomically migrates all current item heads to one additive schema version., tags: [Content]}
+
+  - key: content.item_admin.list
+    method: GET
+    path: /api/v1/admin/content/items
+    handler: {operation_ref: content.item_admin.list}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.item.list]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query:
+        type: object
+        additionalProperties: false
+        properties:
+          limit: *page_limit
+          after_item_ref: &item_ref_optional
+            {type: string, minLength: 49, maxLength: 49, pattern: '^content:item:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'}
+          type_key: *type_key_optional
+          locale: &locale {type: string, minLength: 2, maxLength: 16, pattern: '^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$'}
+          status: &status {type: string, enum: [draft, published]}
+          visibility: &visibility {type: string, enum: [public, private]}
+        required: []
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          items:
+            type: array
+            items: &item_summary
+              type: object
+              additionalProperties: false
+              properties:
+                item_ref: &item_ref
+                  {type: string, minLength: 49, maxLength: 49, pattern: '^content:item:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'}
+                type_key: *type_key
+                locale: *locale
+                current_revision: {type: integer, minimum: 1}
+                current_slug: &slug {type: string, minLength: 1, maxLength: 160, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'}
+                current_status: *status
+                current_visibility: *visibility
+                published_revision: *nullable_positive_int
+                published_slug: &nullable_slug
+                  {type: [string, "null"], maxLength: 160, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'}
+                published_at: &nullable_timestamp {type: [string, "null"], maxLength: 40}
+                has_unpublished_changes: *boolean
+              required: [item_ref, type_key, locale, current_revision, current_slug, current_status, current_visibility, published_revision, published_slug, published_at, has_unpublished_changes]
+          pagination: &item_pagination
+            type: object
+            additionalProperties: false
+            properties:
+              limit: *page_limit
+              after_item_ref: &nullable_item_ref
+                {type: [string, "null"], maxLength: 49, pattern: '^content:item:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'}
+              next_after_item_ref: *nullable_item_ref
+              has_more: *boolean
+            required: [limit, after_item_ref, next_after_item_ref, has_more]
+        required: [items, pagination]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.item_admin.list, summary_fields: [query.limit, query.after_item_ref, query.type_key, query.locale, query.status, query.visibility]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: List Content items, description: Returns a bounded page of editable item heads., tags: [Content]}
+
+  - key: content.item_admin.read
+    method: GET
+    path: /api/v1/admin/content/items/{item_ref}
+    handler: {operation_ref: content.item_admin.read}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.item.read, content.revision.read, content.type.read, storage.record.read]}
+    request:
+      path: &item_path
+        type: object
+        additionalProperties: false
+        properties: {item_ref: *item_ref}
+        required: [item_ref]
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          item: &item_detail
+            type: object
+            additionalProperties: false
+            properties:
+              item_ref: *item_ref
+              type_key: *type_key
+              locale: *locale
+              current_revision: {type: integer, minimum: 1}
+              current_slug: *slug
+              current_status: *status
+              current_visibility: *visibility
+              published_revision: *nullable_positive_int
+              published_slug: *nullable_slug
+              published_at: *nullable_timestamp
+              has_unpublished_changes: *boolean
+              revision: &revision_detail
+                type: object
+                additionalProperties: false
+                properties:
+                  item_ref: *item_ref
+                  revision: {type: integer, minimum: 1}
+                  type_key: *type_key
+                  locale: *locale
+                  type_version: {type: integer, minimum: 1}
+                  slug: *slug
+                  status: *status
+                  visibility: *visibility
+                  attachment_count: {type: integer, minimum: 0, maximum: 100}
+                  created_by: *actor_ref
+                  created_at: *timestamp
+                  values:
+                    type: array
+                    items: &typed_value
+                      type: object
+                      additionalProperties: false
+                      properties:
+                        key: *field_key
+                        value: {type: [string, integer, boolean, "null"]}
+                      required: [key, value]
+                required: [item_ref, revision, type_key, locale, type_version, slug, status, visibility, attachment_count, created_by, created_at, values]
+            required: [item_ref, type_key, locale, current_revision, current_slug, current_status, current_visibility, published_revision, published_slug, published_at, has_unpublished_changes, revision]
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.item_admin.read, summary_fields: [path.item_ref]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Read Content item, description: Returns the editable head and exact current typed revision., tags: [Content]}
+
+  - key: content.item_admin.create
+    method: POST
+    path: /api/v1/admin/content/items
+    handler: {operation_ref: content.item_admin.create}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.item.create, storage.record.create]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties:
+          type_key: *type_key
+          locale: *locale
+          slug: *slug
+          visibility: *visibility
+          values: &typed_values {type: array, items: *typed_value}
+        required: [type_key, locale, slug, visibility, values]
+    response:
+      status: 201
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.create, summary_fields: [body.type_key, body.locale, body.slug, body.visibility]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Create Content item, description: Creates one private administration draft revision., tags: [Content]}
+
+  - key: content.item_admin.update
+    method: PUT
+    path: /api/v1/admin/content/items/{item_ref}
+    handler: {operation_ref: content.item_admin.update}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.item.update, storage.record.update]}
+    request:
+      path: *item_path
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: &item_update_body
+        type: object
+        additionalProperties: false
+        properties:
+          expected_revision: {type: integer, minimum: 1}
+          slug: *slug
+          visibility: *visibility
+          values: *typed_values
+        required: [expected_revision, slug, visibility, values]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.update, summary_fields: [path.item_ref, body.expected_revision, body.slug, body.visibility]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Update Content item, description: CAS-appends one draft item revision., tags: [Content]}
+
+  - key: content.item_admin.revisions.list
+    method: GET
+    path: /api/v1/admin/content/items/{item_ref}/revisions
+    handler: {operation_ref: content.item_admin.revisions.list}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.revision.list]}
+    request:
+      path: *item_path
+      query:
+        type: object
+        additionalProperties: false
+        properties: {limit: *page_limit, after_revision: {type: integer, minimum: 1}}
+        required: []
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          items:
+            type: array
+            items: &revision_summary
+              type: object
+              additionalProperties: false
+              properties:
+                item_ref: *item_ref
+                revision: {type: integer, minimum: 1}
+                type_key: *type_key
+                locale: *locale
+                type_version: {type: integer, minimum: 1}
+                slug: *slug
+                status: *status
+                visibility: *visibility
+                attachment_count: {type: integer, minimum: 0, maximum: 100}
+                created_by: *actor_ref
+                created_at: *timestamp
+              required: [item_ref, revision, type_key, locale, type_version, slug, status, visibility, attachment_count, created_by, created_at]
+          pagination: &revision_pagination
+            type: object
+            additionalProperties: false
+            properties:
+              limit: *page_limit
+              after_revision: *nullable_positive_int
+              next_after_revision: *nullable_positive_int
+              has_more: *boolean
+            required: [limit, after_revision, next_after_revision, has_more]
+        required: [items, pagination]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.item_admin.revisions.list, summary_fields: [path.item_ref, query.limit, query.after_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: List Content revisions, description: Returns immutable revision summaries., tags: [Content]}
+
+  - key: content.item_admin.revisions.read
+    method: GET
+    path: /api/v1/admin/content/items/{item_ref}/revisions/{revision}
+    handler: {operation_ref: content.item_admin.revisions.read}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.revision.read, content.type.read, storage.record.read]}
+    request:
+      path: &item_revision_path
+        type: object
+        additionalProperties: false
+        properties: {item_ref: *item_ref, revision: {type: integer, minimum: 1}}
+        required: [item_ref, revision]
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {revision: *revision_detail}
+        required: [revision]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.item_admin.revisions.read, summary_fields: [path.item_ref, path.revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Read Content revision, description: Returns one exact typed immutable revision., tags: [Content]}
+
+  - key: content.item_admin.revisions.restore
+    method: POST
+    path: /api/v1/admin/content/items/{item_ref}/revisions/{revision}/restore
+    handler: {operation_ref: content.item_admin.revisions.restore}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.item.restore, storage.record.read, storage.record.update]}
+    request:
+      path: *item_revision_path
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: &expected_revision_body
+        type: object
+        additionalProperties: false
+        properties: {expected_revision: {type: integer, minimum: 1}}
+        required: [expected_revision]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.revisions.restore, summary_fields: [path.item_ref, path.revision, body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Restore Content revision, description: Restores historical values through the current schema as a new draft., tags: [Content]}
+
+  - key: content.item_admin.publish
+    method: POST
+    path: /api/v1/admin/content/items/{item_ref}/publish
+    handler: {operation_ref: content.item_admin.publish}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.item.publish]}
+    request: {path: *item_path, query: {type: object, additionalProperties: false, properties: {}, required: []}, body: *expected_revision_body}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.publish, summary_fields: [path.item_ref, body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Publish Content item, description: Publishes the exact current safe projection through CAS., tags: [Content]}
+
+  - key: content.item_admin.unpublish
+    method: POST
+    path: /api/v1/admin/content/items/{item_ref}/unpublish
+    handler: {operation_ref: content.item_admin.unpublish}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.item.unpublish]}
+    request: {path: *item_path, query: {type: object, additionalProperties: false, properties: {}, required: []}, body: *expected_revision_body}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.unpublish, summary_fields: [path.item_ref, body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Unpublish Content item, description: Removes public and Search exposure atomically., tags: [Content]}
+
+  - key: content.item_admin.attachments.list
+    method: GET
+    path: /api/v1/admin/content/items/{item_ref}/attachments
+    handler: {operation_ref: content.item_admin.attachments.list}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.attachment.list]}
+    request: {path: *item_path, query: {type: object, additionalProperties: false, properties: {}, required: []}, body: {type: object, additionalProperties: false, properties: {}, required: []}}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          item_ref: *item_ref
+          revision: {type: integer, minimum: 1}
+          items:
+            type: array
+            items: &attachment
+              type: object
+              additionalProperties: false
+              properties:
+                logical_file_ref: &logical_file_ref
+                  {type: string, minLength: 36, maxLength: 36, pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'}
+                role: &attachment_role {type: string, minLength: 1, maxLength: 64, pattern: '^[a-z][a-z0-9._-]*$'}
+                position: &attachment_position {type: integer, minimum: 0, maximum: 99}
+              required: [logical_file_ref, role, position]
+        required: [item_ref, revision, items]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.item_admin.attachments.list, summary_fields: [path.item_ref]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: List Content attachments, description: Returns the exact current ordered attachment manifest., tags: [Content]}
+
+  - key: content.item_admin.attachments.attach
+    method: POST
+    path: /api/v1/admin/content/items/{item_ref}/attachments
+    handler: {operation_ref: content.item_admin.attachments.attach}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.attachment.attach]}
+    request:
+      path: *item_path
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties:
+          expected_revision: {type: integer, minimum: 1}
+          logical_file_ref: *logical_file_ref
+          role: *attachment_role
+        required: [expected_revision, logical_file_ref, role]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.attachments.attach, summary_fields: [path.item_ref, body.expected_revision, body.logical_file_ref, body.role]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Attach logical file, description: Appends one existing logical-file reference as a new draft revision., tags: [Content]}
+
+  - key: content.item_admin.attachments.detach
+    method: DELETE
+    path: /api/v1/admin/content/items/{item_ref}/attachments/{logical_file_ref}
+    handler: {operation_ref: content.item_admin.attachments.detach}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.attachment.detach]}
+    request:
+      path:
+        type: object
+        additionalProperties: false
+        properties: {item_ref: *item_ref, logical_file_ref: *logical_file_ref}
+        required: [item_ref, logical_file_ref]
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties: {expected_revision: {type: integer, minimum: 1}, role: *attachment_role}
+        required: [expected_revision, role]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.attachments.detach, summary_fields: [path.item_ref, path.logical_file_ref, body.expected_revision, body.role]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Detach logical file, description: Removes one logical-file role binding as a new draft revision., tags: [Content]}
+
+  - key: content.item_admin.attachments.reorder
+    method: PUT
+    path: /api/v1/admin/content/items/{item_ref}/attachments
+    handler: {operation_ref: content.item_admin.attachments.reorder}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.attachment.reorder]}
+    request:
+      path: *item_path
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties:
+          expected_revision: {type: integer, minimum: 1}
+          attachments: {type: array, items: *attachment}
+        required: [expected_revision, attachments]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.attachments.reorder, summary_fields: [path.item_ref, body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Reorder Content attachments, description: Replaces only the deterministic order of the current manifest., tags: [Content]}

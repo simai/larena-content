@@ -6,16 +6,17 @@ use Larena\Content\Access\ContentAccessOperationCatalog;
 use Larena\Content\Database\ContentOwnedTableShapeGuard;
 use Larena\Content\Dataview\ContentDataviewContract;
 use Larena\Content\Search\ContentSearchContract;
+use Larena\Rest\Registry\PackageApiContractLoader;
 use Symfony\Component\Yaml\Yaml;
 
 const PACKAGE = 'larena/content';
-const SPECS_COMMIT = '2c3c3106a4afb98925dbf8192cfaadb57ca4d4a9';
-const GOVERNING_SPECS_BASE_COMMIT = '8a5a007513f972ab3d9b89f427e3bb9a0a68a482';
-const BASE_COMMIT = '11fbc66eb23523549f061f8210d3f195f614ce55';
-const CODING_BRANCH = 'codex/content-platform-v1-guarded-runtime';
-const LAUNCH_RECORD = 'specs/implementation-planning/launch-records/content-batch-2-guarded-runtime.json';
-const EVIDENCE_PATH = 'docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/';
-const ALLOWED_FILES_HASH = 'ae223b21e2a7bedc729a0237e8ca8f656585869a9741a0a1fe9bb618e0b3467f';
+const SPECS_COMMIT = 'b5ea1bc2386544d4a6f4e4af4ce172a28988f0be';
+const GOVERNING_SPECS_BASE_COMMIT = 'f722a4b1a8833879755d51f8076a761596b84cc3';
+const BASE_COMMIT = '4f19197636b3878ac0732f0229cd898291bdd3cc';
+const CODING_BRANCH = 'codex/content-model-administration-api-v1';
+const LAUNCH_RECORD = 'specs/implementation-planning/content-model-administration-api-v1-contract.json';
+const EVIDENCE_PATH = 'docs/project-management/evidence/data-content/content-model-administration-api-v1/';
+const ALLOWED_FILES_HASH = '2c5656c081ae153de92ed50d3935f9c3fc2b4da5a79eadd4960fc3dd587e8556';
 const FORBIDDEN_FILES_HASH = 'c58334343a8099b59108ac534dbe8ab3042f9b4beef9580aba88bf9dddd7fedf';
 const FORBIDDEN_BEHAVIOR_HASH = 'c9a82832d0f43818724ead3d3eb9da9e3b7ce2bac449b9f610d1c416e3ee80cd';
 
@@ -23,8 +24,10 @@ $errors = [];
 $requiredFiles = [
     '.larena/spec-ref.json',
     '.larena/launch-context.json',
+    'CHANGELOG.md',
     'README.md',
     'access.yaml',
+    'api.yaml',
     'audit.yaml',
     'search.yaml',
     'composer.json',
@@ -51,22 +54,39 @@ $requiredFiles = [
     'src/Http/Controllers/PublishedContentController.php',
     'src/Persistence/DatabaseContentRepository.php',
     'src/Providers/ContentServiceProvider.php',
+    'src/Rest/ContentAdminApiOperationHandler.php',
+    'src/Rest/ContentAdminReadModel.php',
+    'src/Rest/ContentAdminValueCodec.php',
     'src/Runtime/ContentParticipantGuard.php',
     'src/Runtime/PublishedContentProjectionBuilder.php',
     'src/Search/ContentSearchContract.php',
+    'src/Search/ContainerContentSearchSourceFactory.php',
     'src/Search/DatabaseContentSearchSourceProvider.php',
     'src/Services/DatabaseContentItemService.php',
     'src/Services/DatabaseContentTypeService.php',
     'src/Services/DatabasePublishedContentReader.php',
+    'src/Storage/ContentStorageGateway.php',
+    'src/Storage/ContentStorageSchemaEvolutionAuthority.php',
+    'src/ValueObjects/ContentAttachmentPage.php',
+    'src/ValueObjects/ContentTypeSchemaCompatibilityReport.php',
+    'src/ValueObjects/ContentTypeVersionPage.php',
+    'src/ValueObjects/ContentTypeVersionQuery.php',
+    'tests/Contract/ContentAdminApiContractTest.php',
     'tests/Feature/ContentDataviewRuntimeTest.php',
     'tests/Feature/ContentProviderBindingTest.php',
     'tests/Feature/ContentSearchRuntimeTest.php',
+    'tests/Feature/ContentAdminApiHandlerRuntimeTest.php',
+    'tests/Feature/ContentTypeSchemaVersionRuntimeTest.php',
     'tests/Feature/PublicContentHttpTest.php',
     'tests/Feature/PublishedContentHttpTest.php',
     'tests/Integration/ContentMigrationShapeTest.php',
     'tests/Integration/ContentPlatformSQLiteTest.php',
     'tests/Support/ContentRuntimeHarness.php',
     'tests/Support/ContentTestDatabase.php',
+    'tests/Unit/ContentAdminHandlerLifetimeTest.php',
+    'tests/Unit/ContentAdminValueCodecTest.php',
+    'docs/developer/README.md',
+    'docs/developer/content-model-administration-api-v1.md',
     'tools/larena-scope-check.php',
 ];
 
@@ -186,7 +206,7 @@ if (($specRef['package'] ?? null) !== PACKAGE) {
     $errors[] = '.larena/spec-ref.json package must be larena/content.';
 }
 if (($specRef['specs_commit'] ?? null) !== SPECS_COMMIT) {
-    $errors[] = '.larena/spec-ref.json must point to the exact guarded-runtime launch commit.';
+    $errors[] = '.larena/spec-ref.json must point to the exact API v1 Specs commit.';
 }
 if (($specRef['canonical_update_allowed'] ?? null) !== false) {
     $errors[] = '.larena/spec-ref.json must keep canonical_update_allowed=false.';
@@ -203,36 +223,34 @@ $launchExpectations = [
 ];
 foreach ($launchExpectations as $field => $expected) {
     if (($launchContext[$field] ?? null) !== $expected) {
-        $errors[] = "launch-context {$field} drifted from the guarded-runtime launch.";
+        $errors[] = "launch-context {$field} drifted from the API v1 implementation contract.";
     }
 }
 if (($launchContext['coding_started'] ?? null) !== true) {
     $errors[] = 'guarded-runtime coding_started must be true.';
 }
-if (!in_array(
-    $launchContext['status'] ?? null,
-    ['coding_started', 'review_ready', 'guarded_runtime_checkpoint_accepted'],
-    true,
-)) {
-    $errors[] = 'launch-context status is outside the guarded-runtime lifecycle.';
+if (($launchContext['status'] ?? null) !== 'implementation_verification_ready') {
+    $errors[] = 'launch-context status must be implementation_verification_ready.';
 }
 
 $expectedFeatures = [
     'content.type_registry',
+    'content.type_schema_versioning',
     'content.item_lifecycle',
     'content.revision_history',
     'content.slug_routing',
     'content.attachment_binding',
     'content.publication_projection',
     'content.search_projection',
+    'content.admin_api_v1',
 ];
 if (($launchContext['selected_features'] ?? null) !== $expectedFeatures) {
-    $errors[] = 'launch-context must contain the exact seven frozen Content features.';
+    $errors[] = 'launch-context must contain the exact nine API v1 Content features.';
 }
 
 foreach (
     [
-        ['allowed_files', 153, ALLOWED_FILES_HASH],
+        ['allowed_files', 171, ALLOWED_FILES_HASH],
         ['forbidden_files', 17, FORBIDDEN_FILES_HASH],
         ['forbidden_behavior', 21, FORBIDDEN_BEHAVIOR_HASH],
     ] as [$field, $count, $hash]
@@ -264,35 +282,14 @@ if (is_array($allowedFiles)) {
 }
 
 $actionGate = $launchContext['action_gate'] ?? [];
-$actionGatePath = is_array($actionGate) ? ($actionGate['evidence_ref'] ?? null) : null;
-$checkpointAccepted = ($launchContext['status'] ?? null) === 'guarded_runtime_checkpoint_accepted'
-    && ($launchContext['review_completed'] ?? null) === true
-    && ($launchContext['independent_review_verdict'] ?? null) === 'pass';
-if (!is_array($actionGate) || ($actionGate['status'] ?? null) !== 'success') {
-    $errors[] = 'package action gate must remain successful.';
-} elseif (
-    $checkpointAccepted
-    && (
-        !is_string($actionGatePath)
-        || preg_match(
-            '/\Asource\/output\/action-gates\/action-gate-report-[0-9]{14}\.json\z/D',
-            $actionGatePath,
-        ) !== 1
-    )
+if (!is_array($actionGate) || ($actionGate['status'] ?? null) !== 'not_required') {
+    $errors[] = 'local package implementation must record action_gate=not_required.';
+}
+if (
+    ($launchContext['review_completed'] ?? null) !== false
+    || ($launchContext['independent_review_verdict'] ?? null) !== 'pending'
 ) {
-    $errors[] = 'accepted checkpoint must retain a clone-portable ignored action-gate provenance reference.';
-} elseif (!is_string($actionGatePath) || !is_file($actionGatePath)) {
-    if (!$checkpointAccepted) {
-        $errors[] = 'package action gate evidence_ref must resolve to the local ignored report.';
-    }
-} elseif (!$checkpointAccepted) {
-    $actionGateReport = read_json_file($actionGatePath, $errors);
-    if (
-        ($actionGateReport['status'] ?? null) !== 'success'
-        || ($actionGateReport['repo'] ?? null) !== dirname(__DIR__)
-    ) {
-        $errors[] = 'package action gate report does not prove this repository preflight.';
-    }
+    $errors[] = 'package metadata must not pre-author the independent review verdict.';
 }
 
 $runtimeToolchain = $launchContext['runtime_toolchain'] ?? [];
@@ -300,35 +297,23 @@ $runtimeReportPath = is_array($runtimeToolchain) ? ($runtimeToolchain['report_re
 if (!is_array($runtimeToolchain) || ($runtimeToolchain['status'] ?? null) !== 'ok') {
     $errors[] = 'runtime toolchain must have status=ok.';
 } elseif (
-    $checkpointAccepted
-    && (
-        $runtimeReportPath !== EVIDENCE_PATH . 'tests.md'
-        || !is_file($runtimeReportPath)
-        || ($runtimeToolchain['php_version'] ?? null) !== '8.4.20'
-    )
+    $runtimeReportPath !== EVIDENCE_PATH . 'tests.md'
+    || !is_file($runtimeReportPath)
+    || ($runtimeToolchain['php_version'] ?? null) !== '8.3.31'
 ) {
-    $errors[] = 'accepted checkpoint runtime toolchain must resolve to the portable committed test receipt.';
-} elseif (!is_string($runtimeReportPath) || !is_file($runtimeReportPath)) {
-    if (!$checkpointAccepted) {
-        $errors[] = 'runtime toolchain report_ref must resolve to an exact report.';
-    }
-} elseif (!$checkpointAccepted) {
-    $runtimeReport = read_json_file($runtimeReportPath, $errors);
-    if (
-        ($runtimeReport['status'] ?? null) !== 'ok'
-        || ($runtimeReport['selected_php']['satisfies_php83'] ?? null) !== true
-    ) {
-        $errors[] = 'runtime toolchain report does not prove PHP 8.3 or newer.';
-    }
+    $errors[] = 'runtime toolchain must resolve to the current portable API v1 receipt.';
 }
 
 $expectedDirectRevisions = [
     'larena/access' => '8c0e75897fe422a8f4d97fc012f1d095ffdba3b2',
     'larena/audit' => 'ab2546b1a0fdd577faba895755a3d6c44f0f9da8',
+    'larena/auth' => '63bac556b36a25fe16885601aefe174d5d712c3a',
+    'larena/core' => '46f3bbc8baba0262117bc9b9519713ee21b1d981',
     'larena/dataview' => 'b84e964b4ed78e1ca08a46c88e7651b02744ee47',
     'larena/filesystem' => '6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f',
     'larena/property' => '92b6e915fc4c85239171dbbff6c3cb15d046cc99',
-    'larena/search' => 'e7206b2491991790edd2858c993d142184c749ef',
+    'larena/rest' => '174dc005002a5ba0e77f906d3e9143ce89a5fd2b',
+    'larena/search' => '9f5c1cf5d2b112751328520eee34826c19dd2535',
     'larena/storage' => '7645c0124999eeab6150edc0b0b949adc17be310',
 ];
 $launchRevisions = is_array($launchContext['dependency_revisions'] ?? null)
@@ -347,10 +332,13 @@ foreach (array_keys($expectedDirectRevisions) as $dependency) {
 }
 
 $expectedLockedRevisions = $expectedDirectRevisions + [
-    'larena/core' => '46f3bbc8baba0262117bc9b9519713ee21b1d981',
+    'larena/admin' => '540e171625cd6a58e8ced00a085abfb45d9ad781',
+    'larena/cockpit' => 'd8074d30727d5c124928b8e47466f063eb746dbf',
     'larena/layout' => 'cb5bdadf588cb8480972279bea3888500dbf9d6e',
     'larena/licensing' => '52d1215a25369cca17d5170bbfcae82d1f6c86d2',
+    'larena/link' => 'affc02abad5f3be568ae02c3678abe51d14575a9',
     'larena/ui' => '07fff2579344d7c77a28716a74071fb53f0bbfc9',
+    'larena/update' => '4c56bb8d26b6259ae71e58512ccadc2529accfec',
 ];
 $lockedPackages = array_merge(
     is_array($lock['packages'] ?? null) ? $lock['packages'] : [],
@@ -460,8 +448,54 @@ if (class_exists(ContentDataviewContract::class)) {
 }
 if (class_exists(ContentAccessOperationCatalog::class)) {
     $operationCodes = ContentAccessOperationCatalog::codes();
-    if (count($operationCodes) !== 16 || in_array('content.public.read', $operationCodes, true)) {
-        $errors[] = 'Content Access catalog must contain 16 protected operations and no public-read grant.';
+    if (count($operationCodes) !== 18 || in_array('content.public.read', $operationCodes, true)) {
+        $errors[] = 'Content Access catalog must contain 18 protected operations and no public-read grant.';
+    }
+}
+
+if (class_exists(PackageApiContractLoader::class)) {
+    try {
+        $apiContract = (new PackageApiContractLoader())->loadFile('api.yaml', PACKAGE);
+        $apiOperationKeys = array_map(
+            static fn ($operation): string => $operation->operationKey,
+            $apiContract->operations,
+        );
+        $expectedApiOperationKeys = [
+            'content.type_admin.list',
+            'content.type_admin.read',
+            'content.type_admin.create',
+            'content.type_admin.versions.list',
+            'content.type_admin.versions.read',
+            'content.type_admin.versions.preview',
+            'content.type_admin.versions.create',
+            'content.item_admin.list',
+            'content.item_admin.read',
+            'content.item_admin.create',
+            'content.item_admin.update',
+            'content.item_admin.revisions.list',
+            'content.item_admin.revisions.read',
+            'content.item_admin.revisions.restore',
+            'content.item_admin.publish',
+            'content.item_admin.unpublish',
+            'content.item_admin.attachments.list',
+            'content.item_admin.attachments.attach',
+            'content.item_admin.attachments.detach',
+            'content.item_admin.attachments.reorder',
+        ];
+        if ($apiOperationKeys !== $expectedApiOperationKeys) {
+            $errors[] = 'api.yaml must compile the exact ordered 20-operation API v1 catalog.';
+        }
+        foreach ($apiContract->operations as $operation) {
+            if (
+                $operation->handlerReference !== $operation->operationKey
+                || !str_starts_with($operation->path, '/api/v1/admin/content')
+                || $operation->authChannels !== ['admin_session']
+            ) {
+                $errors[] = "api.yaml operation {$operation->operationKey} drifted from the closed admin boundary.";
+            }
+        }
+    } catch (Throwable $exception) {
+        $errors[] = 'api.yaml does not compile through larena/rest: ' . $exception->getMessage();
     }
 }
 
@@ -488,7 +522,10 @@ foreach (
         'loadMigrationsFrom',
         'loadRoutesFrom',
         'AccessOperationRegistry::class',
+        'OperationHandlerRegistry::class',
+        'ContentAdminApiOperationHandler::registerLazy',
         'SearchSourceRegistry::class',
+        'ContainerContentSearchSourceFactory::class',
         'ContentDataviewSourceFactory::class',
         'PublishedContentReader::class',
     ] as $compositionMarker
@@ -503,12 +540,12 @@ $module = class_exists(Yaml::class)
     : [];
 if (
     ($module['package'] ?? null) !== PACKAGE
-    || ($module['status'] ?? null) !== 'guarded_runtime_candidate'
-    || ($module['batch'] ?? null) !== 'batch-2-content-guarded-runtime'
+    || ($module['status'] ?? null) !== 'implementation_candidate'
+    || ($module['batch'] ?? null) !== 'content-model-administration-api-v1'
     || ($module['features'] ?? null) !== $expectedFeatures
     || ($module['evidence']['path'] ?? null) !== EVIDENCE_PATH
 ) {
-    $errors[] = 'module.yaml must describe the exact guarded-runtime candidate.';
+    $errors[] = 'module.yaml must describe the exact API v1 implementation candidate.';
 }
 foreach (['runtime_ready', 'production_ready', 'frontend_ready', 'all_packages_ready'] as $nonclaim) {
     if (($module['nonclaims'][$nonclaim] ?? null) !== false) {
@@ -527,7 +564,7 @@ foreach (($access['operations'] ?? []) as $operation) {
 }
 if (
     ($access['package'] ?? null) !== PACKAGE
-    || count($accessCodes) !== 16
+    || count($accessCodes) !== 18
     || in_array('content.public.read', $accessCodes, true)
 ) {
     $errors[] = 'access.yaml must describe the exact protected catalog without public read.';
@@ -539,9 +576,9 @@ $audit = class_exists(Yaml::class)
 if (
     ($audit['package'] ?? null) !== PACKAGE
     || ($audit['storage_owner'] ?? null) !== 'larena/audit'
-    || count(is_array($audit['events'] ?? null) ? $audit['events'] : []) !== 10
+    || count(is_array($audit['events'] ?? null) ? $audit['events'] : []) !== 12
 ) {
-    $errors[] = 'audit.yaml must retain the ten-event larena/audit-owned boundary.';
+    $errors[] = 'audit.yaml must retain the twelve-event larena/audit-owned boundary.';
 }
 
 $search = class_exists(Yaml::class)
@@ -562,13 +599,15 @@ $readme = is_file('README.md') ? (string) file_get_contents('README.md') : '';
 foreach (
     [
         SPECS_COMMIT,
-        'guarded runtime',
+        'closed draft administrator API',
+        '20 operations',
+        'Type evolution',
         'does not claim production readiness',
         EVIDENCE_PATH,
     ] as $readmeMarker
 ) {
     if (!str_contains($readme, $readmeMarker)) {
-        $errors[] = "README.md is missing guarded-runtime marker: {$readmeMarker}";
+        $errors[] = "README.md is missing API v1 marker: {$readmeMarker}";
     }
 }
 if (str_contains($readme, 'interface-first')) {
@@ -582,4 +621,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-echo "Larena Content guarded-runtime package contract is valid.\n";
+echo "Larena Content Model Administration API v1 package contract is valid.\n";

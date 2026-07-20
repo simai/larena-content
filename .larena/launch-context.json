@@ -1,34 +1,41 @@
 {
   "schema": "larena.package_launch_context.v1",
   "package": "larena/content",
-  "launch_record_ref": "specs/implementation-planning/launch-records/content-batch-2-guarded-runtime.json",
+  "launch_record_ref": "specs/implementation-planning/content-model-administration-api-v1-contract.json",
   "specs_repo": "simai/larena-specs",
-  "specs_commit": "2c3c3106a4afb98925dbf8192cfaadb57ca4d4a9",
-  "launch_record_specs_base_commit": "8a5a007513f972ab3d9b89f427e3bb9a0a68a482",
-  "base_commit": "11fbc66eb23523549f061f8210d3f195f614ce55",
-  "branch": "codex/content-platform-v1-guarded-runtime",
+  "specs_commit": "b5ea1bc2386544d4a6f4e4af4ce172a28988f0be",
+  "launch_record_specs_base_commit": "f722a4b1a8833879755d51f8076a761596b84cc3",
+  "base_commit": "4f19197636b3878ac0732f0229cd898291bdd3cc",
+  "branch": "codex/content-model-administration-api-v1",
   "selected_features": [
     "content.type_registry",
+    "content.type_schema_versioning",
     "content.item_lifecycle",
     "content.revision_history",
     "content.slug_routing",
     "content.attachment_binding",
     "content.publication_projection",
-    "content.search_projection"
+    "content.search_projection",
+    "content.admin_api_v1"
   ],
   "dependency_revisions": {
-    "larena/storage": "7645c0124999eeab6150edc0b0b949adc17be310",
-    "larena/filesystem": "6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f",
-    "larena/property": "92b6e915fc4c85239171dbbff6c3cb15d046cc99",
     "larena/access": "8c0e75897fe422a8f4d97fc012f1d095ffdba3b2",
     "larena/audit": "ab2546b1a0fdd577faba895755a3d6c44f0f9da8",
-    "larena/search": "e7206b2491991790edd2858c993d142184c749ef",
-    "larena/dataview": "b84e964b4ed78e1ca08a46c88e7651b02744ee47"
+    "larena/auth": "63bac556b36a25fe16885601aefe174d5d712c3a",
+    "larena/core": "46f3bbc8baba0262117bc9b9519713ee21b1d981",
+    "larena/dataview": "b84e964b4ed78e1ca08a46c88e7651b02744ee47",
+    "larena/filesystem": "6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f",
+    "larena/property": "92b6e915fc4c85239171dbbff6c3cb15d046cc99",
+    "larena/rest": "174dc005002a5ba0e77f906d3e9143ce89a5fd2b",
+    "larena/search": "9f5c1cf5d2b112751328520eee34826c19dd2535",
+    "larena/storage": "7645c0124999eeab6150edc0b0b949adc17be310"
   },
   "allowed_files": [
     ".larena/launch-context.json",
     ".larena/spec-ref.json",
+    "CHANGELOG.md",
     "README.md",
+    "api.yaml",
     "access.yaml",
     "audit.yaml",
     "search.yaml",
@@ -65,10 +72,15 @@
     "src/Runtime/SystemContentClock.php",
     "src/Runtime/SystemContentIdGenerator.php",
     "src/Search/DatabaseContentSearchSourceProvider.php",
+    "src/Search/ContainerContentSearchSourceFactory.php",
     "src/Services/DatabaseContentItemService.php",
     "src/Services/DatabaseContentTypeService.php",
     "src/Services/DatabasePublishedContentReader.php",
     "src/Storage/ContentStorageGateway.php",
+    "src/Storage/ContentStorageSchemaEvolutionAuthority.php",
+    "src/Rest/ContentAdminApiOperationHandler.php",
+    "src/Rest/ContentAdminReadModel.php",
+    "src/Rest/ContentAdminValueCodec.php",
     "src/Contracts/ContentTypeService.php",
     "src/Contracts/ContentItemService.php",
     "src/Contracts/PublishedContentReader.php",
@@ -87,6 +99,9 @@
     "src/ValueObjects/ContentProjectionContract.php",
     "src/ValueObjects/ContentType.php",
     "src/ValueObjects/ContentTypeVersion.php",
+    "src/ValueObjects/ContentTypeVersionQuery.php",
+    "src/ValueObjects/ContentTypeVersionPage.php",
+    "src/ValueObjects/ContentTypeSchemaCompatibilityReport.php",
     "src/ValueObjects/ContentTypeQuery.php",
     "src/ValueObjects/ContentTypePage.php",
     "src/ValueObjects/ContentItem.php",
@@ -97,6 +112,7 @@
     "src/ValueObjects/ContentRevisionPage.php",
     "src/ValueObjects/ContentAttachmentReference.php",
     "src/ValueObjects/ContentAttachmentPlacement.php",
+    "src/ValueObjects/ContentAttachmentPage.php",
     "src/ValueObjects/ContentRouteReservation.php",
     "src/ValueObjects/ContentLogicalFileInspection.php",
     "src/ValueObjects/PublicContentAttachment.php",
@@ -128,6 +144,7 @@
     "tests/Contract/GuardedRuntimeCorrectionContractTest.php",
     "tests/Contract/ServiceInterfaceContractTest.php",
     "tests/Contract/ContentContractFixtureCoverageTest.php",
+    "tests/Contract/ContentAdminApiContractTest.php",
     "tests/Support/ContentRuntimeHarness.php",
     "tests/Support/ContentPlatformScenario.php",
     "tests/Support/ContentTestDatabase.php",
@@ -136,6 +153,8 @@
     "tests/Unit/ContentOwnedTableShapeGuardTest.php",
     "tests/Unit/ContentRuntimeLimitsTest.php",
     "tests/Unit/ContentServiceProviderTest.php",
+    "tests/Unit/ContentAdminHandlerLifetimeTest.php",
+    "tests/Unit/ContentAdminValueCodecTest.php",
     "tests/Feature/ContentAtomicityRuntimeTest.php",
     "tests/Feature/ContentAttachmentRuntimeTest.php",
     "tests/Feature/ContentAuthorizationRuntimeTest.php",
@@ -150,6 +169,8 @@
     "tests/Feature/PublicContentHttpTest.php",
     "tests/Feature/PublishedContentRuntimeTest.php",
     "tests/Feature/ContentProviderBindingTest.php",
+    "tests/Feature/ContentAdminApiHandlerRuntimeTest.php",
+    "tests/Feature/ContentTypeSchemaVersionRuntimeTest.php",
     "tests/Feature/PublishedContentHttpTest.php",
     "tests/Integration/ContentMigrationShapeTest.php",
     "tests/Integration/ContentPlatformSQLiteTest.php",
@@ -178,7 +199,9 @@
     "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/deviations.json",
     "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/code-review-feedback.md",
     "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/independent-review.md",
-    "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/graph-sync-proposal.json"
+    "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/graph-sync-proposal.json",
+    "docs/developer/README.md",
+    "docs/developer/content-model-administration-api-v1.md"
   ],
   "forbidden_files": [
     ".github/*",
@@ -222,37 +245,35 @@
     "release_tag_deployment_update_server_or_production_claim",
     "all_packages_readiness_claim"
   ],
-  "evidence_path": "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/",
-  "graph_sync_proposal_path": "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/graph-sync-proposal.json",
-  "status": "guarded_runtime_checkpoint_accepted",
+  "evidence_path": "docs/project-management/evidence/data-content/content-model-administration-api-v1/",
+  "graph_sync_proposal_path": "docs/project-management/evidence/data-content/content-model-administration-api-v1/graph-sync-proposal.json",
+  "status": "implementation_verification_ready",
   "coding_started": true,
   "repository_enforcement_installed": true,
   "repository_reset_pre_codegen": true,
-  "review_completed": true,
-  "independent_review_verdict": "pass",
+  "review_completed": false,
+  "independent_review_verdict": "pending",
   "independent_review_findings": {
-    "p0": 0,
-    "p1": 0,
-    "p2": 1
+    "p0": null,
+    "p1": null,
+    "p2": null
   },
   "action_gate": {
-    "status": "success",
-    "phase": "preflight",
-    "evidence_ref": "source/output/action-gates/action-gate-report-20260719180549.json"
+    "status": "not_required",
+    "reason": "reversible local package implementation; no live runtime, release or destructive data action"
   },
   "git_boundary_gate": {
-    "status": "covered_by_fresh_action_gate_success",
-    "phase": "preflight",
-    "evidence_ref": "source/output/action-gates/action-gate-report-20260719180549.json"
+    "status": "not_exercised",
+    "reason": "Content owner implementation scope does not commit or push"
   },
   "runtime_toolchain": {
     "status": "ok",
-    "report_ref": "docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/tests.md",
-    "php_path": "/Applications/ServBay/package/php/8.4/8.4.20/bin/php",
-    "php_version": "8.4.20",
+    "report_ref": "docs/project-management/evidence/data-content/content-model-administration-api-v1/tests.md",
+    "php_path": "/opt/homebrew/opt/php@8.3/bin/php",
+    "php_version": "8.3.31",
     "composer_path": "/Applications/ServBay/bin/composer",
     "composer_version": "2.7.1"
   },
-  "next_transition": "commit_push_then_root_exact_integration",
-  "remote_push_status": "pushed_exact_remote_parity"
+  "next_transition": "independent_reverse_outcome_review_then_coordinator_commit_and_root_exact_integration",
+  "remote_push_status": "not_requested_in_content_owner_scope"
 }

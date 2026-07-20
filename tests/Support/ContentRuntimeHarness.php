@@ -43,12 +43,15 @@ use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
 use Larena\Content\Storage\ContentStorageGateway;
+use Larena\Content\Storage\ContentStorageSchemaEvolutionAuthority;
 use Larena\Content\ValueObjects\ActorContext;
 use Larena\Content\ValueObjects\ContentItemRef;
 use Larena\Filesystem\Persistence\DatabasePersistentLogicalFileInspector;
 use Larena\Property\Runtime\PropertyTypeRegistry;
 use Larena\Search\Persistence\DatabaseSearchIndex;
 use Larena\Storage\Runtime\VersionedStorage;
+use Larena\Storage\SchemaEvolution\DatabaseStorageSchemaEvolution;
+use Larena\Storage\SchemaEvolution\StorageSchemaEvolutionOwnerPolicyRegistry;
 use ReflectionClass;
 use RuntimeException;
 
@@ -173,10 +176,28 @@ final class ContentRuntimeHarness
         $canonicalJson = new ContentCanonicalJson();
         $input = new ContentInputGuard($canonicalJson);
         $schemas = new ContentSchemaMapper($propertyTypes, $input, $canonicalJson);
+        $schemaEvolutionAuthority = new ContentStorageSchemaEvolutionAuthority();
+        $schemaEvolutionOwnerPolicies = new StorageSchemaEvolutionOwnerPolicyRegistry();
+        $schemaEvolutionOwnerPolicies->protect(
+            'larena/content',
+            $schemaEvolutionAuthority->ownerValidator(),
+            'content.type.',
+        );
+        $schemaEvolutionOwnerPolicies->seal();
+        $schemaEvolution = new DatabaseStorageSchemaEvolution(
+            $this->connection,
+            $propertyTypes,
+            $this->ownerAuthorizer,
+            $auditPipeline,
+            $schemaEvolutionOwnerPolicies,
+        );
         $this->storage = new ContentStorageGateway(
             $this->ownerStorage,
             $schemas,
             $input,
+            $schemaEvolution,
+            $schemaEvolutionOwnerPolicies,
+            $schemaEvolutionAuthority,
         );
         $contentAuthorizer = new ContentAuthorizer(
             $this->ownerAuthorizer,
