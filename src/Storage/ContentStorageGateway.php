@@ -26,6 +26,7 @@ use Larena\Storage\Contracts\StorageSchemaVersion;
 use Larena\Storage\Contracts\StorageSchemaVersionRef;
 use Larena\Storage\Contracts\StorageWriteResult;
 use Larena\Storage\Contracts\VersionedStorage;
+use Larena\Storage\Exceptions\StoragePersistenceFailed;
 use Larena\Storage\Exceptions\StorageRejected;
 use Larena\Storage\SchemaEvolution\StorageSchemaEvolutionOwnerPolicyRegistry;
 use Throwable;
@@ -93,6 +94,7 @@ final readonly class ContentStorageGateway
         StorageSchemaVersionRef $source,
         array $fields,
         ActorContext $actor,
+        bool $forUpdate = false,
     ): StorageSchemaCompatibilityReport {
         $this->input->assertActor($actor);
         $this->input->assertFields($fields);
@@ -104,6 +106,13 @@ final readonly class ContentStorageGateway
                 $this->schemas->definition($typeKey, $fields),
                 $actor->actorRef,
                 $actor->correlationId,
+                $forUpdate,
+            );
+        } catch (StoragePersistenceFailed $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_analyze_failed',
+                $exception,
             );
         } catch (StorageRejected $exception) {
             throw new ContentRejected(
@@ -161,6 +170,12 @@ final readonly class ContentStorageGateway
                 $evolution->connection(),
                 $operation,
             );
+        } catch (StoragePersistenceFailed $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_orchestration_failed',
+                $exception,
+            );
         } catch (StorageRejected $exception) {
             throw new ContentRejected(
                 'storage_schema_evolution_orchestration_rejected',
@@ -204,6 +219,12 @@ final readonly class ContentStorageGateway
                     $scope,
                     $capability,
                 ),
+            );
+        } catch (StoragePersistenceFailed $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_plan_failed',
+                $exception,
             );
         } catch (StorageRejected $exception) {
             throw new ContentRejected(
@@ -253,6 +274,12 @@ final readonly class ContentStorageGateway
                     $scope,
                     $capability,
                 ),
+            );
+        } catch (StoragePersistenceFailed $exception) {
+            throw new ContentIntegrationFailed(
+                'storage',
+                'schema_evolution_apply_failed',
+                $exception,
             );
         } catch (StorageRejected $exception) {
             throw new ContentRejected(
@@ -357,7 +384,11 @@ final readonly class ContentStorageGateway
             );
         }
 
-        $target = $this->storage->readAdminVersion($restoreFrom, $actor->actorRef);
+        $target = $this->storage->readAdminVersion(
+            $restoreFrom,
+            $actor->actorRef,
+            true,
+        );
         $this->assertReadVersion(
             $target,
             $itemRef,
@@ -367,7 +398,7 @@ final readonly class ContentStorageGateway
         );
         $this->input->assertNormalizedValues($target->values);
 
-        $currentSchema = $this->schemaVersion($expectedSchema);
+        $currentSchema = $this->schemaVersion($expectedSchema, true);
         $currentFields = $this->schemas->fieldDefinitions($currentSchema);
         $normalized = $this->schemas->normalizeValues(
             $currentFields,
@@ -431,10 +462,13 @@ final readonly class ContentStorageGateway
         return $this->schemaEvolutionAuthority;
     }
 
-    public function schemaVersion(StorageSchemaVersionRef $ref): StorageSchemaVersion
+    public function schemaVersion(
+        StorageSchemaVersionRef $ref,
+        bool $forUpdate = false,
+    ): StorageSchemaVersion
     {
         try {
-            $schema = $this->storage->schemaVersion($ref);
+            $schema = $this->storage->schemaVersion($ref, $forUpdate);
             if (
                 $schema->ref->key() !== $ref->key()
                 || $schema->ownerPackage !== 'larena/content'
@@ -460,10 +494,15 @@ final readonly class ContentStorageGateway
     public function readAdminVersion(
         StorageRecordVersionRef $ref,
         ActorContext $actor,
+        bool $forUpdate = false,
     ): StorageRecordVersion {
         $this->input->assertActor($actor);
         try {
-            $version = $this->storage->readAdminVersion($ref, $actor->actorRef);
+            $version = $this->storage->readAdminVersion(
+                $ref,
+                $actor->actorRef,
+                $forUpdate,
+            );
             $this->input->assertNormalizedValues($version->values);
 
             if ($version->ref->key() !== $ref->key()) {
@@ -489,6 +528,7 @@ final readonly class ContentStorageGateway
         string $schemaId,
         ContentItemRef $itemRef,
         ActorContext $actor,
+        bool $forUpdate = false,
     ): ?StorageRecordVersion {
         $this->input->assertActor($actor);
         try {
@@ -496,6 +536,7 @@ final readonly class ContentStorageGateway
                 $schemaId,
                 $itemRef->value,
                 $actor->actorRef,
+                $forUpdate,
             );
 
             if ($version === null) {
@@ -525,9 +566,12 @@ final readonly class ContentStorageGateway
         }
     }
 
-    public function publicProjection(StorageRecordVersionRef $ref): StoragePublicProjection
+    public function publicProjection(
+        StorageRecordVersionRef $ref,
+        bool $forUpdate = false,
+    ): StoragePublicProjection
     {
-        $projection = $this->storage->projectPublicVersion($ref);
+        $projection = $this->storage->projectPublicVersion($ref, $forUpdate);
         $this->input->assertNormalizedValues($projection->values);
 
         if (

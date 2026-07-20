@@ -296,6 +296,26 @@ final class ContentMigrationShapeTest extends TestCase
                 1,
                 $repository->routeRow('article', 'en', 'first')['current_revision'] ?? null,
             );
+            $database->connection()->transaction(
+                static function () use ($repository, $itemRef): void {
+                    self::assertSame(
+                        1,
+                        $repository->revisionRow($itemRef, 1, true)['revision'] ?? null,
+                    );
+                    self::assertSame(
+                        1,
+                        $repository->typeVersionRow('article', 1, true)['version'] ?? null,
+                    );
+                    self::assertSame(
+                        '018f62c6-9d27-7d19-b9b1-7cddfbd9a3e2',
+                        $repository->attachmentRows(
+                            $itemRef,
+                            1,
+                            true,
+                        )[0]['logical_file_ref'] ?? null,
+                    );
+                },
+            );
         } finally {
             $database->close();
         }

@@ -31,6 +31,7 @@ final readonly class PublishedContentProjectionBuilder
         ContentItem $item,
         ContentRevision $revision,
         array $attachments,
+        bool $forUpdate = false,
     ): PublishedContentProjection {
         self::assertExactAttachmentManifest($revision, $attachments);
         $publicAttachments = [];
@@ -63,7 +64,7 @@ final readonly class PublishedContentProjectionBuilder
                 schemaId: $revision->storageSchemaRef,
                 recordId: $revision->storageRecordRef,
                 revision: $revision->storageRecordVersion,
-            )),
+            ), $forUpdate),
             publicAttachments: $publicAttachments,
         );
     }

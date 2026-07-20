@@ -113,6 +113,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 $typeVersion = $this->typeVersion(
                     $typeKey,
                     (int) $typeHead['current_version'],
+                    true,
                 );
                 $normalized = $this->schemas->normalizeValues(
                     $typeVersion->fieldDefinitions,
@@ -324,7 +325,11 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $this->routeSlugs($before, $slug),
                     $itemRef,
                 );
-                $typeVersion = $this->typeVersion($before->typeKey, $current->typeVersion);
+                $typeVersion = $this->typeVersion(
+                    $before->typeKey,
+                    $current->typeVersion,
+                    true,
+                );
                 $this->assertRevisionSchemaMatchesTypeVersion($current, $typeVersion);
                 $normalized = $this->schemas->normalizeValues(
                     $typeVersion->fieldDefinitions,
@@ -340,7 +345,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $normalized,
                     $actor,
                 );
-                $attachments = $this->attachmentPlacementsForRevision($current);
+                $attachments = $this->attachmentPlacementsForRevision($current, true);
                 $now = $this->clock->now();
                 [$after] = $this->persistNextRevision(
                     before: $before,
@@ -418,7 +423,11 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 $actor,
             ): ContentItem {
                 [$before, $current] = $this->lockedCurrent($itemRef, $expectedRevision);
-                $targetRow = $this->repository->revisionRow($itemRef->value, $restoreRevision);
+                $targetRow = $this->repository->revisionRow(
+                    $itemRef->value,
+                    $restoreRevision,
+                    true,
+                );
                 if ($targetRow === null) {
                     throw new ContentRejected(
                         'revision_not_found',
@@ -436,10 +445,12 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 $currentTypeVersion = $this->typeVersion(
                     $before->typeKey,
                     $current->typeVersion,
+                    true,
                 );
                 $targetTypeVersion = $this->typeVersion(
                     $before->typeKey,
                     $target->typeVersion,
+                    true,
                 );
                 $this->assertRevisionSchemaMatchesTypeVersion(
                     $current,
@@ -457,7 +468,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $this->storageSchemaRef($target),
                     $actor,
                 );
-                $attachments = $this->attachmentPlacementsForRevision($target);
+                $attachments = $this->attachmentPlacementsForRevision($target, true);
                 $now = $this->clock->now();
                 [$after] = $this->persistNextRevision(
                     before: $before,
@@ -715,7 +726,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     throw new ContentRejected('logical_file_not_attachable');
                 }
 
-                $placements = $this->attachmentPlacementsForRevision($current);
+                $placements = $this->attachmentPlacementsForRevision($current, true);
                 foreach ($placements as $placement) {
                     if (
                         $placement->logicalFileRef === $logicalFileRef
@@ -887,7 +898,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $this->routeSlugs($before, $before->currentSlug),
                     $itemRef,
                 );
-                $placements = $this->attachmentPlacementsForRevision($current);
+                $placements = $this->attachmentPlacementsForRevision($current, true);
                 $now = $this->clock->now();
                 $nextRevision = $before->currentRevision + 1;
                 [$after, $publishedRevision] = $this->persistNextRevision(
@@ -908,6 +919,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 $typeVersion = $this->typeVersion(
                     $publishedRevision->typeKey,
                     $publishedRevision->typeVersion,
+                    true,
                 );
 
                 try {
@@ -916,6 +928,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                         $after,
                         $publishedRevision,
                         $this->attachmentReferences($publishedRevision, $placements),
+                        true,
                     );
                     $searchProjection = ContentSearchProjection::fromPublished($projection);
                 } catch (\InvalidArgumentException $exception) {
@@ -993,7 +1006,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $this->routeSlugs($before, $before->currentSlug),
                     $itemRef,
                 );
-                $placements = $this->attachmentPlacementsForRevision($current);
+                $placements = $this->attachmentPlacementsForRevision($current, true);
                 $now = $this->clock->now();
                 [$after] = $this->persistNextRevision(
                     before: $before,
@@ -1093,7 +1106,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $itemRef,
                 );
                 $placements = $transform(
-                    $this->attachmentPlacementsForRevision($current),
+                    $this->attachmentPlacementsForRevision($current, true),
                 );
                 $this->input->assertAttachmentManifest($placements);
                 $now = $this->clock->now();
@@ -1168,7 +1181,11 @@ final readonly class DatabaseContentItemService implements ContentItemService
         if ($item->currentRevision !== $expectedRevision) {
             throw new ContentConflict($expectedRevision, $item->currentRevision);
         }
-        $revisionRow = $this->repository->revisionRow($itemRef->value, $expectedRevision);
+        $revisionRow = $this->repository->revisionRow(
+            $itemRef->value,
+            $expectedRevision,
+            true,
+        );
         if ($revisionRow === null) {
             throw new ContentIntegrationFailed('content', 'current_revision_missing');
         }
@@ -1406,8 +1423,13 @@ final readonly class DatabaseContentItemService implements ContentItemService
     private function typeVersion(
         ContentTypeKey $typeKey,
         int $version,
+        bool $forUpdate = false,
     ): ContentTypeVersion {
-        $row = $this->repository->typeVersionRow($typeKey->value, $version);
+        $row = $this->repository->typeVersionRow(
+            $typeKey->value,
+            $version,
+            $forUpdate,
+        );
         if ($row === null) {
             throw new ContentIntegrationFailed('content', 'type_version_missing');
         }
@@ -1415,7 +1437,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
             $storageSchema = $this->storage->schemaVersion(new StorageSchemaVersionRef(
                 (string) $row['storage_schema_ref'],
                 (int) $row['storage_schema_version'],
-            ));
+            ), $forUpdate);
             if (!hash_equals((string) $row['schema_hash'], $storageSchema->definitionHash)) {
                 throw new ContentIntegrationFailed(
                     'content',
@@ -1486,6 +1508,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
      */
     private function attachmentReferencesForRevision(
         ContentRevision $revision,
+        bool $forUpdate = false,
     ): array {
         $attachments = $this->hydrateAttachments(
             $revision->itemRef,
@@ -1493,6 +1516,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
             $this->repository->attachmentRows(
                 $revision->itemRef->value,
                 $revision->revision,
+                $forUpdate,
             ),
         );
         PublishedContentProjectionBuilder::assertExactAttachmentManifest(
@@ -1508,13 +1532,14 @@ final readonly class DatabaseContentItemService implements ContentItemService
      */
     private function attachmentPlacementsForRevision(
         ContentRevision $revision,
+        bool $forUpdate = false,
     ): array
     {
         return array_map(
             static fn (
                 ContentAttachmentReference $attachment,
             ): ContentAttachmentPlacement => $attachment->placement(),
-            $this->attachmentReferencesForRevision($revision),
+            $this->attachmentReferencesForRevision($revision, $forUpdate),
         );
     }
 

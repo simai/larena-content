@@ -172,13 +172,19 @@ final readonly class DatabaseContentRepository
     }
 
     /** @return array<string, bool|int|string|null>|null */
-    public function typeVersionRow(string $typeKey, int $version): ?array
+    public function typeVersionRow(
+        string $typeKey,
+        int $version,
+        bool $forUpdate = false,
+    ): ?array
     {
+        $query = $this->database
+            ->table('larena_content_type_versions')
+            ->where('type_key', $typeKey)
+            ->where('version', $version);
+
         return $this->one(
-            $this->database
-                ->table('larena_content_type_versions')
-                ->where('type_key', $typeKey)
-                ->where('version', $version),
+            $forUpdate ? $query->lockForUpdate() : $query,
             'larena_content_type_versions',
         );
     }
@@ -355,13 +361,19 @@ final readonly class DatabaseContentRepository
     }
 
     /** @return array<string, bool|int|string|null>|null */
-    public function revisionRow(string $itemRef, int $revision): ?array
+    public function revisionRow(
+        string $itemRef,
+        int $revision,
+        bool $forUpdate = false,
+    ): ?array
     {
+        $query = $this->database
+            ->table('larena_content_item_revisions')
+            ->where('item_ref', $itemRef)
+            ->where('revision', $revision);
+
         return $this->one(
-            $this->database
-                ->table('larena_content_item_revisions')
-                ->where('item_ref', $itemRef)
-                ->where('revision', $revision),
+            $forUpdate ? $query->lockForUpdate() : $query,
             'larena_content_item_revisions',
         );
     }
@@ -389,17 +401,23 @@ final readonly class DatabaseContentRepository
     }
 
     /** @return list<array<string, bool|int|string|null>> */
-    public function attachmentRows(string $itemRef, int $revision): array
+    public function attachmentRows(
+        string $itemRef,
+        int $revision,
+        bool $forUpdate = false,
+    ): array
     {
+        $query = $this->database
+            ->table('larena_content_item_revision_attachments')
+            ->where('item_ref', $itemRef)
+            ->where('revision', $revision)
+            ->orderBy('position')
+            // Read one overflow sentinel so a corrupted persisted manifest
+            // cannot be truncated into an apparently valid 100-row list.
+            ->limit(101);
+
         return $this->many(
-            $this->database
-                ->table('larena_content_item_revision_attachments')
-                ->where('item_ref', $itemRef)
-                ->where('revision', $revision)
-                ->orderBy('position')
-                // Read one overflow sentinel so a corrupted persisted manifest
-                // cannot be truncated into an apparently valid 100-row list.
-                ->limit(101),
+            $forUpdate ? $query->lockForUpdate() : $query,
             'larena_content_item_revision_attachments',
         );
     }

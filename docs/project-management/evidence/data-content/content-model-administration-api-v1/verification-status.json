@@ -13,8 +13,8 @@
   "phpstan": "pass",
   "non_mysql_suite": {
     "result": "pass",
-    "tests": 188,
-    "assertions": 1321
+    "tests": 192,
+    "assertions": 1347
   },
   "package_quality_gate": "pass",
   "independent_review": "pending",

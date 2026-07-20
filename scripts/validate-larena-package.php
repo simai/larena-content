@@ -299,7 +299,7 @@ if (!is_array($runtimeToolchain) || ($runtimeToolchain['status'] ?? null) !== 'o
 } elseif (
     $runtimeReportPath !== EVIDENCE_PATH . 'tests.md'
     || !is_file($runtimeReportPath)
-    || ($runtimeToolchain['php_version'] ?? null) !== '8.3.31'
+    || ($runtimeToolchain['php_version'] ?? null) !== '8.4.20'
 ) {
     $errors[] = 'runtime toolchain must resolve to the current portable API v1 receipt.';
 }
@@ -308,13 +308,13 @@ $expectedDirectRevisions = [
     'larena/access' => '8c0e75897fe422a8f4d97fc012f1d095ffdba3b2',
     'larena/audit' => 'ab2546b1a0fdd577faba895755a3d6c44f0f9da8',
     'larena/auth' => '63bac556b36a25fe16885601aefe174d5d712c3a',
-    'larena/core' => '46f3bbc8baba0262117bc9b9519713ee21b1d981',
+    'larena/core' => '68ee3f79ed6313ca9c819340e6be3ff471957f91',
     'larena/dataview' => 'b84e964b4ed78e1ca08a46c88e7651b02744ee47',
     'larena/filesystem' => '6c784d0ad84e5fcc72b515c8b5b27bafac9ee31f',
     'larena/property' => '92b6e915fc4c85239171dbbff6c3cb15d046cc99',
-    'larena/rest' => '174dc005002a5ba0e77f906d3e9143ce89a5fd2b',
+    'larena/rest' => 'b11f4338bb2536ee8627c1f2097915876b8afeb6',
     'larena/search' => '9f5c1cf5d2b112751328520eee34826c19dd2535',
-    'larena/storage' => '7645c0124999eeab6150edc0b0b949adc17be310',
+    'larena/storage' => 'd6a75e7fa604442be2cfcade1afceadedb5e8254',
 ];
 $launchRevisions = is_array($launchContext['dependency_revisions'] ?? null)
     ? $launchContext['dependency_revisions']

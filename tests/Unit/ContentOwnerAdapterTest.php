@@ -31,12 +31,16 @@ use Larena\Filesystem\Enums\FileVisibility;
 use Larena\Filesystem\ValueObjects\PersistentLogicalFileInspection;
 use Larena\Property\Runtime\PropertyTypeRegistry;
 use Larena\Search\Persistence\DatabaseSearchIndex;
+use Larena\Storage\Contracts\StoragePublicProjection;
 use Larena\Storage\Contracts\StorageRecordVersion;
 use Larena\Storage\Contracts\StorageRecordVersionRef;
+use Larena\Storage\Contracts\StorageSchemaCompatibilityReport;
+use Larena\Storage\Contracts\StorageSchemaEvolution;
 use Larena\Storage\Contracts\StorageSchemaVersion;
 use Larena\Storage\Contracts\StorageSchemaVersionRef;
 use Larena\Storage\Contracts\StorageWriteResult;
 use Larena\Storage\Contracts\VersionedStorage;
+use Larena\Storage\Exceptions\StoragePersistenceFailed;
 use ReflectionClass;
 
 final class ContentOwnerAdapterTest extends TestCase
@@ -275,7 +279,7 @@ final class ContentOwnerAdapterTest extends TestCase
         $storage = $this->createMock(VersionedStorage::class);
         $storage->expects(self::once())
             ->method('readAdminVersion')
-            ->with($restoreFrom, $actor->actorRef)
+            ->with($restoreFrom, $actor->actorRef, true)
             ->willReturn($target);
         $schemaMapper = new ContentSchemaMapper(PropertyTypeRegistry::builtIns());
         $schemaDefinition = $schemaMapper->definition(
@@ -289,7 +293,7 @@ final class ContentOwnerAdapterTest extends TestCase
         );
         $storage->expects(self::once())
             ->method('schemaVersion')
-            ->with($schema)
+            ->with($schema, true)
             ->willReturn(new StorageSchemaVersion(
                 ref: $schema,
                 ownerPackage: 'larena/content',
@@ -328,6 +332,167 @@ final class ContentOwnerAdapterTest extends TestCase
                 $actor,
             ),
         );
+    }
+
+    public function testStorageCurrentReadForwardsTheExplicitLockBoundary(): void
+    {
+        $actor = $this->actor();
+        $itemRef = ContentItemRef::fromUuid('018f62c6-9d27-7d19-b9b1-7cddfbd9a3e1');
+        $schema = new StorageSchemaVersionRef('content.type.article', 1);
+        $version = new StorageRecordVersion(
+            ref: new StorageRecordVersionRef(
+                $schema->schemaId,
+                'record-018f62c69d277d19b9b17cddfbd9a3e1',
+                1,
+            ),
+            ownerRef: $itemRef->value,
+            schema: $schema,
+            values: ['title' => 'Current title'],
+            contentHash: str_repeat('a', 64),
+            operation: 'create',
+            createdBy: $actor->actorRef,
+            correlationId: 'storage-record-test',
+            createdAt: '2026-07-19T08:00:00.000000Z',
+        );
+        $storage = $this->createMock(VersionedStorage::class);
+        $storage->expects(self::once())
+            ->method('readAdminCurrentVersion')
+            ->with(
+                $schema->schemaId,
+                $itemRef->value,
+                $actor->actorRef,
+                true,
+            )
+            ->willReturn($version);
+
+        $gateway = new ContentStorageGateway(
+            $storage,
+            new ContentSchemaMapper(PropertyTypeRegistry::builtIns()),
+            new ContentInputGuard(),
+        );
+
+        self::assertSame(
+            $version,
+            $gateway->readAdminCurrentVersion(
+                $schema->schemaId,
+                $itemRef,
+                $actor,
+                true,
+            ),
+        );
+    }
+
+    public function testStoragePublicProjectionForwardsTheExplicitLockBoundary(): void
+    {
+        $itemRef = ContentItemRef::fromUuid('018f62c6-9d27-7d19-b9b1-7cddfbd9a3e1');
+        $schema = new StorageSchemaVersionRef('content.type.article', 1);
+        $ref = new StorageRecordVersionRef(
+            $schema->schemaId,
+            'record-018f62c69d277d19b9b17cddfbd9a3e1',
+            1,
+        );
+        $projection = new StoragePublicProjection(
+            ref: $ref,
+            ownerRef: $itemRef->value,
+            schema: $schema,
+            values: ['title' => 'Current title'],
+        );
+        $storage = $this->createMock(VersionedStorage::class);
+        $storage->expects(self::once())
+            ->method('projectPublicVersion')
+            ->with($ref, true)
+            ->willReturn($projection);
+        $gateway = new ContentStorageGateway(
+            $storage,
+            new ContentSchemaMapper(PropertyTypeRegistry::builtIns()),
+            new ContentInputGuard(),
+        );
+
+        self::assertSame($projection, $gateway->publicProjection($ref, true));
+    }
+
+    public function testSchemaEvolutionAnalyzeForwardsTheExplicitLockBoundary(): void
+    {
+        $actor = $this->actor();
+        $typeKey = new ContentTypeKey('article');
+        $source = new StorageSchemaVersionRef($typeKey->storageSchemaRef(), 1);
+        $target = new StorageSchemaVersionRef($source->schemaId, 2);
+        $fields = $this->fields();
+        $schemas = new ContentSchemaMapper(PropertyTypeRegistry::builtIns());
+        $definition = $schemas->definition($typeKey, $fields);
+        $report = new StorageSchemaCompatibilityReport(
+            source: $source,
+            sourceHash: str_repeat('a', 64),
+            target: $target,
+            targetHash: str_repeat('b', 64),
+            compatible: true,
+            compatibilityClass: 'optional_additions',
+            addedOptionalFieldCount: 1,
+            recordCount: 1,
+            recordHeadsHash: str_repeat('c', 64),
+            reasonCodes: [],
+        );
+        $evolution = $this->createMock(StorageSchemaEvolution::class);
+        $evolution->expects(self::once())
+            ->method('analyze')
+            ->with(
+                $source,
+                $definition,
+                $actor->actorRef,
+                $actor->correlationId,
+                true,
+            )
+            ->willReturn($report);
+        $gateway = new ContentStorageGateway(
+            $this->createStub(VersionedStorage::class),
+            $schemas,
+            new ContentInputGuard(),
+            $evolution,
+        );
+
+        self::assertSame(
+            $report,
+            $gateway->analyzeTypeSchema(
+                $typeKey,
+                $source,
+                $fields,
+                $actor,
+                true,
+            ),
+        );
+    }
+
+    public function testSchemaEvolutionPersistenceFailureRemainsAnIntegrationFailure(): void
+    {
+        $actor = $this->actor();
+        $typeKey = new ContentTypeKey('article');
+        $source = new StorageSchemaVersionRef($typeKey->storageSchemaRef(), 1);
+        $failure = new StoragePersistenceFailed('storage_persistence_failed');
+        $evolution = $this->createMock(StorageSchemaEvolution::class);
+        $evolution->expects(self::once())
+            ->method('analyze')
+            ->willThrowException($failure);
+        $gateway = new ContentStorageGateway(
+            $this->createStub(VersionedStorage::class),
+            new ContentSchemaMapper(PropertyTypeRegistry::builtIns()),
+            new ContentInputGuard(),
+            $evolution,
+        );
+
+        try {
+            $gateway->analyzeTypeSchema(
+                $typeKey,
+                $source,
+                $this->fields(),
+                $actor,
+                true,
+            );
+            self::fail('A Storage persistence failure was misclassified or swallowed.');
+        } catch (ContentIntegrationFailed $exception) {
+            self::assertSame('storage', $exception->integration);
+            self::assertSame('schema_evolution_analyze_failed', $exception->reasonCode);
+            self::assertSame($failure, $exception->getPrevious());
+        }
     }
 
     /**

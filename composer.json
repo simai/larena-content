@@ -206,7 +206,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-rest.git",
-          "reference": "174dc005002a5ba0e77f906d3e9143ce89a5fd2b"
+          "reference": "b11f4338bb2536ee8627c1f2097915876b8afeb6"
         }
       }
     },
@@ -287,7 +287,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-core.git",
-          "reference": "46f3bbc8baba0262117bc9b9519713ee21b1d981"
+          "reference": "68ee3f79ed6313ca9c819340e6be3ff471957f91"
         }
       }
     },
@@ -457,7 +457,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-storage.git",
-          "reference": "7645c0124999eeab6150edc0b0b949adc17be310"
+          "reference": "d6a75e7fa604442be2cfcade1afceadedb5e8254"
         }
       }
     },

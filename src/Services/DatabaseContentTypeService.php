@@ -304,6 +304,7 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
                     ),
                     $fields,
                     $actor,
+                    true,
                 );
                 $this->assertCompatibilityReport(
                     $source,
@@ -399,6 +400,7 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
                     ),
                     $fields,
                     $actor,
+                    true,
                 );
                 $this->assertCompatibilityReport($source, $fields, $report, $heads);
                 if (!$report->compatible) {
@@ -572,12 +574,16 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
                 'stale_type_version',
             );
         }
-        $row = $this->repository->typeVersionRow($typeKey->value, $expectedVersion);
+        $row = $this->repository->typeVersionRow(
+            $typeKey->value,
+            $expectedVersion,
+            true,
+        );
         if ($row === null) {
             throw new ContentIntegrationFailed('content', 'type_version_missing');
         }
 
-        $source = $this->hydrateTypeVersion($row);
+        $source = $this->hydrateTypeVersion($row, true);
         if (
             $source->storageSchemaVersion !== $source->version
             || !hash_equals(
@@ -698,6 +704,7 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
             $revision = $this->repository->revisionRow(
                 $itemRef->value,
                 $currentRevision,
+                $forUpdate,
             );
             if (
                 $revision === null
@@ -716,6 +723,7 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
                 $source->storageSchemaRef,
                 $itemRef,
                 $actor,
+                $forUpdate,
             );
             if (
                 $storage === null
@@ -742,6 +750,7 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
                 $this->repository->attachmentRows(
                     $itemRef->value,
                     $currentRevision,
+                    $forUpdate,
                 ),
             );
             if (count($attachments) !== (int) $revision['attachment_count']) {
@@ -1293,7 +1302,10 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
     /**
      * @param array<string, bool|int|string|null> $row
      */
-    private function hydrateTypeVersion(array $row): ContentTypeVersion
+    private function hydrateTypeVersion(
+        array $row,
+        bool $forUpdate = false,
+    ): ContentTypeVersion
     {
         try {
             $typeKey = new ContentTypeKey((string) $row['type_key']);
@@ -1302,7 +1314,7 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
                 (int) $row['storage_schema_version'],
             );
             try {
-                $schema = $this->storage->schemaVersion($storageRef);
+                $schema = $this->storage->schemaVersion($storageRef, $forUpdate);
             } catch (ContentIntegrationFailed $exception) {
                 throw $exception;
             } catch (Throwable $exception) {
