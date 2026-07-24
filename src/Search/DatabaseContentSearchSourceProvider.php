@@ -30,6 +30,7 @@ final readonly class DatabaseContentSearchSourceProvider implements ContentSearc
         private DatabaseContentRepository $content,
         private PublishedContentReader $published,
         private ContentParticipantGuard $participants,
+        private ?ContentSearchProjectionDelegationRegistry $delegations = null,
     ) {
     }
 
@@ -61,7 +62,12 @@ final readonly class DatabaseContentSearchSourceProvider implements ContentSearc
         try {
             $this->participants->assertSharedConnection();
             $this->content->assertCompleteCompatible();
-            $rows = $this->content->publishedItemRows($afterCursor, $limit);
+            $delegatedTypeKeys = $this->delegations?->delegatedTypeKeys() ?? [];
+            $rows = $this->content->publishedItemRows(
+                $afterCursor,
+                $limit,
+                $delegatedTypeKeys,
+            );
             $projections = [];
 
             foreach ($rows as $row) {
@@ -98,7 +104,11 @@ final readonly class DatabaseContentSearchSourceProvider implements ContentSearc
                 ? $afterCursor
                 : (string) $rows[array_key_last($rows)]['item_ref'];
             $hasMore = count($rows) === $limit
-                && $this->content->publishedItemRows($nextCursor, 1) !== [];
+                && $this->content->publishedItemRows(
+                    $nextCursor,
+                    1,
+                    $delegatedTypeKeys,
+                ) !== [];
 
             return new ReindexBatch($projections, $nextCursor, $hasMore);
         } catch (ContentIntegrationFailed $exception) {

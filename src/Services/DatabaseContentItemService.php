@@ -25,6 +25,7 @@ use Larena\Content\Runtime\ContentInputGuard;
 use Larena\Content\Runtime\ContentParticipantGuard;
 use Larena\Content\Runtime\ContentSchemaMapper;
 use Larena\Content\Runtime\PublishedContentProjectionBuilder;
+use Larena\Content\Search\ContentSearchProjectionDelegationRegistry;
 use Larena\Content\Storage\ContentStorageGateway;
 use Larena\Content\ValueObjects\ActorContext;
 use Larena\Content\ValueObjects\ContentAttachmentPlacement;
@@ -43,6 +44,7 @@ use Larena\Content\ValueObjects\ContentSearchProjection;
 use Larena\Content\ValueObjects\ContentSlug;
 use Larena\Content\ValueObjects\ContentTypeKey;
 use Larena\Content\ValueObjects\ContentTypeVersion;
+use Larena\Content\ValueObjects\PublishedContentProjection;
 use Larena\Search\Contracts\SearchWriteResult;
 use Larena\Search\Persistence\DatabaseSearchIndex;
 use Larena\Storage\Contracts\StorageRecordVersionRef;
@@ -64,6 +66,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
         private ContentAuditEmitter $audit,
         private ContentClock $clock,
         private ContentIdGenerator $ids,
+        private ?ContentSearchProjectionDelegationRegistry $searchDelegations = null,
     ) {
     }
 
@@ -940,10 +943,12 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 }
 
                 $this->assertSearchWriteResult(
-                    $this->writeSearchProjection($searchProjection),
+                    $this->writeSearchProjection($projection, $searchProjection),
                     $itemRef,
                     $after->currentRevision,
                     'indexed',
+                    $this->searchProviderId($before->typeKey),
+                    $this->searchSourceRef($before->typeKey, $itemRef),
                 );
                 $this->audit->emit(
                     'content.item.published',
@@ -1024,10 +1029,16 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     now: $now,
                 );
                 $this->assertSearchWriteResult(
-                    $this->removeSearchProjection($itemRef, $after->currentRevision),
+                    $this->removeSearchProjection(
+                        $before->typeKey,
+                        $itemRef,
+                        $after->currentRevision,
+                    ),
                     $itemRef,
                     $after->currentRevision,
                     'removed',
+                    $this->searchProviderId($before->typeKey),
+                    $this->searchSourceRef($before->typeKey, $itemRef),
                 );
                 $this->audit->emit(
                     'content.item.unpublished',
@@ -1731,9 +1742,15 @@ final readonly class DatabaseContentItemService implements ContentItemService
     }
 
     private function writeSearchProjection(
+        PublishedContentProjection $published,
         ContentSearchProjection $projection,
     ): SearchWriteResult {
         try {
+            $projector = $this->searchDelegations?->projector($published->typeKey);
+            if ($projector !== null) {
+                return $projector->upsert($published);
+            }
+
             return $this->search->upsert($projection->toSearchProjection());
         } catch (Throwable $exception) {
             throw new ContentIntegrationFailed(
@@ -1745,10 +1762,16 @@ final readonly class DatabaseContentItemService implements ContentItemService
     }
 
     private function removeSearchProjection(
+        ContentTypeKey $typeKey,
         ContentItemRef $itemRef,
         int $revision,
     ): SearchWriteResult {
         try {
+            $projector = $this->searchDelegations?->projector($typeKey);
+            if ($projector !== null) {
+                return $projector->remove($itemRef, $revision);
+            }
+
             return $this->search->remove(
                 ContentSearchProjection::PROVIDER_ID,
                 $itemRef->value,
@@ -1768,12 +1791,15 @@ final readonly class DatabaseContentItemService implements ContentItemService
         ContentItemRef $itemRef,
         int $revision,
         string $expectedStatus,
+        string $expectedProviderId = ContentSearchProjection::PROVIDER_ID,
+        ?string $expectedSourceRef = null,
     ): void {
+        $expectedSourceRef ??= $itemRef->value;
         if (
             !$result->changed
             || $result->status !== $expectedStatus
-            || $result->providerId !== ContentSearchProjection::PROVIDER_ID
-            || $result->sourceRef !== $itemRef->value
+            || $result->providerId !== $expectedProviderId
+            || $result->sourceRef !== $expectedSourceRef
             || $result->sourceRevision !== $revision
         ) {
             throw new ContentIntegrationFailed(
@@ -1781,6 +1807,20 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 'write_result_mismatch',
             );
         }
+    }
+
+    private function searchSourceRef(
+        ContentTypeKey $typeKey,
+        ContentItemRef $itemRef,
+    ): string {
+        return $this->searchDelegations?->projector($typeKey)?->sourceRef($itemRef)
+            ?? $itemRef->value;
+    }
+
+    private function searchProviderId(ContentTypeKey $typeKey): string
+    {
+        return $this->searchDelegations?->projector($typeKey)?->providerId()
+            ?? ContentSearchProjection::PROVIDER_ID;
     }
 
     private function assertAttachmentRole(string $role): void

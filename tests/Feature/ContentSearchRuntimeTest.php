@@ -7,11 +7,13 @@ namespace Larena\Content\Tests\Feature;
 use Illuminate\Database\Connection;
 use Larena\Audit\Contracts\ConnectionBoundAuditEventPipeline;
 use Larena\Content\Contracts\PublishedContentReader;
+use Larena\Content\Contracts\ContentProductSearchProjector;
 use Larena\Content\Exceptions\ContentIntegrationFailed;
 use Larena\Content\Exceptions\ContentNotPublic;
 use Larena\Content\Persistence\DatabaseContentRepository;
 use Larena\Content\Runtime\ContentParticipantGuard;
 use Larena\Content\Search\ContentSearchContract;
+use Larena\Content\Search\ContentSearchProjectionDelegationRegistry;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
 use Larena\Content\Tests\Fixtures\ContentPlatformV1Fixture;
 use Larena\Content\Tests\Support\ContentTestDatabase;
@@ -20,6 +22,7 @@ use Larena\Content\ValueObjects\ContentSlug;
 use Larena\Content\ValueObjects\ContentTypeKey;
 use Larena\Content\ValueObjects\PublishedContentProjection;
 use Larena\Search\Persistence\DatabaseSearchIndex;
+use Larena\Search\Contracts\SearchWriteResult;
 use Larena\Storage\Contracts\VersionedStorage;
 use PHPUnit\Framework\TestCase;
 
@@ -127,6 +130,61 @@ final class ContentSearchRuntimeTest extends TestCase
             'content:item:018f62c6-9d27-7d19-b9b1-7cddfbd9a3e1',
             $batch->nextCursor,
         );
+    }
+
+    public function testDelegatedProductTypeIsExcludedBeforeProjectionAndDoesNotCreateGenericDuplicate(): void
+    {
+        $connection = $this->database();
+        $this->insertPublishedHead($connection);
+        $delegations = new ContentSearchProjectionDelegationRegistry();
+        $projector = new class implements ContentProductSearchProjector {
+            public function providerId(): string
+            {
+                return 'product.article';
+            }
+
+            public function sourceRef(
+                \Larena\Content\ValueObjects\ContentItemRef $itemRef,
+            ): string {
+                return 'product:'.$itemRef->value;
+            }
+
+            public function upsert(PublishedContentProjection $projection): SearchWriteResult
+            {
+                throw new \LogicException('The rebuild suppression test does not mutate Search.');
+            }
+
+            public function remove(
+                \Larena\Content\ValueObjects\ContentItemRef $itemRef,
+                int $sourceRevision,
+            ): SearchWriteResult {
+                throw new \LogicException('The rebuild suppression test does not mutate Search.');
+            }
+        };
+        self::assertTrue($delegations->delegate('article', $projector));
+        self::assertFalse($delegations->delegate(new ContentTypeKey('article'), $projector));
+
+        $source = new DatabaseContentSearchSourceProvider(
+            new DatabaseContentRepository($connection),
+            new class implements PublishedContentReader {
+                public function read(
+                    ContentTypeKey $typeKey,
+                    ContentSlug $slug,
+                    ContentLocale $locale,
+                ): PublishedContentProjection {
+                    throw new \LogicException('A delegated product type must not reach the generic projector.');
+                }
+            },
+            $this->participants($connection),
+            $delegations,
+        );
+
+        $batch = $source->readBatch(null, 100);
+
+        self::assertSame([], $batch->projections);
+        self::assertFalse($batch->hasMore);
+        self::assertNull($batch->nextCursor);
+        self::assertSame(['article'], $delegations->delegatedTypeKeys());
     }
 
     public function testProjectionIdentityMismatchFailsClosed(): void

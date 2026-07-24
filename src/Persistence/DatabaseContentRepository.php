@@ -10,6 +10,7 @@ use Larena\Content\Database\ContentOwnedTableShapeGuard;
 use Larena\Content\Enums\ContentStatus;
 use Larena\Content\Enums\ContentVisibility;
 use Larena\Content\Exceptions\ContentRejected;
+use Larena\Content\ValueObjects\ContentTypeKey;
 use stdClass;
 
 /**
@@ -511,8 +512,15 @@ final readonly class DatabaseContentRepository
         );
     }
 
-    /** @return list<array<string, bool|int|string|null>> */
-    public function publishedItemRows(?string $afterItemRef, int $limit): array
+    /**
+     * @param array<array-key, mixed> $excludedTypeKeys
+     * @return list<array<string, bool|int|string|null>>
+     */
+    public function publishedItemRows(
+        ?string $afterItemRef,
+        int $limit,
+        array $excludedTypeKeys = [],
+    ): array
     {
         $this->assertLimit($limit);
         $query = $this->database
@@ -522,6 +530,21 @@ final readonly class DatabaseContentRepository
 
         if ($afterItemRef !== null) {
             $query->where('item_ref', '>', $afterItemRef);
+        }
+
+        if ($excludedTypeKeys !== []) {
+            if (!array_is_list($excludedTypeKeys)) {
+                throw new ContentRejected('search_delegated_type_keys_invalid');
+            }
+
+            $normalized = [];
+            foreach ($excludedTypeKeys as $typeKey) {
+                if (!is_string($typeKey)) {
+                    throw new ContentRejected('search_delegated_type_keys_invalid');
+                }
+                $normalized[] = (new ContentTypeKey($typeKey))->value;
+            }
+            $query->whereNotIn('type_key', array_values(array_unique($normalized)));
         }
 
         return $this->many(

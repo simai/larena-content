@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use JsonException;
 use Larena\Content\Contracts\PublishedContentReader;
+use Larena\Content\Contracts\PublishedContentItemReader;
 use Larena\Content\Enums\ContentStatus;
 use Larena\Content\Enums\ContentVisibility;
 use Larena\Content\Exceptions\ContentIntegrationFailed;
@@ -32,7 +33,7 @@ use Larena\Storage\Contracts\StorageSchemaVersionRef;
 use Larena\Storage\Exceptions\StorageRejected;
 use Throwable;
 
-final readonly class DatabasePublishedContentReader implements PublishedContentReader
+final readonly class DatabasePublishedContentReader implements PublishedContentReader, PublishedContentItemReader
 {
     public function __construct(
         private DatabaseContentRepository $repository,
@@ -60,17 +61,67 @@ final readonly class DatabasePublishedContentReader implements PublishedContentR
             throw new ContentNotPublic();
         }
 
+        return $this->readExactItem(
+            new ContentItemRef((string) $route['item_ref']),
+            $typeKey,
+            $locale,
+            $slug,
+            (int) $route['published_revision'],
+        );
+    }
+
+    public function readItem(ContentItemRef $itemRef): PublishedContentProjection
+    {
+        $this->participants->assertSharedConnection();
+        $this->repository->assertCompleteCompatible();
+        $itemRow = $this->repository->itemRow($itemRef->value);
+        if (
+            $itemRow === null
+            || $itemRow['published_revision'] === null
+            || !is_string($itemRow['published_slug'])
+            || $itemRow['published_slug'] === ''
+        ) {
+            throw new ContentNotPublic();
+        }
+
+        return $this->readExactItem(
+            $itemRef,
+            new ContentTypeKey((string) $itemRow['type_key']),
+            new ContentLocale((string) $itemRow['locale']),
+            new ContentSlug((string) $itemRow['published_slug']),
+            (int) $itemRow['published_revision'],
+            $itemRow,
+        );
+    }
+
+    /**
+     * @param array<string, bool|int|string|null>|null $knownItemRow
+     */
+    private function readExactItem(
+        ContentItemRef $itemRef,
+        ContentTypeKey $typeKey,
+        ContentLocale $locale,
+        ContentSlug $slug,
+        int $publishedRevision,
+        ?array $knownItemRow = null,
+    ): PublishedContentProjection {
         try {
-            $itemRef = new ContentItemRef((string) $route['item_ref']);
-            $publishedRevision = (int) $route['published_revision'];
-            $itemRow = $this->repository->itemRow($itemRef->value);
+            $route = $this->repository->publishedRouteRow(
+                $typeKey->value,
+                $locale->value,
+                $slug->value,
+            );
+            $itemRow = $knownItemRow ?? $this->repository->itemRow($itemRef->value);
             $revisionRow = $this->repository->revisionRow(
                 $itemRef->value,
                 $publishedRevision,
             );
 
             if (
-                $itemRow === null
+                $route === null
+                || (string) $route['item_ref'] !== $itemRef->value
+                || (int) $route['published_revision'] !== $publishedRevision
+                || $itemRow === null
                 || $revisionRow === null
                 || (string) $itemRow['type_key'] !== $typeKey->value
                 || (string) $itemRow['locale'] !== $locale->value

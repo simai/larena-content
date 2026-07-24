@@ -280,10 +280,13 @@ final class ContentRuntimeMySqlTestSupport
 
         $values = self::parseEnv($realPath);
         $required = ['DB_HOST', 'DB_PORT', 'DB_USERNAME', 'DB_PASSWORD'];
-        self::expect(
-            array_keys($values) === $required,
-            'content_mysql_env_keys_invalid',
-        );
+        foreach ($required as $key) {
+            self::expect(
+                array_key_exists($key, $values),
+                'content_mysql_env_keys_invalid',
+            );
+        }
+        $values = array_intersect_key($values, array_flip($required));
         $host = trim($values['DB_HOST']);
         self::expect(
             in_array(strtolower($host), ['127.0.0.1', 'localhost', '::1'], true),

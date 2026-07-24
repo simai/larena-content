@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Larena\Content\Tests\Feature;
 
 use Larena\Content\Enums\ContentVisibility;
+use Larena\Content\Contracts\ContentProductSearchProjector;
 use Larena\Content\Exceptions\ContentNotPublic;
 use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\Runtime\ContentCanonicalJson;
@@ -12,10 +13,15 @@ use Larena\Content\Tests\Support\ContentPlatformScenario;
 use Larena\Content\Tests\Support\ContentRuntimeHarness;
 use Larena\Content\Tests\TestCase;
 use Larena\Content\ValueObjects\ContentLocale;
+use Larena\Content\ValueObjects\ContentItemRef;
+use Larena\Content\ValueObjects\PublishedContentProjection;
 use Larena\Content\ValueObjects\ContentSearchProjection;
 use Larena\Content\ValueObjects\ContentSlug;
 use Larena\Content\ValueObjects\ContentTypeKey;
 use Larena\Search\Contracts\SearchQuery;
+use Larena\Search\Contracts\SearchProjection;
+use Larena\Search\Contracts\SearchWriteResult;
+use Larena\Search\Persistence\DatabaseSearchIndex;
 
 final class PublishedContentRuntimeTest extends TestCase
 {
@@ -51,6 +57,10 @@ final class PublishedContentRuntimeTest extends TestCase
             new ContentSlug('first-article'),
             new ContentLocale('en'),
         );
+        $byItem = $this->runtime->published->readItem($published->itemRef);
+        self::assertSame($projection->itemRef->value, $byItem->itemRef->value);
+        self::assertSame($projection->publishedRevision, $byItem->publishedRevision);
+        self::assertSame($projection->publicFields, $byItem->publicFields);
         self::assertSame([
             'title' => 'First article',
             'body' => 'A deterministic public summary.',
@@ -112,6 +122,89 @@ final class PublishedContentRuntimeTest extends TestCase
         self::assertNotNull($state);
         self::assertSame('removed', (string) $state->state);
         self::assertSame(3, (int) $state->source_revision);
+    }
+
+    public function test_delegated_product_projection_is_the_only_mutation_and_rebuild_document(): void
+    {
+        $scenario = new ContentPlatformScenario($this->runtime);
+        $scenario->createArticleType();
+        $projector = new class($this->runtime->searchIndex) implements ContentProductSearchProjector {
+            public function __construct(private readonly DatabaseSearchIndex $index)
+            {
+            }
+
+            public function providerId(): string
+            {
+                return 'product.article';
+            }
+
+            public function sourceRef(ContentItemRef $itemRef): string
+            {
+                return 'product:'.$itemRef->value;
+            }
+
+            public function upsert(PublishedContentProjection $projection): SearchWriteResult
+            {
+                return $this->index->upsert(new SearchProjection(
+                    providerId: $this->providerId(),
+                    sourceRef: $this->sourceRef($projection->itemRef),
+                    sourceRevision: $projection->publishedRevision,
+                    title: (string) $projection->publicFields['title'],
+                    locator: '/product/'.$projection->slug->value,
+                    snippet: (string) $projection->publicFields['body'],
+                    locale: $projection->locale->value,
+                    accessScope: 'public',
+                    searchableText: (string) $projection->publicFields['body'],
+                    payload: ['item_ref' => $projection->itemRef->value],
+                ));
+            }
+
+            public function remove(ContentItemRef $itemRef, int $sourceRevision): SearchWriteResult
+            {
+                return $this->index->remove(
+                    $this->providerId(),
+                    $this->sourceRef($itemRef),
+                    $sourceRevision,
+                );
+            }
+        };
+        self::assertTrue($this->runtime->searchDelegations->delegate('article', $projector));
+        $draft = $scenario->createArticle();
+
+        $published = $this->runtime->items->publish(
+            $draft->itemRef,
+            1,
+            $this->runtime->actor(),
+        );
+        self::assertSame(1, $this->runtime->connection
+            ->table('larena_search_documents')
+            ->where('provider_id', 'product.article')
+            ->where('source_ref', 'product:'.$published->itemRef->value)
+            ->count());
+        self::assertSame(0, $this->runtime->connection
+            ->table('larena_search_documents')
+            ->where('provider_id', 'content.published_items')
+            ->count());
+        $batch = $this->runtime->searchSource->readBatch(null, 100);
+        self::assertSame([], $batch->projections);
+        self::assertNull($batch->nextCursor);
+
+        $this->runtime->items->unpublish(
+            $published->itemRef,
+            $published->currentRevision,
+            $this->runtime->actor(),
+        );
+        self::assertSame(0, $this->runtime->connection
+            ->table('larena_search_documents')
+            ->where('provider_id', 'product.article')
+            ->count());
+        $state = $this->runtime->connection
+            ->table('larena_search_source_states')
+            ->where('provider_id', 'product.article')
+            ->where('source_ref', 'product:'.$published->itemRef->value)
+            ->first();
+        self::assertNotNull($state);
+        self::assertSame('removed', $state->state);
     }
 
     public function test_private_item_never_publishes_or_enters_search(): void

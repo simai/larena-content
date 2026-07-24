@@ -22,6 +22,7 @@ use Larena\Content\Contracts\ContentLogicalFileInspector;
 use Larena\Content\Contracts\ContentSearchSourceProvider;
 use Larena\Content\Contracts\ContentTypeService;
 use Larena\Content\Contracts\PublishedContentReader;
+use Larena\Content\Contracts\PublishedContentItemReader;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
 use Larena\Content\Filesystem\FilesystemContentLogicalFileInspector;
 use Larena\Content\Persistence\DatabaseContentRepository;
@@ -34,6 +35,7 @@ use Larena\Content\Runtime\SystemContentClock;
 use Larena\Content\Runtime\SystemContentIdGenerator;
 use Larena\Content\Rest\ContentAdminApiOperationHandler;
 use Larena\Content\Search\ContainerContentSearchSourceFactory;
+use Larena\Content\Search\ContentSearchProjectionDelegationRegistry;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
 use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
@@ -164,15 +166,34 @@ final class ContentServiceProvider extends ServiceProvider
 
         $this->app->scoped(DatabaseContentTypeService::class);
         $this->app->alias(DatabaseContentTypeService::class, ContentTypeService::class);
-        $this->app->scoped(DatabaseContentItemService::class);
+        $this->app->scoped(
+            DatabaseContentItemService::class,
+            static fn (Container $app): DatabaseContentItemService => new DatabaseContentItemService(
+                $app->make(DatabaseContentRepository::class),
+                $app->make(ContentAuthorizer::class),
+                $app->make(ContentParticipantGuard::class),
+                $app->make(ContentStorageGateway::class),
+                $app->make(ContentSchemaMapper::class),
+                $app->make(ContentInputGuard::class),
+                $app->make(ContentLogicalFileInspector::class),
+                $app->make(PublishedContentProjectionBuilder::class),
+                $app->make(DatabaseSearchIndex::class),
+                $app->make(ContentAuditEmitter::class),
+                $app->make(ContentClock::class),
+                $app->make(ContentIdGenerator::class),
+                $app->make(ContentSearchProjectionDelegationRegistry::class),
+            ),
+        );
         $this->app->alias(DatabaseContentItemService::class, ContentItemService::class);
         $this->app->scoped(DatabasePublishedContentReader::class);
         $this->app->alias(DatabasePublishedContentReader::class, PublishedContentReader::class);
+        $this->app->alias(DatabasePublishedContentReader::class, PublishedContentItemReader::class);
         $this->app->scoped(DefaultContentDataviewSourceFactory::class);
         $this->app->alias(
             DefaultContentDataviewSourceFactory::class,
             ContentDataviewSourceFactory::class,
         );
+        $this->app->singleton(ContentSearchProjectionDelegationRegistry::class);
 
         $this->app->scoped(
             DatabaseContentSearchSourceProvider::class,
@@ -180,6 +201,7 @@ final class ContentServiceProvider extends ServiceProvider
                 $app->make(DatabaseContentRepository::class),
                 $app->make(PublishedContentReader::class),
                 $app->make(ContentParticipantGuard::class),
+                $app->make(ContentSearchProjectionDelegationRegistry::class),
             ),
         );
         $this->app->alias(

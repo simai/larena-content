@@ -10,6 +10,16 @@ Storage-backed immutable revisions, Access and connection-bound Audit
 integration, Filesystem inspection, public Search projections,
 presentation-only Dataview rows and one anonymous read-only JSON route.
 
+Product packages may delegate Search projection for an explicitly registered
+Content type through `ContentSearchProjectionDelegationRegistry`. Content still
+owns mutation, immutable publication state and the exact safe public
+projection; the product adapter owns only its locator/text projection. The
+generic Content Search source excludes delegated types so one published item
+cannot produce both generic and product documents. Product adapters can read
+an exact published item through `PublishedContentItemReader`; unpublished,
+private, stale-route or inconsistent records remain indistinguishable as not
+public.
+
 The package also declares a closed draft administrator API under
 `/api/v1/admin/content`. Its 20 operations cover content types, immutable type
 versions, items, revisions, publication and logical-file attachment bindings.

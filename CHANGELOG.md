@@ -4,6 +4,11 @@
 
 ### Added
 
+- Generic per-type product Search projection delegation with conflict
+  detection, exact published-item reads and suppression of the corresponding
+  generic Content rebuild rows.
+- Transactional product projector dispatch for publish/unpublish so Content,
+  the product document and Audit remain on the same fail-closed mutation path.
 - Interface-first contracts and immutable value objects for all seven frozen
   Content Platform v1 features.
 - Access, Audit, Search and Dataview descriptors with explicit ownership and

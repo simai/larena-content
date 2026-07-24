@@ -16,7 +16,7 @@ const BASE_COMMIT = '4f19197636b3878ac0732f0229cd898291bdd3cc';
 const CODING_BRANCH = 'codex/content-model-administration-api-v1';
 const LAUNCH_RECORD = 'specs/implementation-planning/content-model-administration-api-v1-contract.json';
 const EVIDENCE_PATH = 'docs/project-management/evidence/data-content/content-model-administration-api-v1/';
-const ALLOWED_FILES_HASH = '2c5656c081ae153de92ed50d3935f9c3fc2b4da5a79eadd4960fc3dd587e8556';
+const ALLOWED_FILES_HASH = 'fa76ecf51af08acd933c7e669e5b1ed57c8fd0c7b8152fc2f17a3ac20c136646';
 const FORBIDDEN_FILES_HASH = 'c58334343a8099b59108ac534dbe8ab3042f9b4beef9580aba88bf9dddd7fedf';
 const FORBIDDEN_BEHAVIOR_HASH = 'c9a82832d0f43818724ead3d3eb9da9e3b7ce2bac449b9f610d1c416e3ee80cd';
 
@@ -45,8 +45,10 @@ $requiredFiles = [
     'src/Audit/ContentAuditEmitter.php',
     'src/Contracts/ContentDataviewSourceFactory.php',
     'src/Contracts/ContentItemService.php',
+    'src/Contracts/ContentProductSearchProjector.php',
     'src/Contracts/ContentSearchSourceProvider.php',
     'src/Contracts/ContentTypeService.php',
+    'src/Contracts/PublishedContentItemReader.php',
     'src/Contracts/PublishedContentReader.php',
     'src/Database/ContentOwnedTableShapeGuard.php',
     'src/Dataview/ContentDataviewContract.php',
@@ -60,6 +62,7 @@ $requiredFiles = [
     'src/Runtime/ContentParticipantGuard.php',
     'src/Runtime/PublishedContentProjectionBuilder.php',
     'src/Search/ContentSearchContract.php',
+    'src/Search/ContentSearchProjectionDelegationRegistry.php',
     'src/Search/ContainerContentSearchSourceFactory.php',
     'src/Search/DatabaseContentSearchSourceProvider.php',
     'src/Services/DatabaseContentItemService.php',
@@ -250,7 +253,7 @@ if (($launchContext['selected_features'] ?? null) !== $expectedFeatures) {
 
 foreach (
     [
-        ['allowed_files', 171, ALLOWED_FILES_HASH],
+        ['allowed_files', 174, ALLOWED_FILES_HASH],
         ['forbidden_files', 17, FORBIDDEN_FILES_HASH],
         ['forbidden_behavior', 21, FORBIDDEN_BEHAVIOR_HASH],
     ] as [$field, $count, $hash]
@@ -527,7 +530,9 @@ foreach (
         'SearchSourceRegistry::class',
         'ContainerContentSearchSourceFactory::class',
         'ContentDataviewSourceFactory::class',
+        'PublishedContentItemReader::class',
         'PublishedContentReader::class',
+        'ContentSearchProjectionDelegationRegistry::class',
     ] as $compositionMarker
 ) {
     if (!str_contains($providerSource, $compositionMarker)) {

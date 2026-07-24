@@ -39,6 +39,7 @@ use Larena\Content\Runtime\ContentParticipantGuard;
 use Larena\Content\Runtime\ContentSchemaMapper;
 use Larena\Content\Runtime\PublishedContentProjectionBuilder;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
+use Larena\Content\Search\ContentSearchProjectionDelegationRegistry;
 use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
@@ -81,6 +82,8 @@ final class ContentRuntimeHarness
     public readonly DatabaseSearchIndex $searchIndex;
 
     public readonly DatabaseContentSearchSourceProvider $searchSource;
+
+    public readonly ContentSearchProjectionDelegationRegistry $searchDelegations;
 
     public readonly DefaultContentDataviewSourceFactory $dataview;
 
@@ -222,6 +225,7 @@ final class ContentRuntimeHarness
             $files,
         );
         $this->repository = new DatabaseContentRepository($this->connection);
+        $this->searchDelegations = new ContentSearchProjectionDelegationRegistry();
         $this->types = new DatabaseContentTypeService(
             $this->repository,
             $contentAuthorizer,
@@ -246,6 +250,7 @@ final class ContentRuntimeHarness
             $contentAudit,
             $clock,
             new ContentFixtureIdGenerator(),
+            $this->searchDelegations,
         );
         $this->published = new DatabasePublishedContentReader(
             $this->repository,
@@ -258,6 +263,7 @@ final class ContentRuntimeHarness
             $this->repository,
             $this->published,
             $participants,
+            $this->searchDelegations,
         );
         $this->dataview = new DefaultContentDataviewSourceFactory($this->items);
         $this->admin = new ActorContext(
