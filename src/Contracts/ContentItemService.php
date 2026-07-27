@@ -60,6 +60,12 @@ interface ContentItemService
         ActorContext $actor,
     ): ContentItem;
 
+    public function submitForReview(
+        ContentItemRef $itemRef,
+        int $expectedRevision,
+        ActorContext $actor,
+    ): ContentItem;
+
     public function revision(
         ContentItemRef $itemRef,
         int $revision,

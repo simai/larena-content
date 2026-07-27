@@ -86,7 +86,7 @@ final class ContentAdminApiHandlerRuntimeTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_all_twenty_handlers_round_trip_through_their_compiled_schemas(): void
+    public function test_all_twenty_one_handlers_round_trip_through_their_compiled_schemas(): void
     {
         $typeBody = $this->typeBody();
         $createdType = $this->call('content.type_admin.create', [], [], $typeBody);
@@ -217,21 +217,30 @@ final class ContentAdminApiHandlerRuntimeTest extends TestCase
             ['expected_revision' => 6, 'role' => 'hero'],
         );
 
-        $published = $this->call(
-            'content.item_admin.publish',
+        $submitted = $this->call(
+            'content.item_admin.submit_review',
             ['item_ref' => $itemRef],
             [],
             ['expected_revision' => 7],
         );
-        self::assertSame(8, $published['item']['current_revision']);
-        $unpublished = $this->call(
-            'content.item_admin.unpublish',
+        self::assertSame('review', $submitted['item']['current_status']);
+        self::assertSame(8, $submitted['item']['current_revision']);
+
+        $published = $this->call(
+            'content.item_admin.publish',
             ['item_ref' => $itemRef],
             [],
             ['expected_revision' => 8],
         );
-        self::assertSame(9, $unpublished['item']['current_revision']);
-        self::assertSame(20, count($this->operations));
+        self::assertSame(9, $published['item']['current_revision']);
+        $unpublished = $this->call(
+            'content.item_admin.unpublish',
+            ['item_ref' => $itemRef],
+            [],
+            ['expected_revision' => 9],
+        );
+        self::assertSame(10, $unpublished['item']['current_revision']);
+        self::assertSame(21, count($this->operations));
     }
 
     public function test_duplicate_type_is_a_409_conflict_through_the_compiled_handler(): void

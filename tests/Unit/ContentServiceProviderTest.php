@@ -74,7 +74,7 @@ final class ContentServiceProviderTest extends TestCase
         self::assertInstanceOf(SystemContentIdGenerator::class, $container->make(ContentIdGenerator::class));
 
         $registry = $container->make(AccessOperationRegistry::class);
-        self::assertCount(18, $registry->all());
+        self::assertCount(19, $registry->all());
         self::assertSame(
             [
                 'content.attachment.attach',
@@ -86,6 +86,7 @@ final class ContentServiceProviderTest extends TestCase
                 'content.item.publish',
                 'content.item.read',
                 'content.item.restore',
+                'content.item.submit_review',
                 'content.item.unpublish',
                 'content.item.update',
                 'content.revision.list',
@@ -103,7 +104,7 @@ final class ContentServiceProviderTest extends TestCase
         );
 
         $provider->register();
-        self::assertCount(18, $registry->all());
+        self::assertCount(19, $registry->all());
         self::assertNull($registry->get('content.public.read'));
     }
 

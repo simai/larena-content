@@ -798,11 +798,11 @@ final readonly class DatabaseContentRepository
         }
 
         if (
-            $row['current_status'] === ContentStatus::Draft->value
+            $row['current_status'] !== ContentStatus::Published->value
             && $publishedRevision !== null
             && (int) $publishedRevision === $currentRevision
         ) {
-            throw new ContentRejected('draft_head_pointer_invalid');
+            throw new ContentRejected('non_published_head_pointer_invalid');
         }
     }
 

@@ -10,7 +10,7 @@ final readonly class ContentFieldDefinition
 {
     public const int MAX_STRING_CODE_POINTS = 65_536;
 
-    /** @var array<string, int> */
+    /** @var array<string, int|string> */
     public array $constraints;
 
     /**
@@ -27,8 +27,8 @@ final readonly class ContentFieldDefinition
             throw new \InvalidArgumentException('Content field keys must be stable lowercase identifiers.');
         }
 
-        if (!in_array($propertyType, ['string', 'integer', 'boolean'], true)) {
-            throw new \InvalidArgumentException('Content Platform v1 supports only string, integer and boolean fields.');
+        if (!in_array($propertyType, ['string', 'text', 'number', 'integer', 'boolean', 'date', 'file', 'relation'], true)) {
+            throw new \InvalidArgumentException('Content CMS v1 field type is not supported.');
         }
 
         $this->constraints = self::normalizeConstraints($propertyType, $constraints);
@@ -42,7 +42,7 @@ final readonly class ContentFieldDefinition
     public function isPublicSearchScalar(): bool
     {
         return $this->isPublic()
-            && in_array($this->propertyType, ['string', 'integer', 'boolean'], true);
+            && in_array($this->propertyType, ['string', 'text', 'number', 'integer', 'boolean', 'date'], true);
     }
 
     public static function assertStringValueWithinFrozenBound(string $value): void
@@ -64,14 +64,15 @@ final readonly class ContentFieldDefinition
     /**
      * @param array<array-key, mixed> $constraints
      *
-     * @return array<string, int>
+     * @return array<string, int|string>
      */
     private static function normalizeConstraints(string $propertyType, array $constraints): array
     {
         $allowedKeys = match ($propertyType) {
-            'string' => ['min_length', 'max_length'],
+            'string', 'text' => ['min_length', 'max_length'],
             'integer' => ['min', 'max'],
-            'boolean' => [],
+            'number', 'date' => ['min', 'max'],
+            'boolean', 'file', 'relation' => [],
             default => throw new \LogicException('Unsupported frozen Content field type.'),
         };
 
@@ -82,7 +83,13 @@ final readonly class ContentFieldDefinition
         $normalized = [];
 
         foreach ($constraints as $key => $value) {
-            if (!is_string($key) || !in_array($key, $allowedKeys, true) || !is_int($value)) {
+            $validValue = match ($propertyType) {
+                'string', 'text', 'integer' => is_int($value),
+                'number' => is_int($value) || is_string($value),
+                'date' => is_string($value),
+                default => false,
+            };
+            if (!is_string($key) || !in_array($key, $allowedKeys, true) || !$validValue) {
                 throw new \InvalidArgumentException(
                     'Content field constraints must match the frozen Property v1 contract.',
                 );
@@ -91,15 +98,16 @@ final readonly class ContentFieldDefinition
             $normalized[$key] = $value;
         }
 
-        $minimumKey = $propertyType === 'string' ? 'min_length' : 'min';
-        $maximumKey = $propertyType === 'string' ? 'max_length' : 'max';
+        $lengthType = in_array($propertyType, ['string', 'text'], true);
+        $minimumKey = $lengthType ? 'min_length' : 'min';
+        $maximumKey = $lengthType ? 'max_length' : 'max';
         $minimum = $normalized[$minimumKey] ?? null;
         $maximum = $normalized[$maximumKey] ?? null;
 
         if (
-            ($propertyType === 'string' && (($minimum !== null && $minimum < 0) || ($maximum !== null && $maximum < 0)))
-            || ($propertyType === 'string' && $maximum !== null && $maximum > self::MAX_STRING_CODE_POINTS)
-            || ($minimum !== null && $maximum !== null && $minimum > $maximum)
+            ($lengthType && (($minimum !== null && $minimum < 0) || ($maximum !== null && $maximum < 0)))
+            || ($lengthType && $maximum !== null && $maximum > self::MAX_STRING_CODE_POINTS)
+            || ($propertyType === 'integer' && $minimum !== null && $maximum !== null && $minimum > $maximum)
         ) {
             throw new \InvalidArgumentException('Content field constraint bounds are invalid.');
         }

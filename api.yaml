@@ -336,7 +336,7 @@ operations:
             {type: string, minLength: 49, maxLength: 49, pattern: '^content:item:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'}
           type_key: *type_key_optional
           locale: &locale {type: string, minLength: 2, maxLength: 16, pattern: '^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$'}
-          status: &status {type: string, enum: [draft, published]}
+          status: &status {type: string, enum: [draft, review, published]}
           visibility: &visibility {type: string, enum: [public, private]}
         required: []
       body: {type: object, additionalProperties: false, properties: {}, required: []}
@@ -521,6 +521,35 @@ operations:
     lifecycle: {state: draft, version: v1}
     docs: {summary: Update Content item, description: CAS-appends one draft item revision., tags: [Content]}
 
+  - key: content.item_admin.submit_review
+    method: POST
+    path: /api/v1/admin/content/items/{item_ref}/submit-review
+    handler: {operation_ref: content.item_admin.submit_review}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.item.submit_review]}
+    request:
+      path: *item_path
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: &expected_revision_body
+        type: object
+        additionalProperties: false
+        properties: {expected_revision: {type: integer, minimum: 1}}
+        required: [expected_revision]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties: {item: *item_summary}
+        required: [item]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.item_admin.submit_review, summary_fields: [path.item_ref, body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Submit Content item for review, description: Appends an immutable review revision for the exact current draft., tags: [Content]}
+
   - key: content.item_admin.revisions.list
     method: GET
     path: /api/v1/admin/content/items/{item_ref}/revisions
@@ -616,11 +645,7 @@ operations:
     request:
       path: *item_revision_path
       query: {type: object, additionalProperties: false, properties: {}, required: []}
-      body: &expected_revision_body
-        type: object
-        additionalProperties: false
-        properties: {expected_revision: {type: integer, minimum: 1}}
-        required: [expected_revision]
+      body: *expected_revision_body
     response:
       status: 200
       schema:

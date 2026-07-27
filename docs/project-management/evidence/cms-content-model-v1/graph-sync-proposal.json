@@ -1,0 +1,22 @@
+{
+  "schema": "larena.graph_sync_proposal.v1",
+  "canonical_update_allowed": false,
+  "package": "larena/content",
+  "status": "proposal_ready",
+  "proposal": {
+    "feature": "content.cms_admin_v1",
+    "capabilities": [
+      "cms_type_definition",
+      "cms_typed_item_mutation",
+      "cms_review_submission",
+      "cms_publication_lifecycle"
+    ],
+    "contracts": [
+      "ContentTypeService",
+      "ContentItemService",
+      "ContentAdminApiOperationHandler"
+    ],
+    "evidence_path": "docs/project-management/evidence/cms-content-model-v1/"
+  },
+  "apply_requested": false
+}

@@ -55,11 +55,11 @@ final readonly class ContentItem
         }
 
         if (
-            $currentStatus === ContentStatus::Draft
+            $currentStatus !== ContentStatus::Published
             && $publishedRevision === $currentRevision
         ) {
             throw new \InvalidArgumentException(
-                'A draft Content head cannot also be the exact published revision.',
+                'A non-published Content head cannot also be the exact published revision.',
             );
         }
     }

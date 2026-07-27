@@ -20,7 +20,7 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
 
     public function testFrozenCorrectionConstantsAreExplicit(): void
     {
-        self::assertCount(18, ContentAccessOperationCatalog::codes());
+        self::assertCount(19, ContentAccessOperationCatalog::codes());
         self::assertNotContains('content.public.read', ContentAccessOperationCatalog::codes());
         self::assertSame(65_536, ContentFieldDefinition::MAX_STRING_CODE_POINTS);
         self::assertSame(100, ContentTypeVersion::MAX_FIELDS);
@@ -155,18 +155,20 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
         self::assertIsArray($toolchain);
         $toolchainRef = $toolchain['report_ref'] ?? null;
         self::assertIsString($toolchainRef);
-        self::assertSame('not_required', $actionGate['status'] ?? null);
-        self::assertArrayNotHasKey('evidence_ref', $actionGate);
+        self::assertSame('success', $actionGate['status'] ?? null);
+        $actionGateRef = $actionGate['evidence_ref'] ?? null;
+        self::assertIsString($actionGateRef);
+        self::assertFalse(str_starts_with($actionGateRef, '/'));
         self::assertFalse(str_starts_with($toolchainRef, '/'));
         self::assertSame(
-            'docs/project-management/evidence/data-content/content-model-administration-api-v1/tests.md',
+            'docs/project-management/evidence/cms-content-model-v1/tests.md',
             $toolchainRef,
         );
         self::assertFileExists($root.'/'.$toolchainRef);
         self::assertFalse($context['review_completed'] ?? true);
         self::assertSame('pending', $context['independent_review_verdict'] ?? null);
         self::assertSame(
-            'not_requested_in_content_owner_scope',
+            'not_requested_in_current_batch',
             $context['remote_push_status'] ?? null,
         );
     }

@@ -91,7 +91,7 @@ PHP;
                 'item_ref_matches' => true,
                 'published_revision' => 2,
                 'search_hits' => 1,
-                'access_assignments' => 2,
+            'access_assignments' => 3,
                 'storage_records' => 2,
             ], $receipt);
 

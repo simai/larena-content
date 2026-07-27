@@ -15,6 +15,7 @@ final class ContentAuditEventCatalog
         'content.type.versioned',
         'content.item.created',
         'content.item.updated',
+        'content.item.submitted_for_review',
         'content.item.restored',
         'content.item.published',
         'content.item.unpublished',

@@ -50,6 +50,7 @@ final class ServiceInterfaceContractTest extends TestCase
                 'restore',
                 'revision',
                 'revisions',
+                'submitForReview',
                 'unpublish',
                 'update',
             ],

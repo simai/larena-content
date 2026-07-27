@@ -99,6 +99,8 @@ final class ContentRuntimeHarness
 
     public readonly ActorContext $reader;
 
+    public readonly ActorContext $editor;
+
     private readonly ContentTestDatabase $database;
 
     private readonly string $blobRoot;
@@ -141,6 +143,11 @@ final class ContentRuntimeHarness
             $this->accessStore->assignRole(
                 'user:admin_identity:2',
                 'reader',
+                'user:admin_identity:1',
+            );
+            $this->accessStore->assignRole(
+                'user:admin_identity:3',
+                'editor',
                 'user:admin_identity:1',
             );
         } else {
@@ -220,11 +227,12 @@ final class ContentRuntimeHarness
             $this->searchIndex,
             $contentAuditPipeline,
         );
+        $this->repository = new DatabaseContentRepository($this->connection);
         $projections = new PublishedContentProjectionBuilder(
             $this->storage,
             $files,
+            $this->repository,
         );
-        $this->repository = new DatabaseContentRepository($this->connection);
         $this->searchDelegations = new ContentSearchProjectionDelegationRegistry();
         $this->types = new DatabaseContentTypeService(
             $this->repository,
@@ -275,6 +283,11 @@ final class ContentRuntimeHarness
             'user',
             'user:admin_identity:2',
             'content-runtime-reader',
+        );
+        $this->editor = new ActorContext(
+            'user',
+            'user:admin_identity:3',
+            'content-runtime-editor',
         );
     }
 
@@ -483,6 +496,7 @@ final class ContentRuntimeHarness
         $this->connection->table('larena_admin_identities')->insert([
             ['id' => 1, 'status' => 'active', 'disabled_at' => null],
             ['id' => 2, 'status' => 'active', 'disabled_at' => null],
+            ['id' => 3, 'status' => 'active', 'disabled_at' => null],
         ]);
     }
 

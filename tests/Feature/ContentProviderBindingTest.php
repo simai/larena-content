@@ -234,7 +234,7 @@ final class ContentProviderBindingTest extends TestCase
             'larena/content',
         );
 
-        self::assertCount(20, $contract->operations);
+        self::assertCount(21, $contract->operations);
         foreach ($contract->operations as $operation) {
             $handler = $registry->get($operation->handlerReference);
             self::assertIsCallable($handler);

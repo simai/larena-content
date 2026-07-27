@@ -28,6 +28,9 @@ operations:
   - code: content.item.update
     risk: high
     audit: always
+  - code: content.item.submit_review
+    risk: high
+    audit: always
   - code: content.item.restore
     risk: critical
     audit: always

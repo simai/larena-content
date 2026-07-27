@@ -17,8 +17,13 @@ final class ContentSchemaMapper
     /** @var array<string, int> */
     private const PROPERTY_VERSIONS = [
         'string' => 2,
+        'text' => 1,
+        'number' => 1,
         'integer' => 1,
         'boolean' => 1,
+        'date' => 1,
+        'file' => 1,
+        'relation' => 1,
     ];
 
     private ContentInputGuard $input;
@@ -45,7 +50,7 @@ final class ContentSchemaMapper
      *         type_version: int,
      *         required: bool,
      *         visibility: string,
-     *         constraints: array<string, int>
+     *         constraints: array<string, int|string>
      *     }>
      * }
      */
@@ -164,7 +169,10 @@ final class ContentSchemaMapper
             if (!$result->canBePersistedByOwner()) {
                 throw new ContentRejected(
                     'content_value_invalid',
-                    'A submitted Content value failed its exact Property contract.',
+                    sprintf(
+                        'The submitted Content value for field "%s" failed its exact Property contract.',
+                        $key,
+                    ),
                 );
             }
 
@@ -290,7 +298,7 @@ final class ContentSchemaMapper
 
             $constraints = [];
             foreach ($field['constraints'] as $key => $value) {
-                if (!is_string($key) || !is_int($value)) {
+                if (!is_string($key) || !(is_int($value) || is_string($value))) {
                     throw new ContentIntegrationFailed(
                         'storage',
                         'schema_contract_mismatch',
@@ -369,7 +377,7 @@ final class ContentSchemaMapper
         return self::PROPERTY_VERSIONS[$propertyType]
             ?? throw new ContentRejected(
                 'property_type_unsupported',
-                'Content Platform v1 supports only its three frozen Property types.',
+                'Content CMS v1 does not support this Property type.',
             );
     }
 

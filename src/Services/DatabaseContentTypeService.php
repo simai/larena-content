@@ -655,7 +655,7 @@ final readonly class DatabaseContentTypeService implements ContentTypeService
      *     property_type:string,
      *     visibility:string,
      *     required:bool,
-     *     constraints:array<string,int>
+     *     constraints:array<string,int|string>
      * }
      */
     private function fieldMaterial(ContentFieldDefinition $field): array

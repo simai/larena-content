@@ -17,7 +17,7 @@ final readonly class ContentProjectionContract
      *     property_type: string,
      *     visibility: string,
      *     required: bool,
-     *     constraints: array<string, int>
+     *     constraints: array<string, int|string>
      * }>
      */
     private array $fieldSignatures;
@@ -67,7 +67,7 @@ final readonly class ContentProjectionContract
             if (
                 !$snippet instanceof ContentFieldDefinition
                 || !$snippet->isPublic()
-                || $snippet->propertyType !== 'string'
+                || !in_array($snippet->propertyType, ['string', 'text'], true)
             ) {
                 throw new \InvalidArgumentException('The snippet field must reference a public string field or be null.');
             }
@@ -253,7 +253,7 @@ final readonly class ContentProjectionContract
             }
 
             $valid = match ($signature['property_type']) {
-                'string' => is_string($value),
+                'string', 'text', 'number', 'date', 'file', 'relation' => is_string($value),
                 'integer' => is_int($value),
                 'boolean' => is_bool($value),
                 default => false,

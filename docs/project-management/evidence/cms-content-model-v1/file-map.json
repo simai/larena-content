@@ -1,0 +1,37 @@
+{
+  "schema": "larena.evidence_file_map.v1",
+  "owner": "larena/content",
+  "status": "package_verified",
+  "files": {
+    "contracts": [
+      "src/Contracts/ContentItemService.php",
+      "api.yaml",
+      "access.yaml",
+      "audit.yaml"
+    ],
+    "domain": [
+      "src/Enums/ContentStatus.php",
+      "src/ValueObjects/ContentFieldDefinition.php",
+      "src/ValueObjects/ContentProjectionContract.php"
+    ],
+    "runtime": [
+      "src/Runtime/ContentSchemaMapper.php",
+      "src/Runtime/PublishedContentProjectionBuilder.php",
+      "src/Services/DatabaseContentItemService.php"
+    ],
+    "integration": [
+      "src/Access/ContentAccessOperationCatalog.php",
+      "src/Access/ContentAuthorizer.php",
+      "src/Audit/ContentAuditEventCatalog.php",
+      "src/Rest/ContentAdminApiOperationHandler.php",
+      "src/Providers/ContentServiceProvider.php"
+    ],
+    "verification": [
+      "tests/Feature/CmsContentModelV1RuntimeTest.php",
+      "tests/Feature/ContentAdminApiHandlerRuntimeTest.php",
+      "tests/Integration/ContentFreshProcessRestartTest.php",
+      "tests/Integration/ContentPlatformMySqlTest.php",
+      "tests/Integration/ContentMigrationShapeTest.php"
+    ]
+  }
+}

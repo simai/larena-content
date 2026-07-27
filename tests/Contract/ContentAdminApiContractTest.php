@@ -27,6 +27,7 @@ final class ContentAdminApiContractTest extends TestCase
         'content.item_admin.read' => ['method' => 'GET', 'path' => '/api/v1/admin/content/items/{item_ref}', 'access' => ['content.item.read', 'content.revision.read', 'content.type.read', 'storage.record.read']],
         'content.item_admin.create' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items', 'access' => ['content.item.create', 'storage.record.create']],
         'content.item_admin.update' => ['method' => 'PUT', 'path' => '/api/v1/admin/content/items/{item_ref}', 'access' => ['content.item.update', 'storage.record.update']],
+        'content.item_admin.submit_review' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/submit-review', 'access' => ['content.item.submit_review']],
         'content.item_admin.revisions.list' => ['method' => 'GET', 'path' => '/api/v1/admin/content/items/{item_ref}/revisions', 'access' => ['content.revision.list']],
         'content.item_admin.revisions.read' => ['method' => 'GET', 'path' => '/api/v1/admin/content/items/{item_ref}/revisions/{revision}', 'access' => ['content.revision.read', 'content.type.read', 'storage.record.read']],
         'content.item_admin.revisions.restore' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/revisions/{revision}/restore', 'access' => ['content.item.restore', 'storage.record.read', 'storage.record.update']],
@@ -38,7 +39,7 @@ final class ContentAdminApiContractTest extends TestCase
         'content.item_admin.attachments.reorder' => ['method' => 'PUT', 'path' => '/api/v1/admin/content/items/{item_ref}/attachments', 'access' => ['content.attachment.reorder']],
     ];
 
-    public function test_real_loader_compiles_exact_twenty_operation_contract(): void
+    public function test_real_loader_compiles_exact_twenty_one_operation_contract(): void
     {
         $contract = (new PackageApiContractLoader())->loadFile(
             dirname(__DIR__, 2).'/api.yaml',
@@ -47,7 +48,7 @@ final class ContentAdminApiContractTest extends TestCase
 
         self::assertSame('larena/content', $contract->package);
         self::assertSame('1.0.0', $contract->version);
-        self::assertCount(20, $contract->operations);
+        self::assertCount(21, $contract->operations);
         self::assertSame(array_keys(self::OPERATIONS), array_map(
             static fn ($operation): string => $operation->operationKey,
             $contract->operations,
@@ -98,7 +99,7 @@ final class ContentAdminApiContractTest extends TestCase
         ))->generate(static fn ($operation): bool => $operation->ownerPackage === 'larena/content');
 
         self::assertSame('3.1.0', $document['openapi']);
-        self::assertCount(14, $document['paths']);
+        self::assertCount(15, $document['paths']);
         foreach (self::OPERATIONS as $operationKey => $expected) {
             $method = strtolower($expected['method']);
             self::assertSame(

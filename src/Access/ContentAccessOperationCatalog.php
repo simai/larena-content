@@ -27,6 +27,7 @@ final class ContentAccessOperationCatalog
         ['code' => 'content.item.read', 'label' => 'item_read', 'target' => 'content.item:all', 'grant' => 'read', 'risk' => 'high'],
         ['code' => 'content.item.create', 'label' => 'item_create', 'target' => 'content.item:all', 'grant' => 'create', 'risk' => 'high'],
         ['code' => 'content.item.update', 'label' => 'item_update', 'target' => 'content.item:all', 'grant' => 'update', 'risk' => 'high'],
+        ['code' => 'content.item.submit_review', 'label' => 'item_submit_review', 'target' => 'content.item:all', 'grant' => 'submit_review', 'risk' => 'high'],
         ['code' => 'content.item.restore', 'label' => 'item_restore', 'target' => 'content.item:all', 'grant' => 'restore', 'risk' => 'critical'],
         ['code' => 'content.revision.list', 'label' => 'revision_list', 'target' => 'content.revision:all', 'grant' => 'list', 'risk' => 'high'],
         ['code' => 'content.revision.read', 'label' => 'revision_read', 'target' => 'content.revision:all', 'grant' => 'read', 'risk' => 'high'],

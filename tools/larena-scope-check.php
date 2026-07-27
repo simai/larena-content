@@ -74,6 +74,13 @@ foreach ($diffOutputs as $diffOutput) {
 $errors = [];
 foreach (array_keys($changedFiles) as $file) {
     $exactlyAllowed = in_array($file, $allowedFiles, true);
+    $allowedByPattern = $exactlyAllowed;
+    foreach ($allowedFiles as $pattern) {
+        if (matches_pattern($file, $pattern)) {
+            $allowedByPattern = true;
+            break;
+        }
+    }
     $evidenceAllowed = $evidencePath !== '' && str_starts_with($file, $evidencePath . '/');
     foreach (['src/', 'config/', 'database/', 'routes/', 'resources/', 'tests/', 'lang/'] as $runtimeRoot) {
         if (str_starts_with($file, $runtimeRoot) && !$codingStarted) {
@@ -87,7 +94,7 @@ foreach (array_keys($changedFiles) as $file) {
             continue 2;
         }
     }
-    if (!$exactlyAllowed && !$evidenceAllowed) {
+    if (!$allowedByPattern && !$evidenceAllowed) {
         $errors[] = $file . ' is outside allowed_files and evidence_path';
     }
 }

@@ -6,6 +6,7 @@ namespace Larena\Content\Runtime;
 
 use Larena\Content\Contracts\ContentLogicalFileInspector;
 use Larena\Content\Exceptions\ContentIntegrationFailed;
+use Larena\Content\Persistence\DatabaseContentRepository;
 use Larena\Content\Storage\ContentStorageGateway;
 use Larena\Content\ValueObjects\ContentAttachmentReference;
 use Larena\Content\ValueObjects\ContentItem;
@@ -20,6 +21,7 @@ final readonly class PublishedContentProjectionBuilder
     public function __construct(
         private ContentStorageGateway $storage,
         private ContentLogicalFileInspector $files,
+        private DatabaseContentRepository $repository,
     ) {
     }
 
@@ -56,17 +58,48 @@ final readonly class PublishedContentProjectionBuilder
             );
         }
 
+        $storageProjection = $this->storage->publicProjection(new StorageRecordVersionRef(
+            schemaId: $revision->storageSchemaRef,
+            recordId: $revision->storageRecordRef,
+            revision: $revision->storageRecordVersion,
+        ), $forUpdate);
+        $this->assertPublicReferences($typeVersion, $storageProjection->values);
+
         return PublishedContentProjection::fromPublishedRevision(
             typeVersion: $typeVersion,
             item: $item,
             revision: $revision,
-            storageProjection: $this->storage->publicProjection(new StorageRecordVersionRef(
-                schemaId: $revision->storageSchemaRef,
-                recordId: $revision->storageRecordRef,
-                revision: $revision->storageRecordVersion,
-            ), $forUpdate),
+            storageProjection: $storageProjection,
             publicAttachments: $publicAttachments,
         );
+    }
+
+    /** @param array<string, mixed> $values */
+    private function assertPublicReferences(ContentTypeVersion $typeVersion, array $values): void
+    {
+        foreach ($values as $fieldKey => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $propertyType = $typeVersion->projectionContract->fieldType($fieldKey);
+            if ($propertyType === 'file' && !$this->files->inspect($value)->isPubliclyProjectable()) {
+                throw new \InvalidArgumentException(
+                    'A public file field must reference a publicly projectable persistent file.',
+                );
+            }
+
+            if ($propertyType !== 'relation') {
+                continue;
+            }
+
+            $target = $this->repository->itemRow('content:item:'.$value);
+            if ($target === null || $target['published_revision'] === null) {
+                throw new \InvalidArgumentException(
+                    'A public relation field must reference a published Content item.',
+                );
+            }
+        }
     }
 
     /**

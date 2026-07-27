@@ -140,7 +140,7 @@ final readonly class ContentSearchProjection
             }
 
             $searchableParts[] = match ($contract->fieldType($fieldKey)) {
-                'string' => is_string($value)
+                'string', 'text', 'number', 'date' => is_string($value)
                     ? self::trimUnicode($value)
                     : throw new \InvalidArgumentException('A searchable string field has an invalid value.'),
                 'integer' => is_int($value)

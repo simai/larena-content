@@ -47,6 +47,7 @@ final readonly class ContentAdminApiOperationHandler
         'content.item_admin.read',
         'content.item_admin.create',
         'content.item_admin.update',
+        'content.item_admin.submit_review',
         'content.item_admin.revisions.list',
         'content.item_admin.revisions.read',
         'content.item_admin.revisions.restore',
@@ -165,6 +166,13 @@ final readonly class ContentAdminApiOperationHandler
                 ],
                 'content.item_admin.create' => $this->itemCreate($body, $actor),
                 'content.item_admin.update' => $this->itemUpdate($path, $body, $actor),
+                'content.item_admin.submit_review' => $this->itemResult(
+                    $this->items->submitForReview(
+                        $this->itemRef($path),
+                        $this->requiredInt($body, 'expected_revision'),
+                        $actor,
+                    ),
+                ),
                 'content.item_admin.revisions.list' => $this->revisionList(
                     $path,
                     $query,

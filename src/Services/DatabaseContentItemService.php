@@ -122,6 +122,11 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $typeVersion->fieldDefinitions,
                     $values,
                 );
+                $this->assertOwnedReferences(
+                    $typeVersion->fieldDefinitions,
+                    $normalized,
+                    $itemRef,
+                );
                 $storageWrite = $this->storage->create(
                     $itemRef,
                     new StorageSchemaVersionRef(
@@ -338,6 +343,11 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     $typeVersion->fieldDefinitions,
                     $values,
                 );
+                $this->assertOwnedReferences(
+                    $typeVersion->fieldDefinitions,
+                    $normalized,
+                    $itemRef,
+                );
                 $storageWrite = $this->storage->update(
                     $itemRef,
                     $this->storageRef($current),
@@ -518,6 +528,85 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     'item_ref' => $itemRef->value,
                     'expected_revision' => max(0, $expectedRevision),
                     'current_revision' => max(0, $restoreRevision),
+                ],
+            );
+
+            throw $exception;
+        }
+    }
+
+    public function submitForReview(
+        ContentItemRef $itemRef,
+        int $expectedRevision,
+        ActorContext $actor,
+    ): ContentItem {
+        $connection = $this->preflightProtected($actor, 'content.item.submit_review');
+
+        try {
+            $this->assertExpectedRevision($expectedRevision);
+            $this->repository->assertCompleteCompatible();
+
+            return $connection->transaction(function () use (
+                $itemRef,
+                $expectedRevision,
+                $actor,
+            ): ContentItem {
+                [$before, $current] = $this->lockedCurrent($itemRef, $expectedRevision);
+                if ($before->currentStatus !== ContentStatus::Draft) {
+                    throw new ContentRejected('content_review_requires_draft');
+                }
+
+                $this->lockAndAssertRoutesAvailable(
+                    $before->typeKey,
+                    $before->locale,
+                    $this->routeSlugs($before, $before->currentSlug),
+                    $itemRef,
+                );
+                $attachments = $this->attachmentPlacementsForRevision($current, true);
+                $now = $this->clock->now();
+                [$after] = $this->persistNextRevision(
+                    before: $before,
+                    storageRef: $this->storageRef($current),
+                    storageSchema: $this->storageSchemaRef($current),
+                    typeVersion: $current->typeVersion,
+                    slug: $before->currentSlug,
+                    status: ContentStatus::Review,
+                    visibility: $before->currentVisibility,
+                    attachments: $attachments,
+                    publishedRevision: $before->publishedRevision,
+                    publishedSlug: $before->publishedSlug,
+                    publishedAt: $before->publishedAt,
+                    actor: $actor,
+                    now: $now,
+                );
+                $this->audit->emit(
+                    'content.item.submitted_for_review',
+                    $actor,
+                    $itemRef->value,
+                    ContentAuditPayload::from([
+                        'operation' => 'content.item.submit_review',
+                        'type_key' => $before->typeKey->value,
+                        'item_ref' => $itemRef->value,
+                        'expected_revision' => $expectedRevision,
+                        'new_revision' => $after->currentRevision,
+                        'status' => $after->currentStatus->value,
+                        'visibility' => $after->currentVisibility->value,
+                        'attachment_count' => count($attachments),
+                    ]),
+                );
+
+                return $after;
+            }, 3);
+        } catch (ContentRejected $exception) {
+            $this->auditDomainDenial(
+                $connection,
+                $actor,
+                'content.item.submit_review',
+                $exception,
+                $itemRef->value,
+                [
+                    'item_ref' => $itemRef->value,
+                    'expected_revision' => max(0, $expectedRevision),
                 ],
             );
 
@@ -880,7 +969,11 @@ final readonly class DatabaseContentItemService implements ContentItemService
         int $expectedRevision,
         ActorContext $actor,
     ): ContentItem {
-        $connection = $this->preflightProtected($actor, 'content.item.publish');
+        $connection = $this->preflightProtected(
+            $actor,
+            'content.item.publish',
+            ['storage.record.read'],
+        );
 
         try {
             $this->assertExpectedRevision($expectedRevision);
@@ -892,6 +985,9 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 $actor,
             ): ContentItem {
                 [$before, $current] = $this->lockedCurrent($itemRef, $expectedRevision);
+                if (!in_array($before->currentStatus, [ContentStatus::Draft, ContentStatus::Review], true)) {
+                    throw new ContentRejected('content_publish_requires_draft_or_review');
+                }
                 if ($before->currentVisibility !== ContentVisibility::Public) {
                     throw new ContentRejected('private_item_cannot_publish');
                 }
@@ -1280,6 +1376,42 @@ final readonly class DatabaseContentItemService implements ContentItemService
         $this->synchronizeRoutes($before, $after, $timestamp);
 
         return [$after, $revision];
+    }
+
+    /**
+     * Property validates reference syntax. Content coordinates semantic owner
+     * checks without reading another package's tables directly.
+     *
+     * @param list<\Larena\Content\ValueObjects\ContentFieldDefinition> $fields
+     * @param array<string, scalar|null> $values
+     */
+    private function assertOwnedReferences(
+        array $fields,
+        array $values,
+        ContentItemRef $owner,
+    ): void {
+        foreach ($fields as $field) {
+            $value = $values[$field->key] ?? null;
+            if (!is_string($value)) {
+                continue;
+            }
+
+            if ($field->propertyType === 'file') {
+                if (!$this->files->inspect($value)->isContentAttachable()) {
+                    throw new ContentRejected('content_file_reference_unavailable');
+                }
+                continue;
+            }
+
+            if ($field->propertyType !== 'relation') {
+                continue;
+            }
+
+            $target = ContentItemRef::fromUuid($value);
+            if ($target->value === $owner->value || $this->repository->itemRow($target->value, true) === null) {
+                throw new ContentRejected('content_relation_target_unavailable');
+            }
+        }
     }
 
     /**

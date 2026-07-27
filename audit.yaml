@@ -19,6 +19,9 @@ events:
   - type: content.item.updated
     category: content_lifecycle
     severity: security
+  - type: content.item.submitted_for_review
+    category: content_lifecycle
+    severity: security
   - type: content.item.restored
     category: content_lifecycle
     severity: security

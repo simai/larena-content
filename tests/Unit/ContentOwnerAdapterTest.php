@@ -75,6 +75,7 @@ final class ContentOwnerAdapterTest extends TestCase
         $authorizer->assertAllowed($actor, 'content.item.publish');
         self::assertSame([
             [$actor->actorRef, 'content.item.publish'],
+            [$actor->actorRef, 'storage.record.read'],
         ], $recording->calls);
     }
 

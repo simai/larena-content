@@ -30,11 +30,12 @@ final readonly class ContentAuthorizer
         ],
         'content.item.create' => ['storage.record.create'],
         'content.item.update' => ['storage.record.update'],
+        'content.item.submit_review' => [],
         'content.item.restore' => ['storage.record.read', 'storage.record.update'],
         'content.attachment.attach' => [],
         'content.attachment.detach' => [],
         'content.attachment.reorder' => [],
-        'content.item.publish' => [],
+        'content.item.publish' => ['storage.record.read'],
         'content.item.unpublish' => [],
     ];
 

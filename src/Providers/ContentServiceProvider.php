@@ -161,6 +161,7 @@ final class ContentServiceProvider extends ServiceProvider
             static fn (Container $app): PublishedContentProjectionBuilder => new PublishedContentProjectionBuilder(
                 $app->make(ContentStorageGateway::class),
                 $app->make(ContentLogicalFileInspector::class),
+                $app->make(DatabaseContentRepository::class),
             ),
         );
 
