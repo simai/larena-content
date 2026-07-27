@@ -31,7 +31,7 @@ final class ContentAdminApiContractTest extends TestCase
         'content.item_admin.revisions.list' => ['method' => 'GET', 'path' => '/api/v1/admin/content/items/{item_ref}/revisions', 'access' => ['content.revision.list']],
         'content.item_admin.revisions.read' => ['method' => 'GET', 'path' => '/api/v1/admin/content/items/{item_ref}/revisions/{revision}', 'access' => ['content.revision.read', 'content.type.read', 'storage.record.read']],
         'content.item_admin.revisions.restore' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/revisions/{revision}/restore', 'access' => ['content.item.restore', 'storage.record.read', 'storage.record.update']],
-        'content.item_admin.publish' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/publish', 'access' => ['content.item.publish']],
+        'content.item_admin.publish' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/publish', 'access' => ['content.item.publish', 'storage.record.read']],
         'content.item_admin.unpublish' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/unpublish', 'access' => ['content.item.unpublish']],
         'content.item_admin.attachments.list' => ['method' => 'GET', 'path' => '/api/v1/admin/content/items/{item_ref}/attachments', 'access' => ['content.attachment.list']],
         'content.item_admin.attachments.attach' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/attachments', 'access' => ['content.attachment.attach']],

@@ -666,7 +666,7 @@ operations:
     handler: {operation_ref: content.item_admin.publish}
     auth: {channels: [admin_session]}
     csrf: {required: true}
-    access: {operations: [content.item.publish]}
+    access: {operations: [content.item.publish, storage.record.read]}
     request: {path: *item_path, query: {type: object, additionalProperties: false, properties: {}, required: []}, body: *expected_revision_body}
     response:
       status: 200
