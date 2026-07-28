@@ -12,9 +12,9 @@ use Symfony\Component\Yaml\Yaml;
 
 const PACKAGE = 'larena/content';
 const SPECS_COMMIT = 'f13cb540b2bb3c658ee760816b1539c9ebb616dc';
-const BASE_COMMIT = '830514d58f37dbcfef5a8c78c9d51826e8278440';
-const LAUNCH_RECORD = 'docs/project-management/launch-records/site-structure-backend-v1.json';
-const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-backend-v1/content/';
+const BASE_COMMIT = 'c5e251729ced49ad38fca7102c32760e47145ccb';
+const LAUNCH_RECORD = 'docs/project-management/launch-records/site-structure-http-v1.json';
+const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-http-v1/content/';
 
 $errors = [];
 
@@ -75,6 +75,12 @@ foreach ([
     'src/Services/DatabaseManagedContentRedirectReader.php',
     'database/migrations/2026_07_28_000001_create_larena_content_site_structure_tables.php',
     'routes/public.php',
+    'routes/admin.php',
+    'config/admin.php',
+    'resources/views/admin/site-structure.blade.php',
+    'src/Http/Controllers/SiteStructureAdminController.php',
+    'src/Http/Controllers/PublishedSiteMetadataController.php',
+    'src/Navigation/ContentAdminNavigationContributor.php',
     'tests/Feature/SiteStructureRuntimeTest.php',
     'tests/Feature/CmsSitePackPortabilityRuntimeTest.php',
     'tests/Integration/CmsSitePackPortabilityMySqlTest.php',
@@ -120,8 +126,8 @@ foreach ([
 if (($context['coding_allowed'] ?? null) !== true || ($context['coding_started'] ?? null) !== true) {
     $errors[] = 'Launch context must explicitly authorize and record coding.';
 }
-if (($context['review_completed'] ?? null) !== false || ($context['independent_review_verdict'] ?? null) !== 'pending') {
-    $errors[] = 'Independent review must remain pending until a separate review occurs.';
+if (($context['review_completed'] ?? null) !== true || ($context['independent_review_verdict'] ?? null) !== 'accepted_with_nonclaims') {
+    $errors[] = 'Operational HTTP acceptance must retain the tester verdict and nonclaims.';
 }
 if (($context['action_gate']['status'] ?? null) !== 'success') {
     $errors[] = 'The package action gate must be successful.';
@@ -209,11 +215,11 @@ foreach (['production_ready', 'frontend_ready', 'frontend_complete', 'all_packag
         $errors[] = "module.yaml must keep {$claim}=false.";
     }
 }
-if (($context['status'] ?? null) !== 'implementation_verification_ready') {
-    $errors[] = 'Launch context must be ready for independent implementation verification.';
+if (($context['status'] ?? null) !== 'package_verification_passed') {
+    $errors[] = 'Launch context must record package HTTP verification.';
 }
-if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'site-structure-backend-v1') {
-    $errors[] = 'module.yaml must identify the active site-structure backend batch.';
+if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'site-structure-http-v1') {
+    $errors[] = 'module.yaml must identify the active site-structure HTTP batch.';
 }
 
 if ($errors !== []) {
@@ -221,4 +227,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-fwrite(STDOUT, 'Larena Content site-structure backend contract is valid.'.PHP_EOL);
+fwrite(STDOUT, 'Larena Content site-structure HTTP contract is valid.'.PHP_EOL);

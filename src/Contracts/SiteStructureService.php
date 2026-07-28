@@ -15,6 +15,12 @@ interface SiteStructureService
 
     public function revision(int $revision, ActorContext $actor): SiteStructureRevision;
 
+    /** @return list<SiteStructureRevision> */
+    public function revisions(ActorContext $actor): array;
+
+    /** @return list<array<string, mixed>> */
+    public function redirects(ActorContext $actor): array;
+
     /**
      * @param list<SiteStructureNode> $nodes
      * @param list<SiteSeoMetadata> $seo

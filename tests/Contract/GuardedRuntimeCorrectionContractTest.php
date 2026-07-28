@@ -161,12 +161,12 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
         self::assertFalse(str_starts_with($actionGateRef, '/'));
         self::assertFalse(str_starts_with($toolchainRef, '/'));
         self::assertSame(
-            'docs/project-management/evidence/site-structure-backend-v1/content/tests.md',
+            'docs/project-management/evidence/site-structure-http-v1/content/tests.md',
             $toolchainRef,
         );
         self::assertFileExists($root.'/'.$toolchainRef);
-        self::assertFalse($context['review_completed'] ?? true);
-        self::assertSame('pending', $context['independent_review_verdict'] ?? null);
+        self::assertTrue($context['review_completed'] ?? false);
+        self::assertSame('accepted_with_nonclaims', $context['independent_review_verdict'] ?? null);
         self::assertSame(
             'branch_not_pushed',
             $context['remote_push_status'] ?? null,

@@ -1,0 +1,27 @@
+{
+  "schema": "larena.human_centered_simplicity_verdict.v1",
+  "owner": "tester",
+  "verdict": "accepted",
+  "surface": "larena/content site structure HTTP v1",
+  "checks": {
+    "one_canonical_state_owner": true,
+    "server_rendered_without_client_state_store": true,
+    "existing_admin_shell_reused": true,
+    "existing_simai_framework_assets_reused": true,
+    "role_actions_visible_without_cli": true,
+    "protective_complexity_retained": true,
+    "manual_redirect_bypass_absent": true
+  },
+  "retained_complexity": [
+    "authorization",
+    "transactions",
+    "expected_revision_compare_and_swap",
+    "sanitized_audit",
+    "immutable_revision_history"
+  ],
+  "nonclaims": {
+    "production_ready": false,
+    "frontend_complete": false,
+    "all_42_packages_ready": false
+  }
+}

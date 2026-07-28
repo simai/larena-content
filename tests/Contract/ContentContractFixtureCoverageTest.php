@@ -58,17 +58,17 @@ final class ContentContractFixtureCoverageTest extends TestCase
         self::assertStringNotContainsString('logical_file_ref', json_encode($search, JSON_THROW_ON_ERROR));
     }
 
-    public function test_guarded_runtime_batch_contains_no_admin_or_frontend_surface(): void
+    public function test_operational_http_batch_keeps_admin_surface_package_owned_and_server_rendered(): void
     {
         $root = dirname(__DIR__, 2);
 
-        foreach ([
-            'routes/admin.php',
-            'resources/views',
-            'resources/js',
-            'src/Http/Controllers/Admin',
-        ] as $forbidden) {
-            self::assertFileDoesNotExist($root.'/'.$forbidden);
-        }
+        self::assertFileExists($root.'/routes/admin.php');
+        self::assertFileExists($root.'/resources/views/admin/site-structure.blade.php');
+        self::assertFileExists($root.'/src/Http/Controllers/SiteStructureAdminController.php');
+        self::assertFileDoesNotExist($root.'/resources/js');
+        self::assertStringContainsString(
+            "@extends('larena-admin::layouts.app')",
+            (string) file_get_contents($root.'/resources/views/admin/site-structure.blade.php'),
+        );
     }
 }

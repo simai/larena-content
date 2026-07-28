@@ -1,0 +1,10 @@
+{
+  "schema": "larena.graph_sync_proposal.v1",
+  "status": "no_canonical_change_required",
+  "selected_features": [
+    "content.site_structure_v1",
+    "content.seo_metadata_v1",
+    "content.managed_redirects_v1"
+  ],
+  "reason": "The operational HTTP surface realizes existing canonical role, publication, anonymous-read, SEO and direct-redirect outcomes. It does not create a new feature owner or state contract."
+}

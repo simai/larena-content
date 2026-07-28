@@ -1,0 +1,29 @@
+{
+  "schema": "larena.package_launch_record.v1",
+  "id": "larena.content.site_structure_http_v1",
+  "status": "package_verification_passed",
+  "target_package": "larena/content",
+  "base_commit": "c5e251729ced49ad38fca7102c32760e47145ccb",
+  "branch": "main",
+  "specs_commit": "f13cb540b2bb3c658ee760816b1539c9ebb616dc",
+  "selected_features": [
+    "content.site_structure_v1",
+    "content.seo_metadata_v1",
+    "content.managed_redirects_v1"
+  ],
+  "implementation_slice": "package_owned_operational_http_surface_v1",
+  "dependency_revisions": {
+    "larena/access": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad",
+    "larena/admin": "63b822dd334ed6ab02c666f2017e39883cd95b6f",
+    "larena/auth": "92a32fa8bfb2a8b67676a64253a92490fc4a3874",
+    "larena/ui": "bd181eda92f2de22130904884e18680587ee10db"
+  },
+  "evidence_path": "docs/project-management/evidence/site-structure-http-v1/content/",
+  "review_completed": true,
+  "independent_review_verdict": "accepted_with_nonclaims",
+  "nonclaims": {
+    "production_ready": false,
+    "frontend_complete": false,
+    "all_42_packages_ready": false
+  }
+}

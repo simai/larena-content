@@ -60,6 +60,28 @@ final readonly class DatabaseSiteStructureService implements SiteStructureServic
         return $this->hydrateRevision($revision, (int) ($head['published_revision'] ?? 0) ?: null);
     }
 
+    public function revisions(ActorContext $actor): array
+    {
+        $this->preflight($actor, 'content.structure.read');
+        $head = $this->repository->head();
+        if ($head === null) {
+            return [];
+        }
+        $published = (int) ($head['published_revision'] ?? 0) ?: null;
+
+        return array_map(
+            fn (array $row): SiteStructureRevision => $this->hydrateRevision((int) $row['revision'], $published),
+            $this->repository->revisions(),
+        );
+    }
+
+    public function redirects(ActorContext $actor): array
+    {
+        $this->preflight($actor, 'content.redirect.list');
+
+        return $this->repository->redirects();
+    }
+
     public function replace(int $expectedRevision, array $nodes, array $seo, ActorContext $actor): SiteStructureRevision
     {
         $connection = $this->preflight($actor, 'content.structure.update');

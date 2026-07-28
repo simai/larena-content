@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-backend-v1/content/';
+const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-http-v1/content/';
 
 $errors = [];
 $context = json_decode((string) file_get_contents('.larena/launch-context.json'), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($context) || ($context['evidence_path'] ?? null) !== EVIDENCE_PATH) {
-    $errors[] = 'Launch context does not point to the site-structure backend evidence bundle.';
+    $errors[] = 'Launch context does not point to the site-structure HTTP evidence bundle.';
 }
 
-foreach (['implementation-summary.md', 'tests.md', 'sitepack-roundtrip.json', 'graph-sync-proposal.json'] as $file) {
+foreach (['implementation-summary.md', 'tests.md', 'browser-acceptance.md', 'simplicity-verdict.json', 'graph-sync-proposal.json'] as $file) {
     $path = EVIDENCE_PATH.$file;
     if (!is_file($path) || trim((string) file_get_contents($path)) === '') {
         $errors[] = "Missing or empty evidence file: {$path}";
@@ -41,8 +41,8 @@ foreach (['SQLite', 'MySQL', 'restart', 'rollback', 'production_ready=false', 'f
     }
 }
 
-if (($context['review_completed'] ?? null) !== false || ($context['independent_review_verdict'] ?? null) !== 'pending') {
-    $errors[] = 'Evidence must not pre-author independent acceptance.';
+if (($context['review_completed'] ?? null) !== true || ($context['independent_review_verdict'] ?? null) !== 'accepted_with_nonclaims') {
+    $errors[] = 'Evidence must retain the accepted tester verdict and explicit nonclaims.';
 }
 
 if ($errors !== []) {
@@ -50,4 +50,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-fwrite(STDOUT, 'Site-structure backend evidence bundle is structurally complete.'.PHP_EOL);
+fwrite(STDOUT, 'Site-structure HTTP evidence bundle is structurally complete.'.PHP_EOL);

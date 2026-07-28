@@ -8,6 +8,7 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\ServiceProvider;
+use Larena\Admin\Navigation\AdminNavigationRegistry;
 use Larena\Access\Contracts\ActorOperationAuthorizer;
 use Larena\Access\Runtime\AccessOperationRegistry;
 use Larena\Access\Runtime\PersistentGlobalRoleQueryScopeProvider;
@@ -64,6 +65,7 @@ use Larena\Storage\Contracts\StorageSchemaEvolution;
 use Larena\Storage\Contracts\VersionedStorage;
 use Larena\Storage\SchemaEvolution\StorageSchemaEvolutionOwnerPolicyRegistry;
 use WeakMap;
+use Larena\Content\Navigation\ContentAdminNavigationContributor;
 
 final class ContentServiceProvider extends ServiceProvider
 {
@@ -71,6 +73,7 @@ final class ContentServiceProvider extends ServiceProvider
     {
         if ($this->app->bound('config')) {
             $this->mergeConfigFrom(__DIR__ . '/../../config/sitepack.php', 'larena-content.sitepack');
+            $this->mergeConfigFrom(__DIR__ . '/../../config/admin.php', 'larena-content.admin');
         }
         $schemaEvolutionAuthority = new ContentStorageSchemaEvolutionAuthority();
         /** @var WeakMap<StorageSchemaEvolutionOwnerPolicyRegistry, true> $protectedRegistries */
@@ -296,6 +299,21 @@ final class ContentServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/public.php');
+        $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'larena-content');
+        $this->loadTranslationsFrom(__DIR__ . '/../../resources/lang', 'larena-content');
+
+        if ($this->app->bound(AdminNavigationRegistry::class)) {
+            $this->app->make(AdminNavigationRegistry::class)
+                ->registerContributor(new ContentAdminNavigationContributor());
+        }
+        if ($this->app->bound('config')) {
+            /** @var Config $config */
+            $config = $this->app->make('config');
+            if ($this->app->environment((array) $config->get('larena-content.admin.allowed_environments', ['local', 'testing']))
+                && (bool) $config->get('larena-content.admin.enabled', false)) {
+                $this->loadRoutesFrom(__DIR__ . '/../../routes/admin.php');
+            }
+        }
 
         if ($this->app->bound(AccessOperationRegistry::class)) {
             self::registerAccessOperations(

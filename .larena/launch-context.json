@@ -3,11 +3,11 @@
   "package": "larena/content",
   "repository_class": "continuation_repository",
   "repository_contains_prior_implementation": true,
-  "launch_record_ref": "docs/project-management/launch-records/site-structure-backend-v1.json",
+  "launch_record_ref": "docs/project-management/launch-records/site-structure-http-v1.json",
   "root_launch_record_ref": "specs/implementation-planning/launch-records/content-site-structure-backend-v1.json",
   "specs_repo": "simai/larena-specs",
   "specs_commit": "f13cb540b2bb3c658ee760816b1539c9ebb616dc",
-  "base_commit": "830514d58f37dbcfef5a8c78c9d51826e8278440",
+  "base_commit": "c5e251729ced49ad38fca7102c32760e47145ccb",
   "branch": "main",
   "selected_features": ["content.site_structure_v1", "content.seo_metadata_v1", "content.managed_redirects_v1"],
   "dependency_revisions": {
@@ -26,8 +26,8 @@
   "allowed_files": [
     ".larena/*", "README.md", "CHANGELOG.md", "access.yaml", "api.yaml", "audit.yaml",
     "composer.json", "composer.lock", "module.yaml", "scripts/*", "tools/*", "database/migrations/*",
-    "routes/*", "src/*", "tests/*", "docs/project-management/launch-records/site-structure-backend-v1.json",
-    "docs/project-management/evidence/site-structure-backend-v1/content/*"
+    "config/*", "resources/*", "routes/*", "src/*", "tests/*", "docs/project-management/launch-records/site-structure-http-v1.json",
+    "docs/project-management/evidence/site-structure-http-v1/content/*"
   ],
   "forbidden_files": ["../link/*", "../layout/*", "../backup/*", "../../larena.test/*"],
   "forbidden_behavior": [
@@ -35,15 +35,15 @@
     "secret_or_content_values_in_audit", "active_larena_test_change", "production_readiness_claim",
     "frontend_completion_claim", "all_42_packages_readiness_claim"
   ],
-  "required_evidence_files": ["implementation-summary.md", "tests.md", "sitepack-roundtrip.json", "graph-sync-proposal.json"],
-  "evidence_path": "docs/project-management/evidence/site-structure-backend-v1/content/",
-  "graph_sync_proposal_path": "docs/project-management/evidence/site-structure-backend-v1/content/graph-sync-proposal.json",
-  "status": "implementation_verification_ready",
+  "required_evidence_files": ["implementation-summary.md", "tests.md", "browser-acceptance.md", "simplicity-verdict.json"],
+  "evidence_path": "docs/project-management/evidence/site-structure-http-v1/content/",
+  "graph_sync_proposal_path": "docs/project-management/evidence/site-structure-http-v1/content/graph-sync-proposal.json",
+  "status": "package_verification_passed",
   "coding_allowed": true,
   "coding_started": true,
   "repository_enforcement_installed": true,
-  "review_completed": false,
-  "independent_review_verdict": "pending",
+  "review_completed": true,
+  "independent_review_verdict": "accepted_with_nonclaims",
   "test_database_policy": {
     "environment": "local_test_only",
     "sqlite": "disposable_file",
@@ -51,17 +51,17 @@
     "existing_application_database": "forbidden",
     "cleanup": "required"
   },
-  "next_transition": "sealed_root_acceptance",
+  "next_transition": "exact_root_integration",
   "action_gate": {
     "phase": "preflight",
     "status": "success",
-    "evidence_ref": "source/output/action-gates/action-gate-report-20260728084054.json",
+    "evidence_ref": "source/output/action-gates/action-gate-report-20260728115502.json",
     "blockers": []
   },
   "runtime_toolchain": {
     "status": "ok",
     "php_version": "8.4.20",
-    "report_ref": "docs/project-management/evidence/site-structure-backend-v1/content/tests.md"
+    "report_ref": "docs/project-management/evidence/site-structure-http-v1/content/tests.md"
   },
   "remote_push_status": "branch_not_pushed"
 }

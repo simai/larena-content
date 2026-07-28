@@ -28,6 +28,7 @@ final class PublishedContentHttpTest extends TestCase
     {
         Facade::clearResolvedInstances();
         Facade::setFacadeApplication(null);
+        Container::setInstance(null);
 
         parent::tearDown();
     }
@@ -155,6 +156,83 @@ final class PublishedContentHttpTest extends TestCase
         self::assertFalse($response->headers->has('Set-Cookie'));
     }
 
+    public function testNavigationAliasRobotsAndSitemapAreSessionlessPublishedHttpContracts(): void
+    {
+        $reader = $this->createStub(PublishedContentReader::class);
+        $structures = $this->createStub(SiteStructureService::class);
+        $structures->method('published')->willReturn([
+            'structure_ref' => 'primary',
+            'revision' => 4,
+            'nodes' => [[
+                'node_ref' => '128f62c6-9d27-4d19-89b1-7cddfbd9a301',
+                'parent_ref' => null,
+                'position' => 0,
+                'label' => 'Page',
+                'target' => ['type' => 'content', 'item_ref' => 'content:item:128f62c6-9d27-4d19-89b1-7cddfbd9a399', 'url' => '/content/article/page'],
+            ]],
+            'seo' => [
+                'content:item:128f62c6-9d27-4d19-89b1-7cddfbd9a399' => [
+                    'item_ref' => 'content:item:128f62c6-9d27-4d19-89b1-7cddfbd9a399',
+                    'canonical_path' => '/knowledge/page',
+                    'robots' => 'index,follow',
+                ],
+                'content:item:128f62c6-9d27-4d19-89b1-7cddfbd9a398' => [
+                    'item_ref' => 'content:item:128f62c6-9d27-4d19-89b1-7cddfbd9a398',
+                    'canonical_path' => '/private/page',
+                    'robots' => 'noindex,follow',
+                ],
+            ],
+        ]);
+        $router = $this->router($reader, null, $structures);
+
+        $navigation = $router->dispatch(Request::create('/content/navigation', 'GET'));
+        self::assertSame(200, $navigation->getStatusCode());
+        self::assertFalse($navigation->headers->has('Set-Cookie'));
+        $robotsRequest = Request::create('/robots.txt', 'GET', [], [], [], ['HTTP_HOST' => 'example.test', 'HTTPS' => 'on']);
+        Container::getInstance()->instance('request', $robotsRequest);
+        Container::getInstance()->instance(Request::class, $robotsRequest);
+        $robots = $router->dispatch($robotsRequest);
+        self::assertSame("User-agent: *\nAllow: /\nSitemap: https://example.test/sitemap.xml\n", $robots->getContent());
+        self::assertFalse($robots->headers->has('Set-Cookie'));
+        $sitemapRequest = Request::create('/sitemap.xml', 'GET', [], [], [], ['HTTP_HOST' => 'example.test', 'HTTPS' => 'on']);
+        Container::getInstance()->instance('request', $sitemapRequest);
+        Container::getInstance()->instance(Request::class, $sitemapRequest);
+        $sitemap = $router->dispatch($sitemapRequest);
+        self::assertStringContainsString('<loc>https://example.test/knowledge/page</loc>', (string) $sitemap->getContent());
+        self::assertStringNotContainsString('/private/page', (string) $sitemap->getContent());
+        self::assertFalse($sitemap->headers->has('Set-Cookie'));
+    }
+
+    public function testPublishedContentCarriesCanonicalAndRobotsHttpMetadata(): void
+    {
+        $projection = ContentPlatformV1Fixture::publishedArticle();
+        $reader = new class($projection) implements PublishedContentReader {
+            public function __construct(private readonly PublishedContentProjection $projection) {}
+            public function read(ContentTypeKey $typeKey, ContentSlug $slug, ContentLocale $locale): PublishedContentProjection { return $this->projection; }
+        };
+        $structures = $this->createStub(SiteStructureService::class);
+        $structures->method('published')->willReturn([
+            'structure_ref' => 'primary', 'revision' => 2, 'nodes' => [],
+            'seo' => [$projection->itemRef->value => [
+                'item_ref' => $projection->itemRef->value,
+                'canonical_path' => '/knowledge/first-article',
+                'robots' => 'index,nofollow',
+            ]],
+        ]);
+
+        $router = $this->router($reader, null, $structures);
+        $contentRequest = Request::create(
+            '/content/article/first-article', 'GET', [], [], [], ['HTTP_HOST' => 'example.test', 'HTTPS' => 'on'],
+        );
+        Container::getInstance()->instance('request', $contentRequest);
+        Container::getInstance()->instance(Request::class, $contentRequest);
+        $response = $router->dispatch($contentRequest);
+
+        self::assertSame('<https://example.test/knowledge/first-article>; rel="canonical"', $response->headers->get('Link'));
+        self::assertSame('index,nofollow', $response->headers->get('X-Robots-Tag'));
+        self::assertFalse($response->headers->has('Set-Cookie'));
+    }
+
     private function router(
         PublishedContentReader $reader,
         ?ManagedContentRedirectReader $redirects = null,
@@ -162,6 +240,7 @@ final class PublishedContentHttpTest extends TestCase
     ): Router
     {
         $container = new Container();
+        Container::setInstance($container);
         $router = new Router(new Dispatcher($container), $container);
         $container->instance('router', $router);
         $container->instance(PublishedContentReader::class, $reader);
