@@ -120,4 +120,53 @@ final class ContentSlugRuntimeTest extends TestCase
             new ContentLocale('en'),
         ));
     }
+
+    public function test_restore_can_reclaim_own_redirect_source_without_creating_a_loop(): void
+    {
+        $scenario = new ContentPlatformScenario($this->runtime);
+        $scenario->createArticleType();
+        $created = $scenario->createArticle('original-slug');
+        $published = $this->runtime->items->publish($created->itemRef, 1, $this->runtime->actor());
+        $renamed = $this->runtime->items->update(
+            $published->itemRef,
+            2,
+            new ContentSlug('renamed-slug'),
+            ContentVisibility::Public,
+            [
+                'title' => 'Renamed article',
+                'body' => 'Renamed body',
+                'featured' => false,
+                'internal_notes' => null,
+            ],
+            $this->runtime->actor(),
+        );
+        $republished = $this->runtime->items->publish($renamed->itemRef, 3, $this->runtime->actor());
+
+        $restored = $this->runtime->items->restore(
+            $republished->itemRef,
+            1,
+            4,
+            $this->runtime->actor(correlationId: 'restore-own-redirect-source'),
+        );
+        self::assertSame('original-slug', $restored->currentSlug->value);
+
+        $this->runtime->items->publish($restored->itemRef, 5, $this->runtime->actor());
+
+        self::assertSame('First article', $this->runtime->published->read(
+            new ContentTypeKey('article'),
+            new ContentSlug('original-slug'),
+            new ContentLocale('en'),
+        )->publicFields['title']);
+        self::assertSame([
+            'type_key' => 'article',
+            'locale' => 'en',
+            'slug' => 'original-slug',
+            'status' => 301,
+        ], $this->runtime->redirects->resolve(
+            new ContentTypeKey('article'),
+            new ContentSlug('renamed-slug'),
+            new ContentLocale('en'),
+        ));
+        self::assertSame(1, $this->runtime->connection->table('larena_content_redirects')->count());
+    }
 }

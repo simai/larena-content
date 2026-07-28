@@ -1018,9 +1018,19 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     now: $now,
                 );
                 $redirectCreated = false;
+                $publishedSlug = $after->publishedSlug;
+                if ($publishedSlug === null) {
+                    throw new ContentRejected('published_slug_missing');
+                }
+                $this->siteStructure->removeOwnedRedirect(
+                    $after->typeKey->value,
+                    $after->locale->value,
+                    $publishedSlug->value,
+                    $after->itemRef->value,
+                );
                 if (
                     $before->publishedSlug !== null
-                    && $before->publishedSlug->value !== $after->publishedSlug?->value
+                    && $before->publishedSlug->value !== $publishedSlug->value
                 ) {
                     $this->siteStructure->reserveRedirect(
                         $before->typeKey->value,
@@ -1478,7 +1488,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
                 $slug->value,
                 true,
             );
-            if ($redirect !== null) {
+            if ($redirect !== null && (string) $redirect['item_ref'] !== $itemRef->value) {
                 throw new ContentRejected('redirect_source_conflict');
             }
         }

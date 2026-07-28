@@ -117,6 +117,24 @@ final readonly class DatabaseSiteStructureRepository
         ]);
     }
 
+    public function removeOwnedRedirect(string $typeKey, string $locale, string $sourceSlug, string $itemRef): bool
+    {
+        $existing = $this->redirect($typeKey, $locale, $sourceSlug, true);
+        if ($existing === null) {
+            return false;
+        }
+        if ((string) $existing['item_ref'] !== $itemRef) {
+            throw new \Larena\Content\Exceptions\ContentRejected('redirect_source_conflict');
+        }
+
+        return $this->database->table('larena_content_redirects')
+            ->where('type_key', $typeKey)
+            ->where('locale', $locale)
+            ->where('source_slug', $sourceSlug)
+            ->where('item_ref', $itemRef)
+            ->delete() === 1;
+    }
+
     /**
      * @param array<string, mixed> $head
      * @param list<array<string, mixed>> $revisions
