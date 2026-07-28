@@ -11,6 +11,9 @@ published slug changes. Redirect state stores the source locator and target
 Content UUID; anonymous resolution computes the current published locator and
 therefore cannot expose a chain or cycle. Current and published route claims,
 redirect sources, duplicate canonicals and unsafe external URLs fail closed.
+Restoring an older published slug can reclaim a redirect owned by the same
+Content item; the service removes the obsolete owned source and creates one
+reverse redirect. Redirects owned by another item remain conflicts.
 
 The public sessionless endpoints expose only the exact published structure and
 published Content. SitePack exports, verifies, plans and imports structure
