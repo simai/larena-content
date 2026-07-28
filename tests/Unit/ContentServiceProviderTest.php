@@ -8,6 +8,7 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Foundation\Application;
 use Larena\Access\Runtime\AccessOperationRegistry;
 use Larena\Content\Contracts\ContentClock;
+use Larena\Content\Contracts\CmsSitePackService;
 use Larena\Content\Contracts\ContentDataviewSourceFactory;
 use Larena\Content\Contracts\ContentIdGenerator;
 use Larena\Content\Contracts\ContentItemService;
@@ -22,6 +23,7 @@ use Larena\Content\Runtime\SystemContentClock;
 use Larena\Content\Runtime\SystemContentIdGenerator;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
 use Larena\Content\Services\DatabaseContentItemService;
+use Larena\Content\Services\DatabaseCmsSitePackService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
 use PHPUnit\Framework\TestCase;
@@ -45,6 +47,7 @@ final class ContentServiceProviderTest extends TestCase
         self::assertTrue($container->bound(ContentIdGenerator::class));
         self::assertTrue($container->bound(ContentTypeService::class));
         self::assertTrue($container->bound(ContentItemService::class));
+        self::assertTrue($container->bound(CmsSitePackService::class));
         self::assertTrue($container->bound(PublishedContentReader::class));
         self::assertTrue($container->bound(ContentDataviewSourceFactory::class));
         self::assertTrue($container->bound(ContentSearchSourceProvider::class));
@@ -56,6 +59,10 @@ final class ContentServiceProviderTest extends TestCase
         self::assertSame(
             DatabaseContentItemService::class,
             $container->getAlias(ContentItemService::class),
+        );
+        self::assertSame(
+            DatabaseCmsSitePackService::class,
+            $container->getAlias(CmsSitePackService::class),
         );
         self::assertSame(
             DatabasePublishedContentReader::class,
@@ -74,7 +81,7 @@ final class ContentServiceProviderTest extends TestCase
         self::assertInstanceOf(SystemContentIdGenerator::class, $container->make(ContentIdGenerator::class));
 
         $registry = $container->make(AccessOperationRegistry::class);
-        self::assertCount(19, $registry->all());
+        self::assertCount(23, $registry->all());
         self::assertSame(
             [
                 'content.attachment.attach',
@@ -91,6 +98,10 @@ final class ContentServiceProviderTest extends TestCase
                 'content.item.update',
                 'content.revision.list',
                 'content.revision.read',
+                'content.sitepack.export',
+                'content.sitepack.import.apply',
+                'content.sitepack.import.dry_run',
+                'content.sitepack.verify',
                 'content.type.create',
                 'content.type.list',
                 'content.type.read',
@@ -104,7 +115,7 @@ final class ContentServiceProviderTest extends TestCase
         );
 
         $provider->register();
-        self::assertCount(19, $registry->all());
+        self::assertCount(23, $registry->all());
         self::assertNull($registry->get('content.public.read'));
     }
 

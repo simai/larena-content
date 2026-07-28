@@ -14,12 +14,14 @@ use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
 use Larena\Audit\Contracts\ConnectionBoundAuditEventPipeline;
 use Larena\Content\Contracts\ContentItemService;
+use Larena\Content\Contracts\CmsSitePackService;
 use Larena\Content\Contracts\ContentSearchSourceProvider;
 use Larena\Content\Contracts\ContentTypeService;
 use Larena\Content\Contracts\PublishedContentReader;
 use Larena\Content\Persistence\DatabaseContentRepository;
 use Larena\Content\Providers\ContentServiceProvider;
 use Larena\Content\Rest\ContentAdminApiOperationHandler;
+use Larena\Content\Rest\CmsSitePackApiOperationHandler;
 use Larena\Content\Rest\ContentAdminReadModel;
 use Larena\Content\Rest\ContentAdminValueCodec;
 use Larena\Content\Runtime\ContentParticipantGuard;
@@ -188,7 +190,7 @@ final class ContentProviderBindingTest extends TestCase
         self::assertSame($expectedMigrationPath, $registeredMigrationPath);
     }
 
-    public function testDiscoveredContentBeforeRestOrderRegistersAndDispatchesAllTwentyHandlers(): void
+    public function testDiscoveredContentBeforeRestOrderRegistersAndDispatchesAllHandlers(): void
     {
         $container = new Container();
         $application = $this->applicationFor($container);
@@ -225,6 +227,12 @@ final class ContentProviderBindingTest extends TestCase
                 new ContentAdminValueCodec(),
             ),
         );
+        $container->singleton(
+            CmsSitePackApiOperationHandler::class,
+            fn (): CmsSitePackApiOperationHandler => new CmsSitePackApiOperationHandler(
+                $this->createStub(CmsSitePackService::class),
+            ),
+        );
 
         $content->boot();
 
@@ -234,7 +242,7 @@ final class ContentProviderBindingTest extends TestCase
             'larena/content',
         );
 
-        self::assertCount(21, $contract->operations);
+        self::assertCount(25, $contract->operations);
         foreach ($contract->operations as $operation) {
             $handler = $registry->get($operation->handlerReference);
             self::assertIsCallable($handler);
@@ -254,7 +262,9 @@ final class ContentProviderBindingTest extends TestCase
                 self::fail('The Content handler accepted a missing validated session context.');
             } catch (ApiOperationException $exception) {
                 self::assertSame(
-                    'content_admin_api_session_context_invalid',
+                    str_starts_with($operation->operationKey, 'content.sitepack_admin.')
+                        ? 'content_sitepack_api_session_context_invalid'
+                        : 'content_admin_api_session_context_invalid',
                     $exception->errorCode,
                 );
                 self::assertSame(403, $exception->httpStatus);

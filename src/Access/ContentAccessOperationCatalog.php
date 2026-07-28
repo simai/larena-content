@@ -37,6 +37,10 @@ final class ContentAccessOperationCatalog
         ['code' => 'content.attachment.attach', 'label' => 'attachment_attach', 'target' => 'content.attachment:all', 'grant' => 'attach', 'risk' => 'high'],
         ['code' => 'content.attachment.detach', 'label' => 'attachment_detach', 'target' => 'content.attachment:all', 'grant' => 'detach', 'risk' => 'high'],
         ['code' => 'content.attachment.reorder', 'label' => 'attachment_reorder', 'target' => 'content.attachment:all', 'grant' => 'reorder', 'risk' => 'high'],
+        ['code' => 'content.sitepack.export', 'label' => 'sitepack_export', 'target' => 'content.sitepack:all', 'grant' => 'export', 'risk' => 'critical'],
+        ['code' => 'content.sitepack.verify', 'label' => 'sitepack_verify', 'target' => 'content.sitepack:all', 'grant' => 'verify', 'risk' => 'critical'],
+        ['code' => 'content.sitepack.import.dry_run', 'label' => 'sitepack_import_dry_run', 'target' => 'content.sitepack:all', 'grant' => 'import', 'risk' => 'critical'],
+        ['code' => 'content.sitepack.import.apply', 'label' => 'sitepack_import_apply', 'target' => 'content.sitepack:all', 'grant' => 'import', 'risk' => 'critical'],
     ];
 
     /**

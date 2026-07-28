@@ -20,7 +20,7 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
 
     public function testFrozenCorrectionConstantsAreExplicit(): void
     {
-        self::assertCount(19, ContentAccessOperationCatalog::codes());
+        self::assertCount(23, ContentAccessOperationCatalog::codes());
         self::assertNotContains('content.public.read', ContentAccessOperationCatalog::codes());
         self::assertSame(65_536, ContentFieldDefinition::MAX_STRING_CODE_POINTS);
         self::assertSame(100, ContentTypeVersion::MAX_FIELDS);
@@ -161,14 +161,14 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
         self::assertFalse(str_starts_with($actionGateRef, '/'));
         self::assertFalse(str_starts_with($toolchainRef, '/'));
         self::assertSame(
-            'docs/project-management/evidence/cms-content-model-v1/tests.md',
+            'docs/project-management/evidence/cms-sitepack-portability-v1/content/tests.md',
             $toolchainRef,
         );
         self::assertFileExists($root.'/'.$toolchainRef);
         self::assertFalse($context['review_completed'] ?? true);
         self::assertSame('pending', $context['independent_review_verdict'] ?? null);
         self::assertSame(
-            'not_requested_in_current_batch',
+            'branch_not_pushed',
             $context['remote_push_status'] ?? null,
         );
     }

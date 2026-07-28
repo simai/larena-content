@@ -3,18 +3,13 @@
   "package": "larena/content",
   "repository_class": "continuation_repository",
   "repository_contains_prior_implementation": true,
-  "launch_record_ref": "specs/implementation-planning/launch-records/content-cms-content-model-v1.json",
+  "launch_record_ref": "docs/project-management/launch-records/cms-sitepack-portability-v1.json",
+  "root_launch_record_ref": "specs/implementation-planning/launch-records/content-cms-sitepack-portability-v1.json",
   "specs_repo": "simai/larena-specs",
-  "specs_commit": "c218f18a",
-  "base_commit": "6423f5e408d027c312c7f34951a187d9f2f129d2",
+  "specs_commit": "7e637fc4",
+  "base_commit": "268208d7343ed5e67a4d90f0222c6c91e681942e",
   "branch": "main",
-  "selected_features": [
-    "content.type_registry",
-    "content.item_lifecycle",
-    "content.revision_history",
-    "content.publication_projection",
-    "content.cms_admin_v1"
-  ],
+  "selected_features": ["content.sitepack_portability_v1"],
   "dependency_revisions": {
     "larena/access": "7b15e0ddf8a6d2339ed80963e6f793b6fc6258eb",
     "larena/admin": "63b822dd334ed6ab02c666f2017e39883cd95b6f",
@@ -22,12 +17,11 @@
     "larena/auth": "92a32fa8bfb2a8b67676a64253a92490fc4a3874",
     "larena/core": "68ee3f79ed6313ca9c819340e6be3ff471957f91",
     "larena/dataview": "b84e964b4ed78e1ca08a46c88e7651b02744ee47",
-    "larena/filesystem": "0dcf79c003ef409c835e3fd8f021e976adac29a0",
+    "larena/filesystem": "5e54a971201f51cf35417b922559f3e52369472d",
     "larena/property": "7773692a9e1cf60f641a050e4ebf99e1fe37c159",
     "larena/rest": "b11f4338bb2536ee8627c1f2097915876b8afeb6",
     "larena/search": "9f5c1cf5d2b112751328520eee34826c19dd2535",
-    "larena/storage": "7c606e092591dbcb40fbe7c45ef30bb917f1df68",
-    "larena/ui": "07fff2579344d7c77a28716a74071fb53f0bbfc9"
+    "larena/storage": "7c606e092591dbcb40fbe7c45ef30bb917f1df68"
   },
   "allowed_files": [
     ".larena/launch-context.json",
@@ -39,66 +33,58 @@
     "audit.yaml",
     "composer.json",
     "composer.lock",
+    "config/sitepack.php",
     "module.yaml",
     "scripts/check-evidence.php",
     "scripts/validate-larena-package.php",
     "tools/larena-scope-check.php",
-    "routes/admin.php",
-    "resources/lang/*",
-    "resources/views/*",
     "src/*",
     "tests/*",
-    "docs/developer/*",
-    "docs/project-management/evidence/cms-content-model-v1/*"
+    "docs/project-management/launch-records/cms-sitepack-portability-v1.json",
+    "docs/project-management/evidence/cms-sitepack-portability-v1/content/*"
   ],
-  "forbidden_files": [
-    "database/migrations/*",
-    "../admin/*",
-    "../ui/*",
-    "../filesystem/*",
-    "../access/*",
-    "../auth/*",
-    "../audit/*"
-  ],
+  "forbidden_files": ["database/migrations/*", "../filesystem/*", "../storage/*", "../access/*"],
   "forbidden_behavior": [
-    "root_owned_content_logic",
-    "docara_owned_generic_content_model",
-    "direct_cross_owner_table_access",
-    "reader_mutation",
-    "editor_publication",
-    "private_value_or_file_content_in_audit",
-    "blade_authorization_or_persistence_logic",
-    "active_larena_test_change_before_isolated_acceptance",
+    "physical_storage_path_in_sitepack_contract",
+    "unverified_or_nontransactional_import",
+    "reader_or_editor_sitepack_mutation",
+    "secret_or_file_bytes_in_audit",
+    "active_larena_test_change",
     "production_readiness_claim",
     "all_42_packages_readiness_claim"
   ],
   "required_evidence_files": [
     "implementation-summary.md",
     "tests.md",
-    "smoke.md",
-    "file-map.json",
-    "deviations.json",
+    "sitepack-contract.json",
     "graph-sync-proposal.json"
   ],
-  "evidence_path": "docs/project-management/evidence/cms-content-model-v1/",
-  "graph_sync_proposal_path": "docs/project-management/evidence/cms-content-model-v1/graph-sync-proposal.json",
+  "evidence_path": "docs/project-management/evidence/cms-sitepack-portability-v1/content/",
+  "graph_sync_proposal_path": "docs/project-management/evidence/cms-sitepack-portability-v1/content/graph-sync-proposal.json",
   "status": "implementation_verification_ready",
   "coding_allowed": true,
   "coding_started": true,
   "repository_enforcement_installed": true,
   "review_completed": false,
   "independent_review_verdict": "pending",
-  "next_transition": "independent_review",
+  "test_database_policy": {
+    "environment": "local_test_only",
+    "sqlite": "disposable_file",
+    "mysql": "generated_allowlisted_schema",
+    "existing_application_database": "forbidden",
+    "cleanup": "required"
+  },
+  "next_transition": "sealed_root_acceptance",
   "action_gate": {
     "phase": "preflight",
     "status": "success",
-    "evidence_ref": "source/output/action-gates/action-gate-report-20260727220634.json",
+    "evidence_ref": "source/output/action-gates/action-gate-report-20260728064246.json",
     "blockers": []
   },
   "runtime_toolchain": {
     "status": "ok",
-    "php_version": "8.3.31",
-    "report_ref": "docs/project-management/evidence/cms-content-model-v1/tests.md"
+    "php_version": "8.4.20",
+    "report_ref": "docs/project-management/evidence/cms-sitepack-portability-v1/content/tests.md"
   },
-  "remote_push_status": "not_requested_in_current_batch"
+  "remote_push_status": "branch_not_pushed"
 }

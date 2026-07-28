@@ -32,7 +32,7 @@ final class DependencyCompatibilityContractTest extends TestCase
         'larena/cockpit' => 'd8074d30727d5c124928b8e47466f063eb746dbf',
         'larena/core' => '68ee3f79ed6313ca9c819340e6be3ff471957f91',
         'larena/dataview' => 'b84e964b4ed78e1ca08a46c88e7651b02744ee47',
-        'larena/filesystem' => '0dcf79c003ef409c835e3fd8f021e976adac29a0',
+        'larena/filesystem' => '5e54a971201f51cf35417b922559f3e52369472d',
         'larena/layout' => 'cb5bdadf588cb8480972279bea3888500dbf9d6e',
         'larena/licensing' => '52d1215a25369cca17d5170bbfcae82d1f6c86d2',
         'larena/link' => 'affc02abad5f3be568ae02c3678abe51d14575a9',

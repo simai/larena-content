@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Larena\Content\Providers;
 
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\ServiceProvider;
 use Larena\Access\Contracts\ActorOperationAuthorizer;
@@ -15,6 +16,7 @@ use Larena\Content\Access\ContentAccessOperationCatalog;
 use Larena\Content\Access\ContentAuthorizer;
 use Larena\Content\Audit\ContentAuditEmitter;
 use Larena\Content\Contracts\ContentClock;
+use Larena\Content\Contracts\CmsSitePackService;
 use Larena\Content\Contracts\ContentDataviewSourceFactory;
 use Larena\Content\Contracts\ContentIdGenerator;
 use Larena\Content\Contracts\ContentItemService;
@@ -34,15 +36,20 @@ use Larena\Content\Runtime\PublishedContentProjectionBuilder;
 use Larena\Content\Runtime\SystemContentClock;
 use Larena\Content\Runtime\SystemContentIdGenerator;
 use Larena\Content\Rest\ContentAdminApiOperationHandler;
+use Larena\Content\Rest\CmsSitePackApiOperationHandler;
 use Larena\Content\Search\ContainerContentSearchSourceFactory;
 use Larena\Content\Search\ContentSearchProjectionDelegationRegistry;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
 use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
+use Larena\Content\Services\DatabaseCmsSitePackService;
+use Larena\Content\SitePack\CmsSitePackArchive;
+use Larena\Content\SitePack\CmsSitePackCodec;
 use Larena\Content\Storage\ContentStorageGateway;
 use Larena\Content\Storage\ContentStorageSchemaEvolutionAuthority;
 use Larena\Filesystem\Contracts\PersistentLogicalFileInspector;
+use Larena\Filesystem\Contracts\PortableLogicalFileStore;
 use Larena\Property\Contracts\PropertyTypeRegistry;
 use Larena\Search\Persistence\DatabaseSearchIndex;
 use Larena\Search\Runtime\SearchSourceRegistry;
@@ -56,6 +63,9 @@ final class ContentServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        if ($this->app->bound('config')) {
+            $this->mergeConfigFrom(__DIR__ . '/../../config/sitepack.php', 'larena-content.sitepack');
+        }
         $schemaEvolutionAuthority = new ContentStorageSchemaEvolutionAuthority();
         /** @var WeakMap<StorageSchemaEvolutionOwnerPolicyRegistry, true> $protectedRegistries */
         $protectedRegistries = new WeakMap();
@@ -93,6 +103,24 @@ final class ContentServiceProvider extends ServiceProvider
         $this->app->singleton(
             ContentCanonicalJson::class,
             static fn (): ContentCanonicalJson => new ContentCanonicalJson(),
+        );
+        $this->app->singleton(
+            CmsSitePackArchive::class,
+            static function (Container $app): CmsSitePackArchive {
+                $config = $app->make(Config::class);
+
+                return new CmsSitePackArchive(
+                    (string) $config->get('larena-content.sitepack.root'),
+                    (int) $config->get('larena-content.sitepack.maximum_bytes', 268_435_456),
+                    (int) $config->get('larena-content.sitepack.maximum_entries', 5000),
+                );
+            },
+        );
+        $this->app->singleton(
+            CmsSitePackCodec::class,
+            static fn (Container $app): CmsSitePackCodec => new CmsSitePackCodec(
+                $app->make(ContentCanonicalJson::class),
+            ),
         );
         $this->app->singleton(
             ContentInputGuard::class,
@@ -186,6 +214,23 @@ final class ContentServiceProvider extends ServiceProvider
             ),
         );
         $this->app->alias(DatabaseContentItemService::class, ContentItemService::class);
+        $this->app->scoped(
+            DatabaseCmsSitePackService::class,
+            static fn (Container $app): DatabaseCmsSitePackService => new DatabaseCmsSitePackService(
+                $app->make(DatabaseContentRepository::class),
+                $app->make(ContentAuthorizer::class),
+                $app->make(ContentParticipantGuard::class),
+                $app->make(ContentStorageGateway::class),
+                $app->make(ContentSchemaMapper::class),
+                $app->make(ContentInputGuard::class),
+                $app->make(ContentTypeService::class),
+                $app->make(PortableLogicalFileStore::class),
+                $app->make(CmsSitePackArchive::class),
+                $app->make(CmsSitePackCodec::class),
+                $app->make(ContentAuditEmitter::class),
+            ),
+        );
+        $this->app->alias(DatabaseCmsSitePackService::class, CmsSitePackService::class);
         $this->app->scoped(DatabasePublishedContentReader::class);
         $this->app->alias(DatabasePublishedContentReader::class, PublishedContentReader::class);
         $this->app->alias(DatabasePublishedContentReader::class, PublishedContentItemReader::class);
@@ -253,6 +298,10 @@ final class ContentServiceProvider extends ServiceProvider
                 fn (): ContentAdminApiOperationHandler => $this->app->make(
                     ContentAdminApiOperationHandler::class,
                 ),
+            );
+            CmsSitePackApiOperationHandler::registerLazy(
+                $this->app->make(OperationHandlerRegistry::class),
+                fn (): CmsSitePackApiOperationHandler => $this->app->make(CmsSitePackApiOperationHandler::class),
             );
         }
     }

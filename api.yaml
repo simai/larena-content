@@ -834,3 +834,102 @@ operations:
     audit: {event: content.item_admin.attachments.reorder, summary_fields: [path.item_ref, body.expected_revision]}
     lifecycle: {state: draft, version: v1}
     docs: {summary: Reorder Content attachments, description: Replaces only the deterministic order of the current manifest., tags: [Content]}
+
+  - key: content.sitepack_admin.export
+    method: POST
+    path: /api/v1/admin/content/sitepacks
+    handler: {operation_ref: content.sitepack_admin.export}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.sitepack.export, storage.record.read]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema: &sitepack_response
+        type: object
+        additionalProperties: false
+        properties:
+          sitepack:
+            type: object
+            additionalProperties: false
+            properties:
+              package_ref: &sitepack_ref {type: string, pattern: '^cms-[0-9a-f]{64}\.sitepack$'}
+              digest: {type: string, pattern: '^[0-9a-f]{64}$'}
+              status: {type: string, enum: [exported, verified, planned, imported]}
+              counts:
+                type: object
+                additionalProperties: false
+                properties:
+                  type_count: {type: integer, minimum: 0}
+                  item_count: {type: integer, minimum: 0}
+                  revision_count: {type: integer, minimum: 0}
+                  file_count: {type: integer, minimum: 0}
+                  created_count: {type: integer, minimum: 0}
+                  unchanged_count: {type: integer, minimum: 0}
+                required: [type_count, item_count, revision_count, file_count]
+            required: [package_ref, digest, status, counts]
+        required: [sitepack]
+    execution: {mode: sync, timeout_seconds: 300, transactional: false}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 5, decay_seconds: 60}
+    audit: {event: content.sitepack.exported, summary_fields: []}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Export CMS SitePack, description: Creates a verified package in the private Content SitePack repository., tags: [Content, SitePack]}
+
+  - key: content.sitepack_admin.verify
+    method: POST
+    path: /api/v1/admin/content/sitepacks/verify
+    handler: {operation_ref: content.sitepack_admin.verify}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.sitepack.verify]}
+    request: &sitepack_request
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties: {package_ref: *sitepack_ref}
+        required: [package_ref]
+    response: {status: 200, schema: *sitepack_response}
+    execution: {mode: sync, timeout_seconds: 300, transactional: false}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 10, decay_seconds: 60}
+    audit: {event: content.sitepack.verified, summary_fields: [body.package_ref]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Verify CMS SitePack, description: Checks format and integrity without importing data., tags: [Content, SitePack]}
+
+  - key: content.sitepack_admin.import.dry_run
+    method: POST
+    path: /api/v1/admin/content/sitepacks/import/dry-run
+    handler: {operation_ref: content.sitepack_admin.import.dry_run}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.sitepack.import.dry_run, storage.record.read]}
+    request: *sitepack_request
+    response: {status: 200, schema: *sitepack_response}
+    execution: {mode: sync, timeout_seconds: 300, transactional: false}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 10, decay_seconds: 60}
+    audit: {event: content.sitepack.import_planned, summary_fields: [body.package_ref]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Plan CMS SitePack import, description: Produces a no-write compatibility and replay plan., tags: [Content, SitePack]}
+
+  - key: content.sitepack_admin.import.apply
+    method: POST
+    path: /api/v1/admin/content/sitepacks/import
+    handler: {operation_ref: content.sitepack_admin.import.apply}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.sitepack.import.apply, storage.schema.create, storage.schema_migration.diff, storage.schema_migration.plan, storage.schema_migration.dispatch, storage.record.create, storage.record.read, storage.record.update]}
+    request: *sitepack_request
+    response: {status: 200, schema: *sitepack_response}
+    execution: {mode: sync, timeout_seconds: 300, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 5, decay_seconds: 60}
+    audit: {event: content.sitepack.imported, summary_fields: [body.package_ref]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Import CMS SitePack, description: Applies a compatible package transactionally with exact replay as a no-op., tags: [Content, SitePack]}

@@ -4,6 +4,13 @@
 
 ### Added
 
+- Package-owned CMS SitePack export, integrity verification, dry-run and
+  transactional import with deterministic manifests and exact replay no-op.
+- Portable preservation of Content types, schema versions, item UUIDs,
+  immutable revisions, publication pointers, relations, attachments and
+  logical files through the Filesystem owner contract.
+- SQLite and disposable MySQL portability acceptance, restart persistence,
+  corruption/incompatibility fail-closed coverage and sanitized Audit events.
 - Generic per-type product Search projection delegation with conflict
   detection, exact published-item reads and suppression of the corresponding
   generic Content rebuild rows.

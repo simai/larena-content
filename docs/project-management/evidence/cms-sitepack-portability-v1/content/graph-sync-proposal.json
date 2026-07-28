@@ -1,0 +1,8 @@
+{
+  "schema": "larena.graph_sync_proposal.v1",
+  "package": "larena/content",
+  "feature": "content.sitepack_portability_v1",
+  "status": "proposal_only",
+  "canonical_update_allowed": false,
+  "capabilities": ["cms_sitepack_export", "cms_sitepack_verify", "cms_sitepack_dry_run", "cms_sitepack_transactional_import"]
+}

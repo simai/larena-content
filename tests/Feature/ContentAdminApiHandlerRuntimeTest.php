@@ -240,7 +240,7 @@ final class ContentAdminApiHandlerRuntimeTest extends TestCase
             ['expected_revision' => 9],
         );
         self::assertSame(10, $unpublished['item']['current_revision']);
-        self::assertSame(21, count($this->operations));
+        self::assertSame(25, count($this->operations));
     }
 
     public function test_duplicate_type_is_a_409_conflict_through_the_compiled_handler(): void

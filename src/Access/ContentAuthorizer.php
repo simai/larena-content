@@ -37,6 +37,18 @@ final readonly class ContentAuthorizer
         'content.attachment.reorder' => [],
         'content.item.publish' => ['storage.record.read'],
         'content.item.unpublish' => [],
+        'content.sitepack.export' => ['storage.record.read'],
+        'content.sitepack.verify' => [],
+        'content.sitepack.import.dry_run' => ['storage.record.read'],
+        'content.sitepack.import.apply' => [
+            'storage.schema.create',
+            'storage.schema_migration.diff',
+            'storage.schema_migration.plan',
+            'storage.schema_migration.dispatch',
+            'storage.record.create',
+            'storage.record.read',
+            'storage.record.update',
+        ],
     ];
 
     /** @var array<string, string> */

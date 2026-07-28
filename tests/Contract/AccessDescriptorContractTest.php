@@ -30,12 +30,16 @@ final class AccessDescriptorContractTest extends TestCase
         'content.attachment.attach',
         'content.attachment.detach',
         'content.attachment.reorder',
+        'content.sitepack.export',
+        'content.sitepack.verify',
+        'content.sitepack.import.dry_run',
+        'content.sitepack.import.apply',
     ];
 
     public function test_catalog_contains_exact_frozen_operations(): void
     {
         self::assertSame(self::EXPECTED_CODES, ContentAccessOperationCatalog::codes());
-        self::assertCount(19, ContentAccessOperationCatalog::operations());
+        self::assertCount(23, ContentAccessOperationCatalog::operations());
 
         foreach (ContentAccessOperationCatalog::operations() as $operation) {
             self::assertSame('larena/content', $operation->ownerPackage);

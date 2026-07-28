@@ -21,8 +21,9 @@ private, stale-route or inconsistent records remain indistinguishable as not
 public.
 
 The package also declares a closed draft administrator API under
-`/api/v1/admin/content`. Its 20 operations cover content types, immutable type
-versions, items, revisions, publication and logical-file attachment bindings.
+`/api/v1/admin/content`. Its 25 operations cover content types, immutable type
+versions, items, revisions, publication, logical-file attachment bindings and
+CMS SitePack export, verification, dry-run and transactional import.
 The API is loaded and protected by `larena/rest`; this package owns only its
 registered handlers and Content read model.
 
@@ -34,8 +35,14 @@ revisions and advances type and item heads through compare-and-swap. Existing
 published revisions remain public until an explicit later publish. Restoring
 an older revision always writes through the current schema and remains draft.
 
-Canonical specifications at
-`b5ea1bc2386544d4a6f4e4af4ce172a28988f0be` and exact accepted dependency
+The SitePack adapter produces deterministic, integrity-checked `.sitepack`
+archives using the shared SitePack format. It preserves Content UUIDs, schema
+versions, revisions, publication state, relations and portable logical files.
+Repeated exact imports are no-ops; malformed, incompatible or conflicting
+packages fail closed. Physical paths, credentials and file bytes never enter
+the portable descriptor or Audit payload.
+
+Canonical specifications at `7e637fc4` and exact accepted dependency
 revisions are recorded by `.larena/spec-ref.json`,
 `.larena/launch-context.json` and `composer.lock`.
 
@@ -59,6 +66,6 @@ composer run quality:gate
 ```
 
 Current implementation evidence is under
-`docs/project-management/evidence/data-content/content-model-administration-api-v1/`.
+`docs/project-management/evidence/cms-sitepack-portability-v1/content/`.
 The previous accepted guarded-runtime proof remains separately preserved under
 `docs/project-management/evidence/data-content/batch-2/content-guarded-runtime/`.

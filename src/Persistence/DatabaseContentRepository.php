@@ -568,6 +568,34 @@ final readonly class DatabaseContentRepository
     }
 
     /**
+     * Dedicated SitePack restore primitive. The complete immutable revision
+     * chain must already exist in the same ambient transaction.
+     *
+     * @param array<string, bool|int|string|null> $row
+     */
+    public function insertImportedItemHead(array $row): void
+    {
+        $this->assertExactKeys($row, self::ITEM_HEAD_KEYS, 'imported item head');
+        $this->assertPositiveInteger($row['current_revision'], 'current_revision');
+        $this->assertMutableRevision((int) $row['current_revision']);
+        $this->assertItemHeadState($row);
+
+        if ($this->database->transactionLevel() < 1) {
+            throw new ContentRejected('sitepack_import_transaction_required');
+        }
+        if (
+            !$this->database->table('larena_content_item_revisions')
+                ->where('item_ref', $row['item_ref'])
+                ->where('revision', $row['current_revision'])
+                ->exists()
+        ) {
+            throw new ContentRejected('sitepack_import_revision_chain_incomplete');
+        }
+
+        $this->database->table('larena_content_items')->insert($row);
+    }
+
+    /**
      * @param array<string, bool|int|string|null> $row
      * @param list<array{logical_file_ref: string, role: string, position: int}> $attachments
      */

@@ -1,0 +1,23 @@
+{
+  "schema": "larena.content.cms_sitepack_contract.v1",
+  "external_format": "sitepack/0.4",
+  "operations": ["export", "verify", "import_dry_run", "import_apply"],
+  "identity_preserved": ["content_type_key", "content_item_uuid", "logical_file_uuid", "public_file_uuid"],
+  "state_preserved": ["schema_versions", "revision_chain", "publication", "routes", "relations", "attachments"],
+  "archive": {
+    "deterministic": true,
+    "integrity": "sha256",
+    "maximum_bytes": 268435456,
+    "maximum_entries": 5000,
+    "encrypted_entries": "rejected",
+    "symlinks": "rejected"
+  },
+  "import": {
+    "dry_run_writes": false,
+    "transaction": "ambient_shared_connection",
+    "exact_replay": "no_op",
+    "identity_conflict": "fail_closed",
+    "new_file_compensation": true
+  },
+  "excluded": ["password", "token", "file_bytes_in_audit", "physical_path", "storage_disk", "storage_key"]
+}

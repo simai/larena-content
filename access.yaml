@@ -58,6 +58,18 @@ operations:
   - code: content.attachment.reorder
     risk: high
     audit: always
+  - code: content.sitepack.export
+    risk: critical
+    audit: always
+  - code: content.sitepack.verify
+    risk: critical
+    audit: always
+  - code: content.sitepack.import.dry_run
+    risk: critical
+    audit: always
+  - code: content.sitepack.import.apply
+    risk: critical
+    audit: always
 nonclaims:
   production_ready: false
   all_packages_ready: false

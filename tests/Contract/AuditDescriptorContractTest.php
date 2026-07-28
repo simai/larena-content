@@ -28,6 +28,11 @@ final class AuditDescriptorContractTest extends TestCase
         'content.attachment.attached',
         'content.attachment.detached',
         'content.attachment.reordered',
+        'content.sitepack.exported',
+        'content.sitepack.verified',
+        'content.sitepack.import_planned',
+        'content.sitepack.imported',
+        'content.sitepack.failed',
         'content.operation.denied',
     ];
 
@@ -75,6 +80,13 @@ final class AuditDescriptorContractTest extends TestCase
         'target_version',
         'added_optional_count',
         'attachment_count',
+        'package_ref',
+        'package_digest',
+        'type_count',
+        'revision_count',
+        'file_count',
+        'created_count',
+        'unchanged_count',
         'correlation_id',
         'timestamp',
     ];

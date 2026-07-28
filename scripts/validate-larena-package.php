@@ -10,10 +10,10 @@ use Larena\Rest\Registry\PackageApiContractLoader;
 use Symfony\Component\Yaml\Yaml;
 
 const PACKAGE = 'larena/content';
-const SPECS_COMMIT = 'c218f18a';
-const BASE_COMMIT = '6423f5e408d027c312c7f34951a187d9f2f129d2';
-const LAUNCH_RECORD = 'specs/implementation-planning/launch-records/content-cms-content-model-v1.json';
-const EVIDENCE_PATH = 'docs/project-management/evidence/cms-content-model-v1/';
+const SPECS_COMMIT = '7e637fc4';
+const BASE_COMMIT = '268208d7343ed5e67a4d90f0222c6c91e681942e';
+const LAUNCH_RECORD = 'docs/project-management/launch-records/cms-sitepack-portability-v1.json';
+const EVIDENCE_PATH = 'docs/project-management/evidence/cms-sitepack-portability-v1/content/';
 
 $errors = [];
 
@@ -69,7 +69,9 @@ foreach ([
     'database/migrations/2026_07_19_000001_create_larena_content_tables.php',
     'src/Providers/ContentServiceProvider.php', 'src/Services/DatabaseContentTypeService.php',
     'src/Services/DatabaseContentItemService.php', 'src/Runtime/PublishedContentProjectionBuilder.php',
-    'tests/Feature/CmsContentModelV1RuntimeTest.php',
+    'src/Services/DatabaseCmsSitePackService.php',
+    'tests/Feature/CmsSitePackPortabilityRuntimeTest.php',
+    'tests/Integration/CmsSitePackPortabilityMySqlTest.php',
 ] as $required) {
     if (!is_file($required)) {
         $errors[] = "Missing CMS content model v1 file: {$required}";
@@ -122,12 +124,9 @@ if (!is_string($gateRef) || $gateRef === '' || str_ends_with($gateRef, '/pending
     $errors[] = 'The successful action gate must point to its durable report.';
 }
 
-$requiredFeatures = [
-    'content.type_registry', 'content.item_lifecycle', 'content.revision_history',
-    'content.publication_projection', 'content.cms_admin_v1',
-];
+$requiredFeatures = ['content.sitepack_portability_v1'];
 if (($context['selected_features'] ?? null) !== $requiredFeatures) {
-    $errors[] = 'Launch context must contain the exact CMS content model v1 feature set.';
+    $errors[] = 'Launch context must contain the exact CMS SitePack portability feature set.';
 }
 
 $expectedRevisions = $context['dependency_revisions'] ?? null;
@@ -168,15 +167,15 @@ foreach (['larena/access', 'larena/audit', 'larena/auth', 'larena/core', 'larena
     }
 }
 
-if (count(ContentAccessOperationCatalog::operations()) !== 19) {
-    $errors[] = 'Content must expose the exact 19-operation protected Access catalog.';
+if (count(ContentAccessOperationCatalog::operations()) !== 23) {
+    $errors[] = 'Content must expose the exact 23-operation protected Access catalog.';
 }
-if (count(ContentAuditEventCatalog::types()) !== 13) {
-    $errors[] = 'Content must expose the exact 13-event sanitized Audit catalog.';
+if (count(ContentAuditEventCatalog::types()) !== 18) {
+    $errors[] = 'Content must expose the exact 18-event sanitized Audit catalog.';
 }
 $api = (new PackageApiContractLoader())->loadFile('api.yaml', PACKAGE);
-if (count($api->operations) !== 21) {
-    $errors[] = 'Content admin API must compile exactly 21 operations.';
+if (count($api->operations) !== 25) {
+    $errors[] = 'Content admin API must compile exactly 25 operations.';
 }
 if (ContentOwnedTableShapeGuard::tableNames() !== [
     'larena_content_types', 'larena_content_type_versions', 'larena_content_items',
@@ -201,8 +200,8 @@ foreach (['production_ready', 'frontend_ready', 'all_packages_ready'] as $claim)
 if (($context['status'] ?? null) !== 'implementation_verification_ready') {
     $errors[] = 'Launch context must be ready for independent implementation verification.';
 }
-if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'content-cms-content-model-v1') {
-    $errors[] = 'module.yaml must identify the active CMS content model v1 batch.';
+if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'cms-sitepack-portability-v1') {
+    $errors[] = 'module.yaml must identify the active CMS SitePack portability batch.';
 }
 
 if ($errors !== []) {
@@ -210,4 +209,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-fwrite(STDOUT, 'Larena Content CMS model v1 contract is valid.'.PHP_EOL);
+fwrite(STDOUT, 'Larena Content CMS SitePack portability contract is valid.'.PHP_EOL);

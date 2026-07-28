@@ -13,6 +13,7 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\DatabaseTransactionsManager;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Larena\Access\Persistence\AdminIdentitySubjectDirectory;
 use Larena\Access\Persistence\PersistentAccessStore;
 use Larena\Access\Runtime\AccessMutationAuditor;
@@ -30,6 +31,7 @@ use Larena\Content\Access\ContentAuthorizer;
 use Larena\Content\Audit\ContentAuditEmitter;
 use Larena\Content\Contracts\ContentClock;
 use Larena\Content\Contracts\ContentIdGenerator;
+use Larena\Content\Contracts\CmsSitePackService;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
 use Larena\Content\Filesystem\FilesystemContentLogicalFileInspector;
 use Larena\Content\Persistence\DatabaseContentRepository;
@@ -43,11 +45,15 @@ use Larena\Content\Search\ContentSearchProjectionDelegationRegistry;
 use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
+use Larena\Content\Services\DatabaseCmsSitePackService;
+use Larena\Content\SitePack\CmsSitePackArchive;
+use Larena\Content\SitePack\CmsSitePackCodec;
 use Larena\Content\Storage\ContentStorageGateway;
 use Larena\Content\Storage\ContentStorageSchemaEvolutionAuthority;
 use Larena\Content\ValueObjects\ActorContext;
 use Larena\Content\ValueObjects\ContentItemRef;
 use Larena\Filesystem\Persistence\DatabasePersistentLogicalFileInspector;
+use Larena\Filesystem\Persistence\DatabasePortableLogicalFileStore;
 use Larena\Property\Runtime\PropertyTypeRegistry;
 use Larena\Search\Persistence\DatabaseSearchIndex;
 use Larena\Storage\Runtime\VersionedStorage;
@@ -76,6 +82,8 @@ final class ContentRuntimeHarness
     public readonly DatabaseContentTypeService $types;
 
     public readonly DatabaseContentItemService $items;
+
+    public readonly CmsSitePackService $sitePacks;
 
     public readonly DatabasePublishedContentReader $published;
 
@@ -116,6 +124,7 @@ final class ContentRuntimeHarness
         bool $initialize,
         ?array $connectionConfig = null,
         ?string $blobRoot = null,
+        ?string $sitePackRoot = null,
     ) {
         $this->database = $connectionConfig === null
             ? ContentTestDatabase::fileBackedSqlite($path)
@@ -260,6 +269,32 @@ final class ContentRuntimeHarness
             new ContentFixtureIdGenerator(),
             $this->searchDelegations,
         );
+        $portableFiles = new DatabasePortableLogicalFileStore(
+            $resolver,
+            $filesystems,
+            new ContentFixtureConfig([
+                'larena-filesystem' => [
+                    'disk' => 'local',
+                    'root' => 'larena/media/blobs',
+                    'maximum_bytes' => 10 * 1024 * 1024,
+                    'max_bytes' => 10 * 1024 * 1024,
+                    'allowed_types' => ['text/plain' => ['txt'], 'image/png' => ['png']],
+                ],
+            ]),
+        );
+        $this->sitePacks = new DatabaseCmsSitePackService(
+            $this->repository,
+            $contentAuthorizer,
+            $participants,
+            $this->storage,
+            $schemas,
+            $input,
+            $this->types,
+            $portableFiles,
+            new CmsSitePackArchive($sitePackRoot ?? $path.'.sitepacks'),
+            new CmsSitePackCodec($canonicalJson),
+            $contentAudit,
+        );
         $this->published = new DatabasePublishedContentReader(
             $this->repository,
             $participants,
@@ -301,6 +336,16 @@ final class ContentRuntimeHarness
         return new self($path, true, true);
     }
 
+    public static function createWithSitePackRoot(string $sitePackRoot): self
+    {
+        $path = tempnam(sys_get_temp_dir(), 'larena-content-runtime-');
+        if (!is_string($path)) {
+            throw new RuntimeException('content_runtime_tempfile_failed');
+        }
+
+        return new self($path, true, true, sitePackRoot: $sitePackRoot);
+    }
+
     public static function reopen(string $path, bool $ownsResources = false): self
     {
         if (!is_file($path)) {
@@ -313,7 +358,7 @@ final class ContentRuntimeHarness
     /**
      * @param array<string, mixed> $config
      */
-    public static function fromConfig(array $config, string $blobRoot): self
+    public static function fromConfig(array $config, string $blobRoot, ?string $sitePackRoot = null): self
     {
         if (
             ($config['driver'] ?? null) !== 'mysql'
@@ -329,6 +374,7 @@ final class ContentRuntimeHarness
             true,
             $config,
             $blobRoot,
+            $sitePackRoot,
         );
     }
 
@@ -391,8 +437,8 @@ final class ContentRuntimeHarness
             'original_name' => 'content-fixture.txt',
             'mime_type' => 'text/plain',
             'extension' => 'txt',
-            'size_bytes' => 17,
-            'sha256' => str_repeat('a', 64),
+            'size_bytes' => strlen('content fixture'),
+            'sha256' => hash('sha256', 'content fixture'),
             'storage_disk' => 'local',
             'storage_key' => $storageKey,
             'visibility' => 'public',
@@ -457,6 +503,7 @@ final class ContentRuntimeHarness
             }
         }
         self::removeTree($this->blobRoot);
+        self::removeTree($this->path.'.sitepacks');
     }
 
     private function migrateOwnersAndContent(): void
@@ -640,6 +687,62 @@ final readonly class ContentFixtureConnectionResolver implements ConnectionResol
     }
 }
 
+final class ContentFixtureConfig implements ConfigRepository
+{
+    /** @param array<string,mixed> $values */
+    public function __construct(private array $values)
+    {
+    }
+
+    public function has($key): bool
+    {
+        return $this->get($key, new \stdClass()) instanceof \stdClass === false;
+    }
+
+    /** @param string|array<string> $key */
+    public function get($key, $default = null): mixed
+    {
+        if (is_array($key)) {
+            $result = [];
+            foreach ($key as $item) {
+                $result[$item] = $this->get($item, $default);
+            }
+
+            return $result;
+        }
+        $value = $this->values;
+        foreach (explode('.', (string) $key) as $part) {
+            if (!is_array($value) || !array_key_exists($part, $value)) {
+                return $default;
+            }
+            $value = $value[$part];
+        }
+
+        return $value;
+    }
+
+    public function all(): array
+    {
+        return $this->values;
+    }
+
+    /** @param string|array<string> $key */
+    public function set($key, $value = null): void
+    {
+        throw new \BadMethodCallException('content_fixture_config_read_only');
+    }
+
+    public function prepend($key, $value): void
+    {
+        throw new \BadMethodCallException('content_fixture_config_read_only');
+    }
+
+    public function push($key, $value): void
+    {
+        throw new \BadMethodCallException('content_fixture_config_read_only');
+    }
+}
+
 final readonly class ContentFixtureFilesystems implements Filesystems
 {
     public function __construct(private string $root)
@@ -689,7 +792,23 @@ final readonly class ContentFixtureDisk implements Filesystem
 
     public function put($path, $contents, $options = []): bool
     {
-        return file_put_contents($this->path($path), (string) $contents) !== false;
+        $target = $this->path($path);
+        $directory = dirname($target);
+        if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+            return false;
+        }
+        if (is_resource($contents)) {
+            $output = fopen($target, 'wb');
+            if (!is_resource($output)) {
+                return false;
+            }
+            $copied = stream_copy_to_stream($contents, $output);
+            fclose($output);
+
+            return $copied !== false;
+        }
+
+        return file_put_contents($target, (string) $contents) !== false;
     }
 
     /**
@@ -745,9 +864,17 @@ final readonly class ContentFixtureDisk implements Filesystem
     }
 
     /** @param string|list<string> $paths */
-    public function delete($paths): never
+    public function delete($paths): bool
     {
-        throw new \BadMethodCallException('content_runtime_fixture_disk_read_only');
+        $deleted = true;
+        foreach ((array) $paths as $path) {
+            $absolute = $this->path($path);
+            if (is_file($absolute) && !unlink($absolute)) {
+                $deleted = false;
+            }
+        }
+
+        return $deleted;
     }
 
     public function copy($from, $to): never

@@ -37,6 +37,10 @@ final class ContentAdminApiContractTest extends TestCase
         'content.item_admin.attachments.attach' => ['method' => 'POST', 'path' => '/api/v1/admin/content/items/{item_ref}/attachments', 'access' => ['content.attachment.attach']],
         'content.item_admin.attachments.detach' => ['method' => 'DELETE', 'path' => '/api/v1/admin/content/items/{item_ref}/attachments/{logical_file_ref}', 'access' => ['content.attachment.detach']],
         'content.item_admin.attachments.reorder' => ['method' => 'PUT', 'path' => '/api/v1/admin/content/items/{item_ref}/attachments', 'access' => ['content.attachment.reorder']],
+        'content.sitepack_admin.export' => ['method' => 'POST', 'path' => '/api/v1/admin/content/sitepacks', 'access' => ['content.sitepack.export', 'storage.record.read']],
+        'content.sitepack_admin.verify' => ['method' => 'POST', 'path' => '/api/v1/admin/content/sitepacks/verify', 'access' => ['content.sitepack.verify']],
+        'content.sitepack_admin.import.dry_run' => ['method' => 'POST', 'path' => '/api/v1/admin/content/sitepacks/import/dry-run', 'access' => ['content.sitepack.import.dry_run', 'storage.record.read']],
+        'content.sitepack_admin.import.apply' => ['method' => 'POST', 'path' => '/api/v1/admin/content/sitepacks/import', 'access' => ['content.sitepack.import.apply', 'storage.schema.create', 'storage.schema_migration.diff', 'storage.schema_migration.plan', 'storage.schema_migration.dispatch', 'storage.record.create', 'storage.record.read', 'storage.record.update']],
     ];
 
     public function test_real_loader_compiles_exact_twenty_one_operation_contract(): void
@@ -48,7 +52,7 @@ final class ContentAdminApiContractTest extends TestCase
 
         self::assertSame('larena/content', $contract->package);
         self::assertSame('1.0.0', $contract->version);
-        self::assertCount(21, $contract->operations);
+        self::assertCount(25, $contract->operations);
         self::assertSame(array_keys(self::OPERATIONS), array_map(
             static fn ($operation): string => $operation->operationKey,
             $contract->operations,
@@ -70,7 +74,15 @@ final class ContentAdminApiContractTest extends TestCase
                 self::assertFalse($operation->idempotencyRequired);
             } else {
                 self::assertTrue($operation->csrfRequired);
-                self::assertTrue($operation->transactional);
+                if (in_array($operation->operationKey, [
+                    'content.sitepack_admin.export',
+                    'content.sitepack_admin.verify',
+                    'content.sitepack_admin.import.dry_run',
+                ], true)) {
+                    self::assertFalse($operation->transactional);
+                } else {
+                    self::assertTrue($operation->transactional);
+                }
                 self::assertTrue($operation->idempotencyRequired);
             }
 
@@ -99,7 +111,7 @@ final class ContentAdminApiContractTest extends TestCase
         ))->generate(static fn ($operation): bool => $operation->ownerPackage === 'larena/content');
 
         self::assertSame('3.1.0', $document['openapi']);
-        self::assertCount(15, $document['paths']);
+        self::assertCount(19, $document['paths']);
         foreach (self::OPERATIONS as $operationKey => $expected) {
             $method = strtolower($expected['method']);
             self::assertSame(

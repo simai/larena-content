@@ -59,7 +59,7 @@ final class ContentRuntimeMySqlTestSupport
         }
     }
 
-    public static function create(): self
+    public static function create(?string $sitePackRoot = null): self
     {
         self::requireOptIn();
         if (!extension_loaded('pdo_mysql')) {
@@ -147,7 +147,7 @@ final class ContentRuntimeMySqlTestSupport
                 throw new RuntimeException('content_mysql_blob_root_create_failed');
             }
 
-            $runtime = ContentRuntimeHarness::fromConfig($config, $blobRoot);
+            $runtime = ContentRuntimeHarness::fromConfig($config, $blobRoot, $sitePackRoot);
 
             return new self(
                 $credentials,

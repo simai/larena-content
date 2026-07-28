@@ -2,7 +2,7 @@ package: larena/content
 title: Larena Content
 status: implementation_verification_ready
 cluster: data-content
-batch: content-cms-content-model-v1
+batch: cms-sitepack-portability-v1
 features:
   - content.type_registry
   - content.type_schema_versioning
@@ -14,11 +14,12 @@ features:
   - content.search_projection
   - content.admin_api_v1
   - content.cms_admin_v1
+  - content.sitepack_portability_v1
 runtime:
   php: "^8.3"
   laravel: "^13.0"
 evidence:
-  path: docs/project-management/evidence/cms-content-model-v1/
+  path: docs/project-management/evidence/cms-sitepack-portability-v1/content/
 nonclaims:
   runtime_ready: false
   production_ready: false

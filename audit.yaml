@@ -40,6 +40,21 @@ events:
   - type: content.attachment.reordered
     category: content_attachment
     severity: security
+  - type: content.sitepack.exported
+    category: content_portability
+    severity: security
+  - type: content.sitepack.verified
+    category: content_portability
+    severity: security
+  - type: content.sitepack.import_planned
+    category: content_portability
+    severity: security
+  - type: content.sitepack.imported
+    category: content_portability
+    severity: security
+  - type: content.sitepack.failed
+    category: content_portability
+    severity: security
   - type: content.operation.denied
     category: content_security
     severity: security
@@ -62,6 +77,13 @@ allowed_payload_fields:
   - target_version
   - added_optional_count
   - attachment_count
+  - package_ref
+  - package_digest
+  - type_count
+  - revision_count
+  - file_count
+  - created_count
+  - unchanged_count
   - correlation_id
   - timestamp
 forbidden_payload_fields:

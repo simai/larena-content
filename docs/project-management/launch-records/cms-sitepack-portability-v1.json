@@ -1,0 +1,11 @@
+{
+  "schema": "larena.pre_coding_launch_record.v1",
+  "id": "larena.launch.content.cms_sitepack_portability_v1",
+  "status": "implementation_verification_ready",
+  "verdict": "ready_for_sealed_root_acceptance",
+  "target_package": "larena/content",
+  "base_commit": "268208d7343ed5e67a4d90f0222c6c91e681942e",
+  "specs_commit": "7e637fc4",
+  "selected_features": ["content.sitepack_portability_v1"],
+  "active_site_mutation": false
+}
