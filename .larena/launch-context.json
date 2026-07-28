@@ -3,15 +3,15 @@
   "package": "larena/content",
   "repository_class": "continuation_repository",
   "repository_contains_prior_implementation": true,
-  "launch_record_ref": "docs/project-management/launch-records/cms-sitepack-portability-v1.json",
-  "root_launch_record_ref": "specs/implementation-planning/launch-records/content-cms-sitepack-portability-v1.json",
+  "launch_record_ref": "docs/project-management/launch-records/site-structure-backend-v1.json",
+  "root_launch_record_ref": "specs/implementation-planning/launch-records/content-site-structure-backend-v1.json",
   "specs_repo": "simai/larena-specs",
-  "specs_commit": "7e637fc4",
-  "base_commit": "268208d7343ed5e67a4d90f0222c6c91e681942e",
+  "specs_commit": "f13cb540b2bb3c658ee760816b1539c9ebb616dc",
+  "base_commit": "830514d58f37dbcfef5a8c78c9d51826e8278440",
   "branch": "main",
-  "selected_features": ["content.sitepack_portability_v1"],
+  "selected_features": ["content.site_structure_v1", "content.seo_metadata_v1", "content.managed_redirects_v1"],
   "dependency_revisions": {
-    "larena/access": "7b15e0ddf8a6d2339ed80963e6f793b6fc6258eb",
+    "larena/access": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad",
     "larena/admin": "63b822dd334ed6ab02c666f2017e39883cd95b6f",
     "larena/audit": "cc6ba3ccf279eefdef3fa3973249629a3a100feb",
     "larena/auth": "92a32fa8bfb2a8b67676a64253a92490fc4a3874",
@@ -24,43 +24,20 @@
     "larena/storage": "7c606e092591dbcb40fbe7c45ef30bb917f1df68"
   },
   "allowed_files": [
-    ".larena/launch-context.json",
-    ".larena/spec-ref.json",
-    "README.md",
-    "CHANGELOG.md",
-    "access.yaml",
-    "api.yaml",
-    "audit.yaml",
-    "composer.json",
-    "composer.lock",
-    "config/sitepack.php",
-    "module.yaml",
-    "scripts/check-evidence.php",
-    "scripts/validate-larena-package.php",
-    "tools/larena-scope-check.php",
-    "src/*",
-    "tests/*",
-    "docs/project-management/launch-records/cms-sitepack-portability-v1.json",
-    "docs/project-management/evidence/cms-sitepack-portability-v1/content/*"
+    ".larena/*", "README.md", "CHANGELOG.md", "access.yaml", "api.yaml", "audit.yaml",
+    "composer.json", "composer.lock", "module.yaml", "scripts/*", "tools/*", "database/migrations/*",
+    "routes/*", "src/*", "tests/*", "docs/project-management/launch-records/site-structure-backend-v1.json",
+    "docs/project-management/evidence/site-structure-backend-v1/content/*"
   ],
-  "forbidden_files": ["database/migrations/*", "../filesystem/*", "../storage/*", "../access/*"],
+  "forbidden_files": ["../link/*", "../layout/*", "../backup/*", "../../larena.test/*"],
   "forbidden_behavior": [
-    "physical_storage_path_in_sitepack_contract",
-    "unverified_or_nontransactional_import",
-    "reader_or_editor_sitepack_mutation",
-    "secret_or_file_bytes_in_audit",
-    "active_larena_test_change",
-    "production_readiness_claim",
-    "all_42_packages_readiness_claim"
+    "second_navigation_owner", "redirect_chain_or_cycle", "draft_anonymous_exposure",
+    "secret_or_content_values_in_audit", "active_larena_test_change", "production_readiness_claim",
+    "frontend_completion_claim", "all_42_packages_readiness_claim"
   ],
-  "required_evidence_files": [
-    "implementation-summary.md",
-    "tests.md",
-    "sitepack-contract.json",
-    "graph-sync-proposal.json"
-  ],
-  "evidence_path": "docs/project-management/evidence/cms-sitepack-portability-v1/content/",
-  "graph_sync_proposal_path": "docs/project-management/evidence/cms-sitepack-portability-v1/content/graph-sync-proposal.json",
+  "required_evidence_files": ["implementation-summary.md", "tests.md", "sitepack-roundtrip.json", "graph-sync-proposal.json"],
+  "evidence_path": "docs/project-management/evidence/site-structure-backend-v1/content/",
+  "graph_sync_proposal_path": "docs/project-management/evidence/site-structure-backend-v1/content/graph-sync-proposal.json",
   "status": "implementation_verification_ready",
   "coding_allowed": true,
   "coding_started": true,
@@ -78,13 +55,13 @@
   "action_gate": {
     "phase": "preflight",
     "status": "success",
-    "evidence_ref": "source/output/action-gates/action-gate-report-20260728064246.json",
+    "evidence_ref": "source/output/action-gates/action-gate-report-20260728084054.json",
     "blockers": []
   },
   "runtime_toolchain": {
     "status": "ok",
     "php_version": "8.4.20",
-    "report_ref": "docs/project-management/evidence/cms-sitepack-portability-v1/content/tests.md"
+    "report_ref": "docs/project-management/evidence/site-structure-backend-v1/content/tests.md"
   },
   "remote_push_status": "branch_not_pushed"
 }

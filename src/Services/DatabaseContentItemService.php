@@ -21,6 +21,7 @@ use Larena\Content\Exceptions\ContentConflict;
 use Larena\Content\Exceptions\ContentIntegrationFailed;
 use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\Persistence\DatabaseContentRepository;
+use Larena\Content\Persistence\DatabaseSiteStructureRepository;
 use Larena\Content\Runtime\ContentInputGuard;
 use Larena\Content\Runtime\ContentParticipantGuard;
 use Larena\Content\Runtime\ContentSchemaMapper;
@@ -66,6 +67,7 @@ final readonly class DatabaseContentItemService implements ContentItemService
         private ContentAuditEmitter $audit,
         private ContentClock $clock,
         private ContentIdGenerator $ids,
+        private DatabaseSiteStructureRepository $siteStructure,
         private ?ContentSearchProjectionDelegationRegistry $searchDelegations = null,
     ) {
     }
@@ -1015,6 +1017,20 @@ final readonly class DatabaseContentItemService implements ContentItemService
                     actor: $actor,
                     now: $now,
                 );
+                $redirectCreated = false;
+                if (
+                    $before->publishedSlug !== null
+                    && $before->publishedSlug->value !== $after->publishedSlug?->value
+                ) {
+                    $this->siteStructure->reserveRedirect(
+                        $before->typeKey->value,
+                        $before->locale->value,
+                        $before->publishedSlug->value,
+                        $before->itemRef->value,
+                        $this->timestamp($now),
+                    );
+                    $redirectCreated = true;
+                }
                 $typeVersion = $this->typeVersion(
                     $publishedRevision->typeKey,
                     $publishedRevision->typeVersion,
@@ -1061,6 +1077,20 @@ final readonly class DatabaseContentItemService implements ContentItemService
                         'attachment_count' => count($placements),
                     ]),
                 );
+                if ($redirectCreated) {
+                    $this->audit->emit(
+                        'content.redirect.created',
+                        $actor,
+                        $itemRef->value,
+                        ContentAuditPayload::from([
+                            'operation' => 'content.item.publish',
+                            'type_key' => $before->typeKey->value,
+                            'item_ref' => $itemRef->value,
+                            'new_revision' => $after->currentRevision,
+                            'redirect_count' => 1,
+                        ]),
+                    );
+                }
 
                 return $after;
             }, 3);
@@ -1441,6 +1471,15 @@ final readonly class DatabaseContentItemService implements ContentItemService
             );
             if ($row !== null && (string) $row['item_ref'] !== $itemRef->value) {
                 throw new ContentRejected('slug_conflict');
+            }
+            $redirect = $this->siteStructure->redirect(
+                $typeKey->value,
+                $locale->value,
+                $slug->value,
+                true,
+            );
+            if ($redirect !== null) {
+                throw new ContentRejected('redirect_source_conflict');
             }
         }
     }

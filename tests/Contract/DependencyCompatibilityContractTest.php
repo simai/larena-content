@@ -25,7 +25,7 @@ use ReflectionMethod;
 final class DependencyCompatibilityContractTest extends TestCase
 {
     private const EXACT_REVISIONS = [
-        'larena/access' => '7b15e0ddf8a6d2339ed80963e6f793b6fc6258eb',
+        'larena/access' => '28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad',
         'larena/admin' => '63b822dd334ed6ab02c666f2017e39883cd95b6f',
         'larena/audit' => 'cc6ba3ccf279eefdef3fa3973249629a3a100feb',
         'larena/auth' => '92a32fa8bfb2a8b67676a64253a92490fc4a3874',

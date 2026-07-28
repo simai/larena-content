@@ -2,11 +2,11 @@
   "schema": "larena.package_specs_reference.v1",
   "package": "larena/content",
   "specs_repo": "simai/larena-specs",
-  "specs_commit": "7e637fc4",
+  "specs_commit": "f13cb540b2bb3c658ee760816b1539c9ebb616dc",
   "package_spec": "specs/packages/content/package.json",
   "package_dna": "specs/packages/content/dna.json",
   "features_index": "specs/packages/content/features.json",
-  "selected_feature": "content.sitepack_portability_v1",
+  "selected_features": ["content.site_structure_v1", "content.seo_metadata_v1", "content.managed_redirects_v1"],
   "canonical_update_allowed": false,
   "graph_sync_proposal_required": true
 }

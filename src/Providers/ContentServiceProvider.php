@@ -25,9 +25,12 @@ use Larena\Content\Contracts\ContentSearchSourceProvider;
 use Larena\Content\Contracts\ContentTypeService;
 use Larena\Content\Contracts\PublishedContentReader;
 use Larena\Content\Contracts\PublishedContentItemReader;
+use Larena\Content\Contracts\ManagedContentRedirectReader;
+use Larena\Content\Contracts\SiteStructureService;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
 use Larena\Content\Filesystem\FilesystemContentLogicalFileInspector;
 use Larena\Content\Persistence\DatabaseContentRepository;
+use Larena\Content\Persistence\DatabaseSiteStructureRepository;
 use Larena\Content\Runtime\ContentCanonicalJson;
 use Larena\Content\Runtime\ContentInputGuard;
 use Larena\Content\Runtime\ContentParticipantGuard;
@@ -37,6 +40,7 @@ use Larena\Content\Runtime\SystemContentClock;
 use Larena\Content\Runtime\SystemContentIdGenerator;
 use Larena\Content\Rest\ContentAdminApiOperationHandler;
 use Larena\Content\Rest\CmsSitePackApiOperationHandler;
+use Larena\Content\Rest\SiteStructureApiOperationHandler;
 use Larena\Content\Search\ContainerContentSearchSourceFactory;
 use Larena\Content\Search\ContentSearchProjectionDelegationRegistry;
 use Larena\Content\Search\DatabaseContentSearchSourceProvider;
@@ -44,6 +48,8 @@ use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
 use Larena\Content\Services\DatabaseCmsSitePackService;
+use Larena\Content\Services\DatabaseManagedContentRedirectReader;
+use Larena\Content\Services\DatabaseSiteStructureService;
 use Larena\Content\SitePack\CmsSitePackArchive;
 use Larena\Content\SitePack\CmsSitePackCodec;
 use Larena\Content\Storage\ContentStorageGateway;
@@ -144,6 +150,12 @@ final class ContentServiceProvider extends ServiceProvider
             ),
         );
         $this->app->scoped(
+            DatabaseSiteStructureRepository::class,
+            static fn (Container $app): DatabaseSiteStructureRepository => new DatabaseSiteStructureRepository(
+                $app->make(DatabaseManager::class)->connection(),
+            ),
+        );
+        $this->app->scoped(
             ContentAuthorizer::class,
             static fn (Container $app): ContentAuthorizer => new ContentAuthorizer(
                 $app->make(ActorOperationAuthorizer::class),
@@ -210,6 +222,7 @@ final class ContentServiceProvider extends ServiceProvider
                 $app->make(ContentAuditEmitter::class),
                 $app->make(ContentClock::class),
                 $app->make(ContentIdGenerator::class),
+                $app->make(DatabaseSiteStructureRepository::class),
                 $app->make(ContentSearchProjectionDelegationRegistry::class),
             ),
         );
@@ -218,6 +231,7 @@ final class ContentServiceProvider extends ServiceProvider
             DatabaseCmsSitePackService::class,
             static fn (Container $app): DatabaseCmsSitePackService => new DatabaseCmsSitePackService(
                 $app->make(DatabaseContentRepository::class),
+                $app->make(DatabaseSiteStructureRepository::class),
                 $app->make(ContentAuthorizer::class),
                 $app->make(ContentParticipantGuard::class),
                 $app->make(ContentStorageGateway::class),
@@ -234,6 +248,10 @@ final class ContentServiceProvider extends ServiceProvider
         $this->app->scoped(DatabasePublishedContentReader::class);
         $this->app->alias(DatabasePublishedContentReader::class, PublishedContentReader::class);
         $this->app->alias(DatabasePublishedContentReader::class, PublishedContentItemReader::class);
+        $this->app->scoped(DatabaseSiteStructureService::class);
+        $this->app->alias(DatabaseSiteStructureService::class, SiteStructureService::class);
+        $this->app->scoped(DatabaseManagedContentRedirectReader::class);
+        $this->app->alias(DatabaseManagedContentRedirectReader::class, ManagedContentRedirectReader::class);
         $this->app->scoped(DefaultContentDataviewSourceFactory::class);
         $this->app->alias(
             DefaultContentDataviewSourceFactory::class,
@@ -302,6 +320,10 @@ final class ContentServiceProvider extends ServiceProvider
             CmsSitePackApiOperationHandler::registerLazy(
                 $this->app->make(OperationHandlerRegistry::class),
                 fn (): CmsSitePackApiOperationHandler => $this->app->make(CmsSitePackApiOperationHandler::class),
+            );
+            SiteStructureApiOperationHandler::registerLazy(
+                $this->app->make(OperationHandlerRegistry::class),
+                fn (): SiteStructureApiOperationHandler => $this->app->make(SiteStructureApiOperationHandler::class),
             );
         }
     }

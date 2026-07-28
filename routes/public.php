@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Larena\Content\Http\Controllers\PublishedContentController;
+use Larena\Content\Http\Controllers\PublishedSiteStructureController;
+
+Route::get('/content/site-structure', [PublishedSiteStructureController::class, 'show'])
+    ->name('larena.content.structure.public');
 
 Route::get('/content/{typeKey}/{slug}', [PublishedContentController::class, 'show'])
     ->where([

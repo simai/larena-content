@@ -41,6 +41,12 @@ final class ContentAdminApiContractTest extends TestCase
         'content.sitepack_admin.verify' => ['method' => 'POST', 'path' => '/api/v1/admin/content/sitepacks/verify', 'access' => ['content.sitepack.verify']],
         'content.sitepack_admin.import.dry_run' => ['method' => 'POST', 'path' => '/api/v1/admin/content/sitepacks/import/dry-run', 'access' => ['content.sitepack.import.dry_run', 'storage.record.read']],
         'content.sitepack_admin.import.apply' => ['method' => 'POST', 'path' => '/api/v1/admin/content/sitepacks/import', 'access' => ['content.sitepack.import.apply', 'storage.schema.create', 'storage.schema_migration.diff', 'storage.schema_migration.plan', 'storage.schema_migration.dispatch', 'storage.record.create', 'storage.record.read', 'storage.record.update']],
+        'content.structure_admin.read' => ['method' => 'GET', 'path' => '/api/v1/admin/content/site-structure', 'access' => ['content.structure.read']],
+        'content.structure_admin.revisions.read' => ['method' => 'GET', 'path' => '/api/v1/admin/content/site-structure/revisions/{revision}', 'access' => ['content.structure.read']],
+        'content.structure_admin.replace' => ['method' => 'PUT', 'path' => '/api/v1/admin/content/site-structure', 'access' => ['content.structure.update']],
+        'content.structure_admin.submit_review' => ['method' => 'POST', 'path' => '/api/v1/admin/content/site-structure/submit-review', 'access' => ['content.structure.submit_review']],
+        'content.structure_admin.publish' => ['method' => 'POST', 'path' => '/api/v1/admin/content/site-structure/publish', 'access' => ['content.structure.publish']],
+        'content.structure_admin.restore' => ['method' => 'POST', 'path' => '/api/v1/admin/content/site-structure/revisions/{revision}/restore', 'access' => ['content.structure.restore']],
     ];
 
     public function test_real_loader_compiles_exact_twenty_one_operation_contract(): void
@@ -52,7 +58,7 @@ final class ContentAdminApiContractTest extends TestCase
 
         self::assertSame('larena/content', $contract->package);
         self::assertSame('1.0.0', $contract->version);
-        self::assertCount(25, $contract->operations);
+        self::assertCount(31, $contract->operations);
         self::assertSame(array_keys(self::OPERATIONS), array_map(
             static fn ($operation): string => $operation->operationKey,
             $contract->operations,
@@ -111,7 +117,7 @@ final class ContentAdminApiContractTest extends TestCase
         ))->generate(static fn ($operation): bool => $operation->ownerPackage === 'larena/content');
 
         self::assertSame('3.1.0', $document['openapi']);
-        self::assertCount(19, $document['paths']);
+        self::assertCount(24, $document['paths']);
         foreach (self::OPERATIONS as $operationKey => $expected) {
             $method = strtolower($expected['method']);
             self::assertSame(

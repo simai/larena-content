@@ -109,5 +109,15 @@ final class ContentSlugRuntimeTest extends TestCase
                 new ContentLocale('en'),
             )->publicFields['title'],
         );
+        self::assertSame([
+            'type_key' => 'article',
+            'locale' => 'en',
+            'slug' => 'new-public-slug',
+            'status' => 301,
+        ], $this->runtime->redirects->resolve(
+            new ContentTypeKey('article'),
+            new ContentSlug('shared-slug'),
+            new ContentLocale('en'),
+        ));
     }
 }

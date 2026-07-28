@@ -22,6 +22,8 @@ use Larena\Content\Persistence\DatabaseContentRepository;
 use Larena\Content\Providers\ContentServiceProvider;
 use Larena\Content\Rest\ContentAdminApiOperationHandler;
 use Larena\Content\Rest\CmsSitePackApiOperationHandler;
+use Larena\Content\Rest\SiteStructureApiOperationHandler;
+use Larena\Content\Contracts\SiteStructureService;
 use Larena\Content\Rest\ContentAdminReadModel;
 use Larena\Content\Rest\ContentAdminValueCodec;
 use Larena\Content\Runtime\ContentParticipantGuard;
@@ -180,6 +182,10 @@ final class ContentProviderBindingTest extends TestCase
         self::assertNotNull($route);
         self::assertSame(['GET', 'HEAD'], $route->methods());
         self::assertSame([], $route->gatherMiddleware());
+        $structureRoute = $router->getRoutes()->getByName('larena.content.structure.public');
+        self::assertNotNull($structureRoute);
+        self::assertSame(['GET', 'HEAD'], $structureRoute->methods());
+        self::assertSame([], $structureRoute->gatherMiddleware());
         self::assertCount(1, $migrator->paths);
         $expectedMigrationPath = realpath(
             dirname(__DIR__, 2) . '/database/migrations',
@@ -233,6 +239,12 @@ final class ContentProviderBindingTest extends TestCase
                 $this->createStub(CmsSitePackService::class),
             ),
         );
+        $container->singleton(
+            SiteStructureApiOperationHandler::class,
+            fn (): SiteStructureApiOperationHandler => new SiteStructureApiOperationHandler(
+                $this->createStub(SiteStructureService::class),
+            ),
+        );
 
         $content->boot();
 
@@ -242,7 +254,7 @@ final class ContentProviderBindingTest extends TestCase
             'larena/content',
         );
 
-        self::assertCount(25, $contract->operations);
+        self::assertCount(31, $contract->operations);
         foreach ($contract->operations as $operation) {
             $handler = $registry->get($operation->handlerReference);
             self::assertIsCallable($handler);
@@ -264,7 +276,9 @@ final class ContentProviderBindingTest extends TestCase
                 self::assertSame(
                     str_starts_with($operation->operationKey, 'content.sitepack_admin.')
                         ? 'content_sitepack_api_session_context_invalid'
-                        : 'content_admin_api_session_context_invalid',
+                        : (str_starts_with($operation->operationKey, 'content.structure_admin.')
+                            ? 'content_structure_api_session_context_invalid'
+                            : 'content_admin_api_session_context_invalid'),
                     $exception->errorCode,
                 );
                 self::assertSame(403, $exception->httpStatus);

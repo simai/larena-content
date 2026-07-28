@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-const EVIDENCE_PATH = 'docs/project-management/evidence/cms-sitepack-portability-v1/content/';
+const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-backend-v1/content/';
 
 $errors = [];
 $context = json_decode((string) file_get_contents('.larena/launch-context.json'), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($context) || ($context['evidence_path'] ?? null) !== EVIDENCE_PATH) {
-    $errors[] = 'Launch context does not point to the CMS SitePack portability evidence bundle.';
+    $errors[] = 'Launch context does not point to the site-structure backend evidence bundle.';
 }
 
-foreach (['implementation-summary.md', 'tests.md', 'sitepack-contract.json', 'graph-sync-proposal.json'] as $file) {
+foreach (['implementation-summary.md', 'tests.md', 'sitepack-roundtrip.json', 'graph-sync-proposal.json'] as $file) {
     $path = EVIDENCE_PATH.$file;
     if (!is_file($path) || trim((string) file_get_contents($path)) === '') {
         $errors[] = "Missing or empty evidence file: {$path}";
@@ -50,4 +50,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-fwrite(STDOUT, 'CMS SitePack portability evidence bundle is structurally complete.'.PHP_EOL);
+fwrite(STDOUT, 'Site-structure backend evidence bundle is structurally complete.'.PHP_EOL);

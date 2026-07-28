@@ -18,6 +18,7 @@ use Larena\Content\Enums\ContentVisibility;
 use Larena\Content\Exceptions\ContentIntegrationFailed;
 use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\Persistence\DatabaseContentRepository;
+use Larena\Content\Persistence\DatabaseSiteStructureRepository;
 use Larena\Content\Runtime\ContentInputGuard;
 use Larena\Content\Runtime\ContentParticipantGuard;
 use Larena\Content\Runtime\ContentSchemaMapper;
@@ -32,6 +33,8 @@ use Larena\Content\ValueObjects\ContentLocale;
 use Larena\Content\ValueObjects\ContentProjectionContract;
 use Larena\Content\ValueObjects\ContentSlug;
 use Larena\Content\ValueObjects\ContentTypeKey;
+use Larena\Content\ValueObjects\SiteSeoMetadata;
+use Larena\Content\ValueObjects\SiteStructureNode;
 use Larena\Filesystem\Contracts\PortableLogicalFileStore;
 use Larena\Filesystem\Exceptions\PortableLogicalFileFailed;
 use Larena\Filesystem\ValueObjects\PortableLogicalFileDescriptor;
@@ -45,6 +48,7 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
 
     public function __construct(
         private DatabaseContentRepository $repository,
+        private DatabaseSiteStructureRepository $siteStructures,
         private ContentAuthorizer $authorizer,
         private ContentParticipantGuard $participants,
         private ContentStorageGateway $storage,
@@ -160,6 +164,8 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
                 }
                 $this->importTypes($loaded['document']['types'], $actor);
                 $this->importItems($loaded['document']['items'], $loaded['document']['types'], $actor);
+                $this->importSiteStructure($loaded['document']['structure']);
+                $this->importRedirects($loaded['document']['redirects']);
                 $report = new CmsSitePackReport(
                     $loaded['package_ref'],
                     $loaded['digest'],
@@ -332,6 +338,83 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
             $latest = max($latest, (string) $itemRow['updated_at']);
         }
 
+        $structureRevisionCount = 0;
+        $seoCount = 0;
+        $structureHead = $this->siteStructures->head();
+        if ($structureHead !== null) {
+            $structureRevisionIds = [];
+            foreach ($this->siteStructures->revisions() as $structureRevision) {
+                $revision = (int) $structureRevision['revision'];
+                $structureRevisionCount++;
+                $revisionId = 'content-site-structure-revision:primary:'.str_pad((string) $revision, 10, '0', STR_PAD_LEFT);
+                $structureRevisionIds[] = $revisionId;
+                $nodes = $this->siteStructureNodes((string) $structureRevision['nodes_json']);
+                $seo = $this->siteStructureSeo((string) $structureRevision['seo_json']);
+                $seoCount += count($seo);
+                $targets = [];
+                foreach ($nodes as $node) {
+                    if ($node->contentItemRef !== null) {
+                        $targets['content-item:'.$node->contentItemRef->uuid()] = true;
+                    }
+                }
+                foreach ($seo as $metadata) {
+                    $targets['content-item:'.$metadata->itemRef->uuid()] = true;
+                }
+                $targetRelations = array_keys($targets);
+                sort($targetRelations, SORT_STRING);
+                $entities[] = [
+                    'id' => $revisionId,
+                    'type' => 'larena.content.site_structure_revision',
+                    'attributes' => [
+                        'structure_ref' => 'primary',
+                        'revision' => $revision,
+                        'status' => (string) $structureRevision['status'],
+                        'nodes' => array_map(static fn (SiteStructureNode $node): array => $node->toArray(), $nodes),
+                        'seo' => array_map(static fn (SiteSeoMetadata $metadata): array => $metadata->toArray(), $seo),
+                        'created_by' => (string) $structureRevision['created_by'],
+                        'correlation_id' => (string) $structureRevision['correlation_id'],
+                        'created_at' => (string) $structureRevision['created_at'],
+                    ],
+                    'relations' => ['content_items' => $targetRelations],
+                ];
+                $latest = max($latest, (string) $structureRevision['created_at']);
+            }
+            $entities[] = [
+                'id' => 'content-site-structure:primary',
+                'type' => 'larena.content.site_structure',
+                'attributes' => [
+                    'structure_ref' => 'primary',
+                    'current_revision' => (int) $structureHead['current_revision'],
+                    'current_status' => (string) $structureHead['current_status'],
+                    'published_revision' => $structureHead['published_revision'] === null ? null : (int) $structureHead['published_revision'],
+                    'created_at' => (string) $structureHead['created_at'],
+                    'updated_at' => (string) $structureHead['updated_at'],
+                ],
+                'relations' => ['revisions' => $structureRevisionIds],
+            ];
+            $latest = max($latest, (string) $structureHead['updated_at']);
+        }
+
+        $redirectCount = 0;
+        foreach ($this->siteStructures->redirects() as $redirect) {
+            $redirectCount++;
+            $item = new ContentItemRef((string) $redirect['item_ref']);
+            $entities[] = [
+                'id' => $this->redirectEntityId((string) $redirect['type_key'], (string) $redirect['locale'], (string) $redirect['source_slug']),
+                'type' => 'larena.content.redirect',
+                'attributes' => [
+                    'type_key' => (string) $redirect['type_key'],
+                    'locale' => (string) $redirect['locale'],
+                    'source_slug' => (string) $redirect['source_slug'],
+                    'item_ref' => $item->uuid(),
+                    'created_at' => (string) $redirect['created_at'],
+                    'updated_at' => (string) $redirect['updated_at'],
+                ],
+                'relations' => ['content_item' => ['content-item:'.$item->uuid()]],
+            ];
+            $latest = max($latest, (string) $redirect['updated_at']);
+        }
+
         $assets = [];
         $blobs = [];
         ksort($fileRefs, SORT_STRING);
@@ -374,6 +457,10 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
                 'file_count' => count($assets),
                 'item_count' => count($this->allItemRows()),
                 'revision_count' => $revisionCount,
+                'site_structure_count' => $structureHead === null ? 0 : 1,
+                'site_structure_revision_count' => $structureRevisionCount,
+                'seo_count' => $seoCount,
+                'redirect_count' => $redirectCount,
                 'type_count' => $typeCount,
             ],
         ];
@@ -401,6 +488,13 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
                 'file_count' => count($document['assets']),
                 'item_count' => count($document['items']),
                 'revision_count' => array_sum(array_map(static fn (array $item): int => count($item['revisions']), $document['items'])),
+                'site_structure_count' => $document['structure'] === null ? 0 : 1,
+                'site_structure_revision_count' => $document['structure'] === null ? 0 : count($document['structure']['revisions']),
+                'seo_count' => $document['structure'] === null ? 0 : array_sum(array_map(
+                    static fn (array $revision): int => count($revision['attributes']['seo']),
+                    $document['structure']['revisions'],
+                )),
+                'redirect_count' => count($document['redirects']),
                 'type_count' => count($document['types']),
             ],
             'document' => $document,
@@ -409,12 +503,14 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
 
     /**
      * @param array{entities:list<array<string,mixed>>,assets:list<array<string,mixed>>,blobs:array<string,string>,package_id:string} $decoded
-     * @return array{types:array<string,array<string,mixed>>,items:array<string,array<string,mixed>>,assets:array<string,array<string,mixed>>}
+     * @return array{types:array<string,array<string,mixed>>,items:array<string,array<string,mixed>>,assets:array<string,array<string,mixed>>,structure:?array<string,mixed>,redirects:array<string,array<string,mixed>>}
      */
     private function document(array $decoded): array
     {
         $types = [];
         $items = [];
+        $structure = null;
+        $redirects = [];
         foreach ($decoded['entities'] as $entity) {
             $type = $entity['type'] ?? null;
             $attributes = $entity['attributes'] ?? null;
@@ -449,6 +545,39 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
                 $items[$item->value]['revisions'][$revision] = [
                     'attributes' => $attributes,
                     'relations' => $this->relations($entity),
+                ];
+            } elseif ($type === 'larena.content.site_structure') {
+                $this->assertEntityId($entity, 'content-site-structure:primary');
+                if ($structure !== null && isset($structure['head'])) {
+                    throw new ContentRejected('sitepack_site_structure_duplicate');
+                }
+                $structure ??= ['revisions' => []];
+                $structure['head'] = $attributes;
+                $structure['relations'] = $this->relations($entity);
+            } elseif ($type === 'larena.content.site_structure_revision') {
+                $revision = $this->positiveInt($attributes, 'revision');
+                $this->assertEntityId($entity, 'content-site-structure-revision:primary:'.str_pad((string) $revision, 10, '0', STR_PAD_LEFT));
+                $structure ??= ['revisions' => []];
+                if (isset($structure['revisions'][$revision])) {
+                    throw new ContentRejected('sitepack_site_structure_revision_duplicate');
+                }
+                $structure['revisions'][$revision] = [
+                    'attributes' => $attributes,
+                    'relations' => $this->relations($entity),
+                ];
+            } elseif ($type === 'larena.content.redirect') {
+                $typeKey = new ContentTypeKey($this->string($attributes, 'type_key'));
+                $locale = new ContentLocale($this->string($attributes, 'locale'));
+                $slug = new ContentSlug($this->string($attributes, 'source_slug'));
+                $this->assertEntityId($entity, $this->redirectEntityId($typeKey->value, $locale->value, $slug->value));
+                $key = $typeKey->value."\0".$locale->value."\0".$slug->value;
+                if (isset($redirects[$key])) {
+                    throw new ContentRejected('sitepack_redirect_duplicate');
+                }
+                $redirects[$key] = [
+                    'attributes' => $attributes,
+                    'relations' => $this->relations($entity),
+                    'action' => 'unknown',
                 ];
             } else {
                 throw new ContentRejected('sitepack_entity_type_incompatible');
@@ -563,7 +692,16 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
         }
         unset($item);
 
-        return ['types' => $types, 'items' => $items, 'assets' => $assets];
+        if ($structure !== null) {
+            $structure = $this->normalizeSiteStructureDocument($structure, $items);
+        }
+        ksort($redirects, SORT_STRING);
+        foreach ($redirects as &$redirect) {
+            $this->normalizeRedirectDocument($redirect, $items);
+        }
+        unset($redirect);
+
+        return ['types' => $types, 'items' => $items, 'assets' => $assets, 'structure' => $structure, 'redirects' => $redirects];
     }
 
     /**
@@ -631,6 +769,48 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
             $unchanged++;
         }
         unset($item);
+        if ($document['structure'] !== null) {
+            $existing = $this->siteStructures->head();
+            if ($existing === null) {
+                $document['structure']['action'] = 'create';
+                $created++;
+            } elseif ($this->existingSiteStructureMatches($document['structure'])) {
+                $document['structure']['action'] = 'unchanged';
+                $unchanged++;
+            } else {
+                throw new ContentRejected('sitepack_site_structure_identity_conflict');
+            }
+        }
+        foreach ($document['redirects'] as &$redirect) {
+            $attributes = $redirect['attributes'];
+            $itemRef = ContentItemRef::fromUuid($this->string($attributes, 'item_ref'))->value;
+            $existing = $this->siteStructures->redirect(
+                $this->string($attributes, 'type_key'),
+                $this->string($attributes, 'locale'),
+                $this->string($attributes, 'source_slug'),
+            );
+            if ($existing === null) {
+                if ($this->repository->routeRow(
+                    $this->string($attributes, 'type_key'),
+                    $this->string($attributes, 'locale'),
+                    $this->string($attributes, 'source_slug'),
+                ) !== null) {
+                    throw new ContentRejected('sitepack_redirect_route_conflict');
+                }
+                $redirect['action'] = 'create';
+                $created++;
+            } elseif (
+                (string) $existing['item_ref'] === $itemRef
+                && (string) $existing['created_at'] === $this->string($attributes, 'created_at')
+                && (string) $existing['updated_at'] === $this->string($attributes, 'updated_at')
+            ) {
+                $redirect['action'] = 'unchanged';
+                $unchanged++;
+            } else {
+                throw new ContentRejected('sitepack_redirect_identity_conflict');
+            }
+        }
+        unset($redirect);
 
         return ['created_count' => $created, 'unchanged_count' => $unchanged];
     }
@@ -719,6 +899,56 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
                 'updated_at' => $this->timestamp($this->string($head, 'updated_at')),
             ]);
             $this->importRoutes($itemRefValue, $head);
+        }
+    }
+
+    /** @param array<string,mixed>|null $structure */
+    private function importSiteStructure(?array $structure): void
+    {
+        if ($structure === null || $structure['action'] !== 'create') {
+            return;
+        }
+        $head = $structure['head'];
+        $rows = [];
+        foreach ($structure['revisions'] as $revision) {
+            $attributes = $revision['attributes'];
+            $rows[] = [
+                'structure_ref' => 'primary',
+                'revision' => $this->positiveInt($attributes, 'revision'),
+                'status' => $this->string($attributes, 'status'),
+                'nodes_json' => $this->canonical($attributes['nodes']),
+                'seo_json' => $this->canonical($attributes['seo']),
+                'created_by' => $this->string($attributes, 'created_by'),
+                'correlation_id' => $this->string($attributes, 'correlation_id'),
+                'created_at' => $this->timestamp($this->string($attributes, 'created_at')),
+            ];
+        }
+        $this->siteStructures->insertImportedStructure([
+            'structure_ref' => 'primary',
+            'current_revision' => $this->positiveInt($head, 'current_revision'),
+            'current_status' => $this->string($head, 'current_status'),
+            'published_revision' => $this->nullablePositiveInt($head, 'published_revision'),
+            'created_at' => $this->timestamp($this->string($head, 'created_at')),
+            'updated_at' => $this->timestamp($this->string($head, 'updated_at')),
+        ], $rows);
+    }
+
+    /** @param array<string,array<string,mixed>> $redirects */
+    private function importRedirects(array $redirects): void
+    {
+        foreach ($redirects as $redirect) {
+            if ($redirect['action'] !== 'create') {
+                continue;
+            }
+            $attributes = $redirect['attributes'];
+            $this->siteStructures->insertImportedRedirect([
+                'type_key' => $this->string($attributes, 'type_key'),
+                'locale' => $this->string($attributes, 'locale'),
+                'source_slug' => $this->string($attributes, 'source_slug'),
+                'item_ref' => ContentItemRef::fromUuid($this->string($attributes, 'item_ref'))->value,
+                'created_at' => $this->timestamp($this->string($attributes, 'created_at')),
+                'updated_at' => $this->timestamp($this->string($attributes, 'updated_at')),
+            ]);
         }
     }
 
@@ -845,6 +1075,253 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
         if ($relations !== $expected) {
             throw new ContentRejected('sitepack_relation_graph_mismatch');
         }
+    }
+
+    /**
+     * @param array<string, mixed> $structure
+     * @param array<string, array<string, mixed>> $items
+     * @return array<string, mixed>
+     */
+    private function normalizeSiteStructureDocument(array $structure, array $items): array
+    {
+        $head = $structure['head'] ?? null;
+        $revisions = $structure['revisions'] ?? null;
+        if (!is_array($head) || array_is_list($head) || !is_array($revisions) || $revisions === []) {
+            throw new ContentRejected('sitepack_site_structure_incomplete');
+        }
+        if ($this->string($head, 'structure_ref') !== 'primary') {
+            throw new ContentRejected('sitepack_site_structure_identity_mismatch');
+        }
+        ksort($revisions, SORT_NUMERIC);
+        $current = $this->positiveInt($head, 'current_revision');
+        if (array_keys($revisions) !== range(1, $current)) {
+            throw new ContentRejected('sitepack_site_structure_revision_chain_invalid');
+        }
+        $currentStatus = $this->siteStructureStatus($this->string($head, 'current_status'));
+        $published = $this->nullablePositiveInt($head, 'published_revision');
+        $this->timestamp($this->string($head, 'created_at'));
+        $this->timestamp($this->string($head, 'updated_at'));
+        $expectedRevisionRelations = array_map(
+            static fn (int $revision): string => 'content-site-structure-revision:primary:'.str_pad((string) $revision, 10, '0', STR_PAD_LEFT),
+            array_keys($revisions),
+        );
+        if (($structure['relations'] ?? null) !== ['revisions' => $expectedRevisionRelations]) {
+            throw new ContentRejected('sitepack_site_structure_relation_graph_mismatch');
+        }
+        foreach ($revisions as $number => &$revision) {
+            $attributes = $revision['attributes'] ?? null;
+            if (
+                !is_array($attributes)
+                || array_is_list($attributes)
+                || $this->string($attributes, 'structure_ref') !== 'primary'
+                || $this->positiveInt($attributes, 'revision') !== (int) $number
+            ) {
+                throw new ContentRejected('sitepack_site_structure_revision_invalid');
+            }
+            $status = $this->siteStructureStatus($this->string($attributes, 'status'));
+            $nodes = $this->siteStructureNodesValue($attributes['nodes'] ?? null);
+            $seo = $this->siteStructureSeoValue($attributes['seo'] ?? null);
+            $createdBy = $this->string($attributes, 'created_by');
+            $correlationId = $this->string($attributes, 'correlation_id');
+            if ($createdBy === '' || strlen($createdBy) > 191 || $correlationId === '' || strlen($correlationId) > 191) {
+                throw new ContentRejected('sitepack_site_structure_revision_invalid');
+            }
+            $this->timestamp($this->string($attributes, 'created_at'));
+            $targets = [];
+            foreach ($nodes as $node) {
+                if ($node->contentItemRef !== null) {
+                    if (!isset($items[$node->contentItemRef->value])) {
+                        throw new ContentRejected('sitepack_site_structure_target_unavailable');
+                    }
+                    $targets['content-item:'.$node->contentItemRef->uuid()] = true;
+                }
+            }
+            foreach ($seo as $metadata) {
+                if (!isset($items[$metadata->itemRef->value])) {
+                    throw new ContentRejected('sitepack_site_structure_target_unavailable');
+                }
+                $targets['content-item:'.$metadata->itemRef->uuid()] = true;
+            }
+            $expectedTargets = array_keys($targets);
+            sort($expectedTargets, SORT_STRING);
+            if (($revision['relations'] ?? null) !== ['content_items' => $expectedTargets]) {
+                throw new ContentRejected('sitepack_site_structure_relation_graph_mismatch');
+            }
+            $attributes['nodes'] = array_map(static fn (SiteStructureNode $node): array => $node->toArray(), $nodes);
+            $attributes['seo'] = array_map(static fn (SiteSeoMetadata $metadata): array => $metadata->toArray(), $seo);
+            $attributes['status'] = $status;
+            $revision['attributes'] = $attributes;
+        }
+        unset($revision);
+        if ($revisions[$current]['attributes']['status'] !== $currentStatus) {
+            throw new ContentRejected('sitepack_site_structure_head_mismatch');
+        }
+        if ($published !== null && (!isset($revisions[$published]) || $revisions[$published]['attributes']['status'] !== 'published')) {
+            throw new ContentRejected('sitepack_site_structure_published_pointer_invalid');
+        }
+
+        return [
+            'head' => $head,
+            'relations' => $structure['relations'],
+            'revisions' => $revisions,
+            'action' => 'unknown',
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $redirect
+     * @param array<string, array<string, mixed>> $items
+     */
+    private function normalizeRedirectDocument(array &$redirect, array $items): void
+    {
+        $attributes = $redirect['attributes'];
+        $type = new ContentTypeKey($this->string($attributes, 'type_key'));
+        $locale = new ContentLocale($this->string($attributes, 'locale'));
+        $slug = new ContentSlug($this->string($attributes, 'source_slug'));
+        $item = ContentItemRef::fromUuid($this->string($attributes, 'item_ref'));
+        if (!isset($items[$item->value])) {
+            throw new ContentRejected('sitepack_redirect_target_unavailable');
+        }
+        $head = $items[$item->value]['head'];
+        if ($this->string($head, 'type_key') !== $type->value || $this->string($head, 'locale') !== $locale->value) {
+            throw new ContentRejected('sitepack_redirect_target_mismatch');
+        }
+        foreach ($items as $candidate) {
+            $candidateHead = $candidate['head'];
+            if (
+                $this->string($candidateHead, 'type_key') === $type->value
+                && $this->string($candidateHead, 'locale') === $locale->value
+                && in_array($slug->value, [
+                    $this->string($candidateHead, 'current_slug'),
+                    $this->nullableString($candidateHead, 'published_slug'),
+                ], true)
+            ) {
+                throw new ContentRejected('sitepack_redirect_route_conflict');
+            }
+        }
+        $this->timestamp($this->string($attributes, 'created_at'));
+        $this->timestamp($this->string($attributes, 'updated_at'));
+        if (($redirect['relations'] ?? null) !== ['content_item' => ['content-item:'.$item->uuid()]]) {
+            throw new ContentRejected('sitepack_redirect_relation_graph_mismatch');
+        }
+        $redirect['action'] = 'unknown';
+    }
+
+    /** @param array<string,mixed> $structure */
+    private function existingSiteStructureMatches(array $structure): bool
+    {
+        $existing = $this->siteStructures->head();
+        if ($existing === null) {
+            return false;
+        }
+        $head = $structure['head'];
+        foreach (['structure_ref', 'current_revision', 'current_status', 'published_revision', 'created_at', 'updated_at'] as $key) {
+            if ($existing[$key] !== $head[$key]) {
+                return false;
+            }
+        }
+        $rows = $this->siteStructures->revisions();
+        if (count($rows) !== count($structure['revisions'])) {
+            return false;
+        }
+        foreach ($rows as $row) {
+            $revision = $structure['revisions'][(int) $row['revision']]['attributes'] ?? null;
+            if (!is_array($revision)) {
+                return false;
+            }
+            foreach (['structure_ref', 'revision', 'status', 'created_by', 'correlation_id', 'created_at'] as $key) {
+                if ($row[$key] !== $revision[$key]) {
+                    return false;
+                }
+            }
+            if (
+                $this->canonical(array_map(static fn (SiteStructureNode $node): array => $node->toArray(), $this->siteStructureNodes((string) $row['nodes_json']))) !== $this->canonical($revision['nodes'])
+                || $this->canonical(array_map(static fn (SiteSeoMetadata $seo): array => $seo->toArray(), $this->siteStructureSeo((string) $row['seo_json']))) !== $this->canonical($revision['seo'])
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @return list<SiteStructureNode> */
+    private function siteStructureNodes(string $json): array
+    {
+        return $this->siteStructureNodesValue($this->decodeList($json));
+    }
+
+    /** @return list<SiteSeoMetadata> */
+    private function siteStructureSeo(string $json): array
+    {
+        return $this->siteStructureSeoValue($this->decodeList($json));
+    }
+
+    /** @return list<SiteStructureNode> */
+    private function siteStructureNodesValue(mixed $value): array
+    {
+        if (!is_array($value) || !array_is_list($value) || count($value) > 200) {
+            throw new ContentRejected('sitepack_site_structure_nodes_invalid');
+        }
+        try {
+            return array_map(static function (mixed $node): SiteStructureNode {
+                if (!is_array($node) || array_is_list($node)) {
+                    throw new \InvalidArgumentException('site_structure_node_invalid');
+                }
+
+                return SiteStructureNode::fromArray($node);
+            }, $value);
+        } catch (\InvalidArgumentException $exception) {
+            throw new ContentRejected('sitepack_site_structure_nodes_invalid', previous: $exception);
+        }
+    }
+
+    /** @return list<SiteSeoMetadata> */
+    private function siteStructureSeoValue(mixed $value): array
+    {
+        if (!is_array($value) || !array_is_list($value) || count($value) > 500) {
+            throw new ContentRejected('sitepack_site_structure_seo_invalid');
+        }
+        try {
+            return array_map(static function (mixed $seo): SiteSeoMetadata {
+                if (!is_array($seo) || array_is_list($seo)) {
+                    throw new \InvalidArgumentException('site_structure_seo_invalid');
+                }
+
+                return SiteSeoMetadata::fromArray($seo);
+            }, $value);
+        } catch (\InvalidArgumentException $exception) {
+            throw new ContentRejected('sitepack_site_structure_seo_invalid', previous: $exception);
+        }
+    }
+
+    /** @return list<mixed> */
+    private function decodeList(string $json): array
+    {
+        try {
+            $value = json_decode($json, true, 64, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            throw new ContentRejected('sitepack_site_structure_json_invalid', previous: $exception);
+        }
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new ContentRejected('sitepack_site_structure_json_invalid');
+        }
+
+        return $value;
+    }
+
+    private function siteStructureStatus(string $status): string
+    {
+        if (!in_array($status, ['draft', 'review', 'published'], true)) {
+            throw new ContentRejected('sitepack_site_structure_status_invalid');
+        }
+
+        return $status;
+    }
+
+    private function redirectEntityId(string $typeKey, string $locale, string $sourceSlug): string
+    {
+        return 'content-redirect:'.hash('sha256', $typeKey."\0".$locale."\0".$sourceSlug);
     }
 
     /**
@@ -995,6 +1472,10 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
             'type_count' => $report->counts['type_count'] ?? 0,
             'item_count' => $report->counts['item_count'] ?? 0,
             'revision_count' => $report->counts['revision_count'] ?? 0,
+            'site_structure_count' => $report->counts['site_structure_count'] ?? 0,
+            'site_structure_revision_count' => $report->counts['site_structure_revision_count'] ?? 0,
+            'seo_count' => $report->counts['seo_count'] ?? 0,
+            'redirect_count' => $report->counts['redirect_count'] ?? 0,
             'file_count' => $report->counts['file_count'] ?? 0,
             'created_count' => $report->counts['created_count'] ?? 0,
             'unchanged_count' => $report->counts['unchanged_count'] ?? 0,
@@ -1027,6 +1508,12 @@ final readonly class DatabaseCmsSitePackService implements CmsSitePackService
             foreach ($document[$group] as $entry) {
                 $entry['action'] === 'create' ? $created++ : $unchanged++;
             }
+        }
+        if ($document['structure'] !== null) {
+            $document['structure']['action'] === 'create' ? $created++ : $unchanged++;
+        }
+        foreach ($document['redirects'] as $redirect) {
+            $redirect['action'] === 'create' ? $created++ : $unchanged++;
         }
 
         return ['created_count' => $created, 'unchanged_count' => $unchanged];

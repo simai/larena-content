@@ -11,6 +11,9 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Route;
 use Larena\Content\Contracts\PublishedContentReader;
+use Larena\Content\Contracts\ManagedContentRedirectReader;
+use Larena\Content\Contracts\SiteStructureService;
+use Larena\Content\Exceptions\ContentNotPublic;
 use Larena\Content\Tests\Fixtures\ContentPlatformV1Fixture;
 use Larena\Content\ValueObjects\ContentLocale;
 use Larena\Content\ValueObjects\ContentSlug;
@@ -108,12 +111,67 @@ final class PublishedContentHttpTest extends TestCase
         self::assertSame(0, $reader->calls);
     }
 
-    private function router(PublishedContentReader $reader): Router
+    public function testOldPublishedLocatorReturnsOneDirectPermanentRedirect(): void
+    {
+        $reader = new class implements PublishedContentReader {
+            public function read(ContentTypeKey $typeKey, ContentSlug $slug, ContentLocale $locale): PublishedContentProjection
+            {
+                throw new ContentNotPublic();
+            }
+        };
+        $redirects = new class implements ManagedContentRedirectReader {
+            public function resolve(ContentTypeKey $typeKey, ContentSlug $slug, ContentLocale $locale): array
+            {
+                return ['type_key' => 'article', 'locale' => 'en', 'slug' => 'new-slug', 'status' => 301];
+            }
+        };
+        $response = $this->router($reader, $redirects)->dispatch(Request::create('/content/article/old-slug', 'GET'));
+
+        self::assertSame(301, $response->getStatusCode());
+        self::assertSame('/content/article/new-slug', $response->headers->get('Location'));
+        self::assertFalse($response->headers->has('Set-Cookie'));
+    }
+
+    public function testAnonymousSiteStructureRouteReturnsOnlyPublishedProjection(): void
+    {
+        $reader = $this->createStub(PublishedContentReader::class);
+        $structures = $this->createStub(SiteStructureService::class);
+        $projection = [
+            'structure_ref' => 'primary',
+            'revision' => 3,
+            'nodes' => [],
+            'seo' => [],
+        ];
+        $structures->method('published')->willReturn($projection);
+        $router = $this->router($reader, null, $structures);
+        $route = $router->getRoutes()->getByName('larena.content.structure.public');
+
+        self::assertNotNull($route);
+        self::assertSame(['GET', 'HEAD'], $route->methods());
+        self::assertSame([], $route->gatherMiddleware());
+        $response = $router->dispatch(Request::create('/content/site-structure', 'GET'));
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame($projection, json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR));
+        self::assertFalse($response->headers->has('Set-Cookie'));
+    }
+
+    private function router(
+        PublishedContentReader $reader,
+        ?ManagedContentRedirectReader $redirects = null,
+        ?SiteStructureService $structures = null,
+    ): Router
     {
         $container = new Container();
         $router = new Router(new Dispatcher($container), $container);
         $container->instance('router', $router);
         $container->instance(PublishedContentReader::class, $reader);
+        $container->instance(ManagedContentRedirectReader::class, $redirects ?? new class implements ManagedContentRedirectReader {
+            public function resolve(ContentTypeKey $typeKey, ContentSlug $slug, ContentLocale $locale): ?array
+            {
+                return null;
+            }
+        });
+        $container->instance(SiteStructureService::class, $structures ?? $this->createStub(SiteStructureService::class));
 
         Facade::setFacadeApplication(null);
         Route::swap($router);

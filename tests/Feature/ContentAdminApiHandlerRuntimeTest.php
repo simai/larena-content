@@ -10,6 +10,7 @@ use Larena\Content\Exceptions\ContentIntegrationFailed;
 use Larena\Content\Rest\ContentAdminApiOperationHandler;
 use Larena\Content\Rest\ContentAdminReadModel;
 use Larena\Content\Rest\ContentAdminValueCodec;
+use Larena\Content\Rest\SiteStructureApiOperationHandler;
 use Larena\Content\Tests\Support\ContentRuntimeHarness;
 use Larena\Content\Tests\TestCase;
 use Larena\Core\Contracts\OperationContext;
@@ -66,6 +67,11 @@ final class ContentAdminApiHandlerRuntimeTest extends TestCase
             $this->handlers,
             static fn (): ContentAdminApiOperationHandler => $handler,
         );
+        $structureHandler = new SiteStructureApiOperationHandler($this->runtime->siteStructure);
+        SiteStructureApiOperationHandler::registerLazy(
+            $this->handlers,
+            static fn (): SiteStructureApiOperationHandler => $structureHandler,
+        );
         $this->schemas = new RequestSchemaValidator();
         $entry = EntryObject::create(
             EntryObjectType::User,
@@ -86,7 +92,7 @@ final class ContentAdminApiHandlerRuntimeTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_all_twenty_one_handlers_round_trip_through_their_compiled_schemas(): void
+    public function test_all_handlers_round_trip_through_their_compiled_schemas(): void
     {
         $typeBody = $this->typeBody();
         $createdType = $this->call('content.type_admin.create', [], [], $typeBody);
@@ -240,7 +246,33 @@ final class ContentAdminApiHandlerRuntimeTest extends TestCase
             ['expected_revision' => 9],
         );
         self::assertSame(10, $unpublished['item']['current_revision']);
-        self::assertSame(25, count($this->operations));
+        $createdStructure = $this->call('content.structure_admin.replace', [], [], [
+            'expected_revision' => 0,
+            'nodes' => [],
+            'seo' => [],
+        ]);
+        self::assertSame(1, $createdStructure['structure']['revision']);
+        $structure = $this->call('content.structure_admin.read');
+        self::assertSame(1, $structure['structure']['revision']);
+        $this->call('content.structure_admin.revisions.read', ['revision' => 1]);
+        $replaced = $this->call('content.structure_admin.replace', [], [], [
+            'expected_revision' => 1,
+            'nodes' => [],
+            'seo' => [],
+        ]);
+        self::assertSame(2, $replaced['structure']['revision']);
+        $review = $this->call('content.structure_admin.submit_review', [], [], ['expected_revision' => 2]);
+        self::assertSame('review', $review['structure']['status']);
+        $publishedStructure = $this->call('content.structure_admin.publish', [], [], ['expected_revision' => 3]);
+        self::assertSame('published', $publishedStructure['structure']['status']);
+        $restoredStructure = $this->call(
+            'content.structure_admin.restore',
+            ['revision' => 1],
+            [],
+            ['expected_revision' => 4],
+        );
+        self::assertSame(5, $restoredStructure['structure']['revision']);
+        self::assertSame(31, count($this->operations));
     }
 
     public function test_duplicate_type_is_a_409_conflict_through_the_compiled_handler(): void

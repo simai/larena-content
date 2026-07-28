@@ -933,3 +933,313 @@ operations:
     audit: {event: content.sitepack.imported, summary_fields: [body.package_ref]}
     lifecycle: {state: draft, version: v1}
     docs: {summary: Import CMS SitePack, description: Applies a compatible package transactionally with exact replay as a no-op., tags: [Content, SitePack]}
+
+  - key: content.structure_admin.read
+    method: GET
+    path: /api/v1/admin/content/site-structure
+    handler: {operation_ref: content.structure_admin.read}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.structure.read]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          structure:
+            type: object
+            additionalProperties: false
+            properties:
+              structure_ref: {type: string, enum: [primary]}
+              revision: {type: integer, minimum: 1}
+              status: {type: string, enum: [draft, review, published]}
+              published_revision: {type: [integer, "null"], minimum: 1}
+              nodes:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    node_ref: {type: string, pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'}
+                    parent_ref: {type: [string, "null"], pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'}
+                    position: {type: integer, minimum: 0, maximum: 199}
+                    label: {type: string, minLength: 1, maxLength: 200}
+                    visible: {type: boolean}
+                    target_type: {type: string, enum: [content, external]}
+                    content_item_ref: {type: [string, "null"], maxLength: 64}
+                    external_url: {type: [string, "null"], maxLength: 2048}
+                  required: [node_ref, parent_ref, position, label, visible, target_type, content_item_ref, external_url]
+              seo:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    item_ref: {type: string, maxLength: 64}
+                    canonical_path: {type: [string, "null"], maxLength: 2048}
+                    seo_title: {type: [string, "null"], maxLength: 255}
+                    description: {type: [string, "null"], maxLength: 500}
+                    robots: {type: string, enum: ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow']}
+                  required: [item_ref, canonical_path, seo_title, description, robots]
+              created_by: {type: string, maxLength: 191}
+              created_at: {type: string, maxLength: 40}
+            required: [structure_ref, revision, status, published_revision, nodes, seo, created_by, created_at]
+        required: [structure]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.structure_admin.read, summary_fields: []}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Read site structure, description: Returns the current protected navigation and SEO draft., tags: [Content, Site structure]}
+
+  - key: content.structure_admin.revisions.read
+    method: GET
+    path: /api/v1/admin/content/site-structure/revisions/{revision}
+    handler: {operation_ref: content.structure_admin.revisions.read}
+    auth: {channels: [admin_session]}
+    csrf: {required: false}
+    access: {operations: [content.structure.read]}
+    request:
+      path:
+        type: object
+        additionalProperties: false
+        properties: {revision: {type: integer, minimum: 1}}
+        required: [revision]
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body: {type: object, additionalProperties: false, properties: {}, required: []}
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          structure:
+            type: object
+            additionalProperties: false
+            properties:
+              structure_ref: {type: string, enum: [primary]}
+              revision: {type: integer, minimum: 1}
+              status: {type: string, enum: [draft, review, published]}
+              published_revision: {type: [integer, "null"], minimum: 1}
+              nodes:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    node_ref: {type: string, pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'}
+                    parent_ref: {type: [string, "null"], pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'}
+                    position: {type: integer, minimum: 0, maximum: 199}
+                    label: {type: string, minLength: 1, maxLength: 200}
+                    visible: {type: boolean}
+                    target_type: {type: string, enum: [content, external]}
+                    content_item_ref: {type: [string, "null"], maxLength: 64}
+                    external_url: {type: [string, "null"], maxLength: 2048}
+                  required: [node_ref, parent_ref, position, label, visible, target_type, content_item_ref, external_url]
+              seo:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    item_ref: {type: string, maxLength: 64}
+                    canonical_path: {type: [string, "null"], maxLength: 2048}
+                    seo_title: {type: [string, "null"], maxLength: 255}
+                    description: {type: [string, "null"], maxLength: 500}
+                    robots: {type: string, enum: ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow']}
+                  required: [item_ref, canonical_path, seo_title, description, robots]
+              created_by: {type: string, maxLength: 191}
+              created_at: {type: string, maxLength: 40}
+            required: [structure_ref, revision, status, published_revision, nodes, seo, created_by, created_at]
+        required: [structure]
+    execution: {mode: sync, timeout_seconds: 30, transactional: false}
+    idempotency: {required: false, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 60, decay_seconds: 60}
+    audit: {event: content.structure_admin.revisions.read, summary_fields: [path.revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Read site-structure revision, description: Returns one immutable structure revision., tags: [Content, Site structure]}
+
+  - key: content.structure_admin.replace
+    method: PUT
+    path: /api/v1/admin/content/site-structure
+    handler: {operation_ref: content.structure_admin.replace}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.structure.update]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties:
+          expected_revision: {type: integer, minimum: 0}
+          nodes:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              properties:
+                node_ref: {type: string, pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'}
+                parent_ref: {type: [string, "null"], pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'}
+                position: {type: integer, minimum: 0, maximum: 199}
+                label: {type: string, minLength: 1, maxLength: 200}
+                visible: {type: boolean}
+                target_type: {type: string, enum: [content, external]}
+                content_item_ref: {type: [string, "null"], maxLength: 64}
+                external_url: {type: [string, "null"], maxLength: 2048}
+              required: [node_ref, parent_ref, position, label, visible, target_type, content_item_ref, external_url]
+          seo:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              properties:
+                item_ref: {type: string, maxLength: 64}
+                canonical_path: {type: [string, "null"], maxLength: 2048}
+                seo_title: {type: [string, "null"], maxLength: 255}
+                description: {type: [string, "null"], maxLength: 500}
+                robots: {type: string, enum: ['index,follow', 'index,nofollow', 'noindex,follow', 'noindex,nofollow']}
+              required: [item_ref, canonical_path, seo_title, description, robots]
+        required: [expected_revision, nodes, seo]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          structure:
+            type: object
+            additionalProperties: false
+            properties:
+              structure_ref: {type: string, enum: [primary]}
+              revision: {type: integer, minimum: 1}
+              status: {type: string, enum: [draft, review, published]}
+            required: [structure_ref, revision, status]
+        required: [structure]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.structure.updated, summary_fields: [body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Replace site-structure draft, description: Appends one validated immutable navigation and SEO revision., tags: [Content, Site structure]}
+
+  - key: content.structure_admin.submit_review
+    method: POST
+    path: /api/v1/admin/content/site-structure/submit-review
+    handler: {operation_ref: content.structure_admin.submit_review}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.structure.submit_review]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties: {expected_revision: {type: integer, minimum: 1}}
+        required: [expected_revision]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          structure:
+            type: object
+            additionalProperties: false
+            properties:
+              structure_ref: {type: string, enum: [primary]}
+              revision: {type: integer, minimum: 1}
+              status: {type: string, enum: [draft, review, published]}
+            required: [structure_ref, revision, status]
+        required: [structure]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.structure.submitted_for_review, summary_fields: [body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Submit site structure, description: Appends a review revision without public exposure., tags: [Content, Site structure]}
+
+  - key: content.structure_admin.publish
+    method: POST
+    path: /api/v1/admin/content/site-structure/publish
+    handler: {operation_ref: content.structure_admin.publish}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.structure.publish]}
+    request:
+      path: {type: object, additionalProperties: false, properties: {}, required: []}
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties: {expected_revision: {type: integer, minimum: 1}}
+        required: [expected_revision]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          structure:
+            type: object
+            additionalProperties: false
+            properties:
+              structure_ref: {type: string, enum: [primary]}
+              revision: {type: integer, minimum: 1}
+              status: {type: string, enum: [draft, review, published]}
+            required: [structure_ref, revision, status]
+        required: [structure]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.structure.published, summary_fields: [body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Publish site structure, description: Publishes only valid Content and HTTPS targets with exact SEO metadata., tags: [Content, Site structure]}
+
+  - key: content.structure_admin.restore
+    method: POST
+    path: /api/v1/admin/content/site-structure/revisions/{revision}/restore
+    handler: {operation_ref: content.structure_admin.restore}
+    auth: {channels: [admin_session]}
+    csrf: {required: true}
+    access: {operations: [content.structure.restore]}
+    request:
+      path:
+        type: object
+        additionalProperties: false
+        properties: {revision: {type: integer, minimum: 1}}
+        required: [revision]
+      query: {type: object, additionalProperties: false, properties: {}, required: []}
+      body:
+        type: object
+        additionalProperties: false
+        properties: {expected_revision: {type: integer, minimum: 1}}
+        required: [expected_revision]
+    response:
+      status: 200
+      schema:
+        type: object
+        additionalProperties: false
+        properties:
+          structure:
+            type: object
+            additionalProperties: false
+            properties:
+              structure_ref: {type: string, enum: [primary]}
+              revision: {type: integer, minimum: 1}
+              status: {type: string, enum: [draft, review, published]}
+            required: [structure_ref, revision, status]
+        required: [structure]
+    execution: {mode: sync, timeout_seconds: 120, transactional: true}
+    idempotency: {required: true, header: Idempotency-Key, ttl_seconds: 86400}
+    rate_limit: {max_attempts: 20, decay_seconds: 60}
+    audit: {event: content.structure.restored, summary_fields: [path.revision, body.expected_revision]}
+    lifecycle: {state: draft, version: v1}
+    docs: {summary: Restore site structure, description: Copies a historical revision into a new draft without implicit publication., tags: [Content, Site structure]}

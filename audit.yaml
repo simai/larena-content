@@ -40,6 +40,21 @@ events:
   - type: content.attachment.reordered
     category: content_attachment
     severity: security
+  - type: content.structure.updated
+    category: content_structure
+    severity: security
+  - type: content.structure.submitted_for_review
+    category: content_structure
+    severity: security
+  - type: content.structure.published
+    category: content_structure
+    severity: security
+  - type: content.structure.restored
+    category: content_structure
+    severity: security
+  - type: content.redirect.created
+    category: content_routing
+    severity: security
   - type: content.sitepack.exported
     category: content_portability
     severity: security
@@ -77,6 +92,12 @@ allowed_payload_fields:
   - target_version
   - added_optional_count
   - attachment_count
+  - structure_ref
+  - node_count
+  - site_structure_count
+  - site_structure_revision_count
+  - seo_count
+  - redirect_count
   - package_ref
   - package_digest
   - type_count

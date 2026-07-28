@@ -1,0 +1,15 @@
+{
+  "schema": "larena.package_launch_record.v1",
+  "id": "larena.content.site_structure_backend_v1",
+  "status": "implementation_verification_ready",
+  "target_package": "larena/content",
+  "base_commit": "830514d58f37dbcfef5a8c78c9d51826e8278440",
+  "branch": "main",
+  "specs_commit": "f13cb540b2bb3c658ee760816b1539c9ebb616dc",
+  "selected_features": ["content.site_structure_v1", "content.seo_metadata_v1", "content.managed_redirects_v1"],
+  "dependency_revisions": {"larena/access": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad"},
+  "evidence_path": "docs/project-management/evidence/site-structure-backend-v1/content/",
+  "review_completed": false,
+  "independent_review_verdict": "pending",
+  "nonclaims": {"production_ready": false, "frontend_complete": false, "all_42_packages_ready": false}
+}

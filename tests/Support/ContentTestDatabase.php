@@ -7,9 +7,11 @@ namespace Larena\Content\Tests\Support;
 use Illuminate\Container\Container;
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Schema;
 use Larena\Content\Database\ContentOwnedTableShapeGuard;
+use Larena\Content\Database\SiteStructureTableShapeGuard;
 use RuntimeException;
 
 final class ContentTestDatabase
@@ -103,29 +105,53 @@ final class ContentTestDatabase
     public function migrateUp(): void
     {
         $migration = $this->migration();
-
-        if (!method_exists($migration, 'up')) {
-            throw new RuntimeException('content_test_migration_up_missing');
-        }
-
-        $migration->up();
+        $this->invokeMigration($migration, 'up');
+        $this->migrateSiteStructureUp();
     }
 
     public function migrateDown(): void
     {
-        $migration = $this->migration();
-
-        if (!method_exists($migration, 'down')) {
-            throw new RuntimeException('content_test_migration_down_missing');
+        $schema = $this->database->getSchemaBuilder();
+        $siteStructureTables = array_values(array_filter(
+            SiteStructureTableShapeGuard::tableNames(),
+            static fn (string $table): bool => $schema->hasTable($table),
+        ));
+        if ($siteStructureTables !== []) {
+            $this->migrateSiteStructureDown();
         }
-
-        $migration->down();
+        $migration = $this->migration();
+        $this->invokeMigration($migration, 'down');
     }
 
-    public function migration(): object
+    public function migration(): Migration
     {
         return require dirname(__DIR__, 2)
             .'/database/migrations/2026_07_19_000001_create_larena_content_tables.php';
+    }
+
+    public function siteStructureMigration(): Migration
+    {
+        return require dirname(__DIR__, 2)
+            .'/database/migrations/2026_07_28_000001_create_larena_content_site_structure_tables.php';
+    }
+
+    public function migrateSiteStructureUp(): void
+    {
+        $this->invokeMigration($this->siteStructureMigration(), 'up');
+    }
+
+    public function migrateSiteStructureDown(): void
+    {
+        $this->invokeMigration($this->siteStructureMigration(), 'down');
+    }
+
+    private function invokeMigration(Migration $migration, string $method): void
+    {
+        $callback = [$migration, $method];
+        if (!is_callable($callback)) {
+            throw new RuntimeException('content_test_migration_'.$method.'_missing');
+        }
+        $callback();
     }
 
     /** @return list<string> */

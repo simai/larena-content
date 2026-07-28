@@ -1,0 +1,9 @@
+{
+  "schema": "larena.graph_sync_proposal.v1",
+  "status": "proposal_only",
+  "package": "larena/content",
+  "features": ["content.site_structure_v1", "content.seo_metadata_v1", "content.managed_redirects_v1"],
+  "proposed_capabilities": ["versioned_site_structure", "revision_bound_seo", "managed_slug_redirects", "sitepack_structure_portability"],
+  "ownership": {"canonical_owner": "larena/content", "layout_role": "read_only_consumer", "link_role": "token_action_share_links"},
+  "apply_approved": false
+}

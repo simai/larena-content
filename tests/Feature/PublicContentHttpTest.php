@@ -56,7 +56,7 @@ final class PublicContentHttpTest extends TestCase
             $response->headers->get('Content-Type'),
         );
         self::assertSame('max-age=60, public', $response->headers->get('Cache-Control'));
-        self::assertSame($projection->toArray(), $response->getData(true));
+        self::assertSame($projection->toArray(), json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR));
         self::assertSame([
             [
                 'type_key' => 'article',

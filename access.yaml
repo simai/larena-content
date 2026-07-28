@@ -58,6 +58,24 @@ operations:
   - code: content.attachment.reorder
     risk: high
     audit: always
+  - code: content.structure.read
+    risk: high
+    audit: denial
+  - code: content.structure.update
+    risk: high
+    audit: always
+  - code: content.structure.submit_review
+    risk: high
+    audit: always
+  - code: content.structure.publish
+    risk: critical
+    audit: always
+  - code: content.structure.restore
+    risk: critical
+    audit: always
+  - code: content.redirect.list
+    risk: high
+    audit: denial
   - code: content.sitepack.export
     risk: critical
     audit: always

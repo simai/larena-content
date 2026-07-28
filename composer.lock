@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5551d7c1eaabb040221c41654b0c52c7",
+    "content-hash": "90d1e2419630bb5812914493e5a7d622",
     "packages": [
         {
             "name": "brick/math",
@@ -1836,7 +1836,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/simai/larena-access.git",
-                "reference": "7b15e0ddf8a6d2339ed80963e6f793b6fc6258eb"
+                "reference": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad"
             },
             "require": {
                 "illuminate/console": "^13.0",

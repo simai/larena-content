@@ -14,6 +14,8 @@ use Larena\Content\ValueObjects\ContentLocale;
 use Larena\Content\ValueObjects\ContentProjectionContract;
 use Larena\Content\ValueObjects\ContentSlug;
 use Larena\Content\ValueObjects\ContentTypeKey;
+use Larena\Content\ValueObjects\SiteSeoMetadata;
+use Larena\Content\ValueObjects\SiteStructureNode;
 
 final class CmsSitePackPortabilityRuntimeTest extends TestCase
 {
@@ -107,26 +109,49 @@ final class CmsSitePackPortabilityRuntimeTest extends TestCase
             $article->currentRevision,
             $this->source->actor(correlationId: 'sitepack-publish'),
         );
+        $article = $this->source->items->update(
+            $article->itemRef,
+            $article->currentRevision,
+            new ContentSlug('portable-article-renamed'),
+            ContentVisibility::Public,
+            [
+                'title' => 'Portable article',
+                'hero' => ContentRuntimeHarness::PUBLIC_FILE,
+                'category' => $category->itemRef->uuid(),
+            ],
+            $this->source->actor(correlationId: 'sitepack-rename'),
+        );
+        $article = $this->source->items->submitForReview($article->itemRef, $article->currentRevision, $this->source->actor(correlationId: 'sitepack-rename-review'));
+        $article = $this->source->items->publish($article->itemRef, $article->currentRevision, $this->source->actor(correlationId: 'sitepack-rename-publish'));
+        $structure = $this->source->siteStructure->replace(0, [
+            new SiteStructureNode('428f62c6-9d27-4d19-89b1-7cddfbd9a301', null, 0, 'Portable article', true, 'content', $article->itemRef),
+        ], [
+            new SiteSeoMetadata($article->itemRef, '/portable/article', 'Portable SEO', 'Portable description', 'index,follow'),
+        ], $this->source->editor);
+        $structure = $this->source->siteStructure->submitForReview($structure->revision, $this->source->editor);
+        $this->source->siteStructure->publish($structure->revision, $this->source->admin);
 
         $first = $this->source->sitePacks->export($this->source->actor(correlationId: 'sitepack-export-1'));
         $second = $this->source->sitePacks->export($this->source->actor(correlationId: 'sitepack-export-2'));
         self::assertSame($first->packageRef, $second->packageRef);
         self::assertSame($first->digest, $second->digest);
         self::assertSame('verified', $this->source->sitePacks->verify($first->packageRef, $this->source->actor())->status);
-        self::assertSame(5, $this->source->sitePacks->dryRun($first->packageRef, $this->source->actor())->counts['unchanged_count']);
+        self::assertSame(7, $this->source->sitePacks->dryRun($first->packageRef, $this->source->actor())->counts['unchanged_count']);
 
         $plan = $this->destination->sitePacks->dryRun($first->packageRef, $this->destination->actor());
-        self::assertSame(5, $plan->counts['created_count']);
+        self::assertSame(7, $plan->counts['created_count']);
         $imported = $this->destination->sitePacks->import($first->packageRef, $this->destination->actor());
         self::assertSame('imported', $imported->status);
         self::assertSame(2, $this->destination->connection->table('larena_content_types')->count());
         self::assertSame(2, $this->destination->connection->table('larena_content_items')->count());
-        self::assertSame(7, $this->destination->connection->table('larena_content_item_revisions')->count());
+        self::assertSame(10, $this->destination->connection->table('larena_content_item_revisions')->count());
         self::assertSame(1, $this->destination->connection->table('larena_files')->count());
+        self::assertSame(3, $this->destination->connection->table('larena_content_site_structure_revisions')->count());
+        self::assertSame(1, $this->destination->connection->table('larena_content_redirects')->count());
 
         $restored = $this->destination->published->read(
             new ContentTypeKey('article'),
-            new ContentSlug('portable-article'),
+            new ContentSlug('portable-article-renamed'),
             new ContentLocale('en'),
         );
         self::assertSame($article->itemRef->value, $restored->itemRef->value);
@@ -134,11 +159,19 @@ final class CmsSitePackPortabilityRuntimeTest extends TestCase
         self::assertSame($category->itemRef->uuid(), $restored->publicFields['category']);
         self::assertSame(ContentRuntimeHarness::PUBLIC_FILE, $restored->publicFields['hero']);
         self::assertCount(1, $restored->publicAttachments);
+        self::assertSame('/portable/article', $this->destination->siteStructure->published()['seo'][$article->itemRef->value]['canonical_path']);
+        $redirect = $this->destination->redirects->resolve(
+            new ContentTypeKey('article'),
+            new ContentSlug('portable-article'),
+            new ContentLocale('en'),
+        );
+        self::assertNotNull($redirect);
+        self::assertSame('portable-article-renamed', $redirect['slug']);
 
         $replay = $this->destination->sitePacks->import($first->packageRef, $this->destination->actor());
         self::assertSame(0, $replay->counts['created_count']);
-        self::assertSame(5, $replay->counts['unchanged_count']);
-        self::assertSame(7, $this->destination->connection->table('larena_content_item_revisions')->count());
+        self::assertSame(7, $replay->counts['unchanged_count']);
+        self::assertSame(10, $this->destination->connection->table('larena_content_item_revisions')->count());
 
         $payloads = $this->destination->connection->table('larena_audit_events')
             ->where('source_package', 'larena/content')
@@ -159,12 +192,14 @@ final class CmsSitePackPortabilityRuntimeTest extends TestCase
         try {
             $afterRestart = $reopened->published->read(
                 new ContentTypeKey('article'),
-                new ContentSlug('portable-article'),
+                new ContentSlug('portable-article-renamed'),
                 new ContentLocale('en'),
             );
             self::assertSame($article->itemRef->value, $afterRestart->itemRef->value);
             self::assertSame('Portable article', $afterRestart->publicFields['title']);
-            self::assertSame(7, $reopened->connection->table('larena_content_item_revisions')->count());
+            self::assertSame(10, $reopened->connection->table('larena_content_item_revisions')->count());
+            self::assertSame('/portable/article', $reopened->siteStructure->published()['seo'][$article->itemRef->value]['canonical_path']);
+            self::assertSame(1, $reopened->connection->table('larena_content_redirects')->count());
         } finally {
             $reopened->close();
         }

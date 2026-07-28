@@ -16,8 +16,11 @@ use Larena\Content\Contracts\ContentLogicalFileInspector;
 use Larena\Content\Contracts\ContentSearchSourceProvider;
 use Larena\Content\Contracts\ContentTypeService;
 use Larena\Content\Contracts\PublishedContentReader;
+use Larena\Content\Contracts\ManagedContentRedirectReader;
+use Larena\Content\Contracts\SiteStructureService;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
 use Larena\Content\Persistence\DatabaseContentRepository;
+use Larena\Content\Persistence\DatabaseSiteStructureRepository;
 use Larena\Content\Providers\ContentServiceProvider;
 use Larena\Content\Runtime\SystemContentClock;
 use Larena\Content\Runtime\SystemContentIdGenerator;
@@ -26,6 +29,8 @@ use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseCmsSitePackService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
+use Larena\Content\Services\DatabaseManagedContentRedirectReader;
+use Larena\Content\Services\DatabaseSiteStructureService;
 use PHPUnit\Framework\TestCase;
 
 final class ContentServiceProviderTest extends TestCase
@@ -42,6 +47,7 @@ final class ContentServiceProviderTest extends TestCase
         $provider->register();
 
         self::assertTrue($container->bound(DatabaseContentRepository::class));
+        self::assertTrue($container->bound(DatabaseSiteStructureRepository::class));
         self::assertTrue($container->bound(ContentLogicalFileInspector::class));
         self::assertTrue($container->bound(ContentClock::class));
         self::assertTrue($container->bound(ContentIdGenerator::class));
@@ -49,6 +55,8 @@ final class ContentServiceProviderTest extends TestCase
         self::assertTrue($container->bound(ContentItemService::class));
         self::assertTrue($container->bound(CmsSitePackService::class));
         self::assertTrue($container->bound(PublishedContentReader::class));
+        self::assertTrue($container->bound(ManagedContentRedirectReader::class));
+        self::assertTrue($container->bound(SiteStructureService::class));
         self::assertTrue($container->bound(ContentDataviewSourceFactory::class));
         self::assertTrue($container->bound(ContentSearchSourceProvider::class));
 
@@ -69,6 +77,14 @@ final class ContentServiceProviderTest extends TestCase
             $container->getAlias(PublishedContentReader::class),
         );
         self::assertSame(
+            DatabaseManagedContentRedirectReader::class,
+            $container->getAlias(ManagedContentRedirectReader::class),
+        );
+        self::assertSame(
+            DatabaseSiteStructureService::class,
+            $container->getAlias(SiteStructureService::class),
+        );
+        self::assertSame(
             DefaultContentDataviewSourceFactory::class,
             $container->getAlias(ContentDataviewSourceFactory::class),
         );
@@ -81,7 +97,7 @@ final class ContentServiceProviderTest extends TestCase
         self::assertInstanceOf(SystemContentIdGenerator::class, $container->make(ContentIdGenerator::class));
 
         $registry = $container->make(AccessOperationRegistry::class);
-        self::assertCount(23, $registry->all());
+        self::assertCount(29, $registry->all());
         self::assertSame(
             [
                 'content.attachment.attach',
@@ -96,12 +112,18 @@ final class ContentServiceProviderTest extends TestCase
                 'content.item.submit_review',
                 'content.item.unpublish',
                 'content.item.update',
+                'content.redirect.list',
                 'content.revision.list',
                 'content.revision.read',
                 'content.sitepack.export',
                 'content.sitepack.import.apply',
                 'content.sitepack.import.dry_run',
                 'content.sitepack.verify',
+                'content.structure.publish',
+                'content.structure.read',
+                'content.structure.restore',
+                'content.structure.submit_review',
+                'content.structure.update',
                 'content.type.create',
                 'content.type.list',
                 'content.type.read',
@@ -115,7 +137,7 @@ final class ContentServiceProviderTest extends TestCase
         );
 
         $provider->register();
-        self::assertCount(23, $registry->all());
+        self::assertCount(29, $registry->all());
         self::assertNull($registry->get('content.public.read'));
     }
 

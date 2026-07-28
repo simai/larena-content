@@ -5,15 +5,16 @@ declare(strict_types=1);
 use Larena\Content\Access\ContentAccessOperationCatalog;
 use Larena\Content\Audit\ContentAuditEventCatalog;
 use Larena\Content\Database\ContentOwnedTableShapeGuard;
+use Larena\Content\Database\SiteStructureTableShapeGuard;
 use Larena\Property\Runtime\PropertyTypeRegistry;
 use Larena\Rest\Registry\PackageApiContractLoader;
 use Symfony\Component\Yaml\Yaml;
 
 const PACKAGE = 'larena/content';
-const SPECS_COMMIT = '7e637fc4';
-const BASE_COMMIT = '268208d7343ed5e67a4d90f0222c6c91e681942e';
-const LAUNCH_RECORD = 'docs/project-management/launch-records/cms-sitepack-portability-v1.json';
-const EVIDENCE_PATH = 'docs/project-management/evidence/cms-sitepack-portability-v1/content/';
+const SPECS_COMMIT = 'f13cb540b2bb3c658ee760816b1539c9ebb616dc';
+const BASE_COMMIT = '830514d58f37dbcfef5a8c78c9d51826e8278440';
+const LAUNCH_RECORD = 'docs/project-management/launch-records/site-structure-backend-v1.json';
+const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-backend-v1/content/';
 
 $errors = [];
 
@@ -70,8 +71,14 @@ foreach ([
     'src/Providers/ContentServiceProvider.php', 'src/Services/DatabaseContentTypeService.php',
     'src/Services/DatabaseContentItemService.php', 'src/Runtime/PublishedContentProjectionBuilder.php',
     'src/Services/DatabaseCmsSitePackService.php',
+    'src/Services/DatabaseSiteStructureService.php',
+    'src/Services/DatabaseManagedContentRedirectReader.php',
+    'database/migrations/2026_07_28_000001_create_larena_content_site_structure_tables.php',
+    'routes/public.php',
+    'tests/Feature/SiteStructureRuntimeTest.php',
     'tests/Feature/CmsSitePackPortabilityRuntimeTest.php',
     'tests/Integration/CmsSitePackPortabilityMySqlTest.php',
+    'tests/Integration/SiteStructureMigrationShapeTest.php',
 ] as $required) {
     if (!is_file($required)) {
         $errors[] = "Missing CMS content model v1 file: {$required}";
@@ -124,7 +131,7 @@ if (!is_string($gateRef) || $gateRef === '' || str_ends_with($gateRef, '/pending
     $errors[] = 'The successful action gate must point to its durable report.';
 }
 
-$requiredFeatures = ['content.sitepack_portability_v1'];
+$requiredFeatures = ['content.site_structure_v1', 'content.seo_metadata_v1', 'content.managed_redirects_v1'];
 if (($context['selected_features'] ?? null) !== $requiredFeatures) {
     $errors[] = 'Launch context must contain the exact CMS SitePack portability feature set.';
 }
@@ -167,21 +174,26 @@ foreach (['larena/access', 'larena/audit', 'larena/auth', 'larena/core', 'larena
     }
 }
 
-if (count(ContentAccessOperationCatalog::operations()) !== 23) {
-    $errors[] = 'Content must expose the exact 23-operation protected Access catalog.';
+if (count(ContentAccessOperationCatalog::operations()) !== 29) {
+    $errors[] = 'Content must expose the exact 29-operation protected Access catalog.';
 }
-if (count(ContentAuditEventCatalog::types()) !== 18) {
-    $errors[] = 'Content must expose the exact 18-event sanitized Audit catalog.';
+if (count(ContentAuditEventCatalog::types()) !== 23) {
+    $errors[] = 'Content must expose the exact 23-event sanitized Audit catalog.';
 }
 $api = (new PackageApiContractLoader())->loadFile('api.yaml', PACKAGE);
-if (count($api->operations) !== 25) {
-    $errors[] = 'Content admin API must compile exactly 25 operations.';
+if (count($api->operations) !== 31) {
+    $errors[] = 'Content admin API must compile exactly 31 operations.';
 }
 if (ContentOwnedTableShapeGuard::tableNames() !== [
     'larena_content_types', 'larena_content_type_versions', 'larena_content_items',
     'larena_content_item_revisions', 'larena_content_item_revision_attachments', 'larena_content_routes',
 ]) {
     $errors[] = 'Content must retain the exact six-table owned persistence boundary.';
+}
+if (SiteStructureTableShapeGuard::tableNames() !== [
+    'larena_content_site_structures', 'larena_content_site_structure_revisions', 'larena_content_redirects',
+]) {
+    $errors[] = 'Content must expose the exact three-table site-structure persistence boundary.';
 }
 $types = [];
 foreach (PropertyTypeRegistry::builtIns()->descriptors() as $descriptor) {
@@ -192,7 +204,7 @@ foreach (['string', 'text', 'number', 'boolean', 'date', 'file', 'relation'] as 
         $errors[] = "Property registry does not provide required CMS field type {$type}.";
     }
 }
-foreach (['production_ready', 'frontend_ready', 'all_packages_ready'] as $claim) {
+foreach (['production_ready', 'frontend_ready', 'frontend_complete', 'all_packages_ready', 'all_42_packages_ready'] as $claim) {
     if (($module['nonclaims'][$claim] ?? null) !== false) {
         $errors[] = "module.yaml must keep {$claim}=false.";
     }
@@ -200,8 +212,8 @@ foreach (['production_ready', 'frontend_ready', 'all_packages_ready'] as $claim)
 if (($context['status'] ?? null) !== 'implementation_verification_ready') {
     $errors[] = 'Launch context must be ready for independent implementation verification.';
 }
-if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'cms-sitepack-portability-v1') {
-    $errors[] = 'module.yaml must identify the active CMS SitePack portability batch.';
+if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'site-structure-backend-v1') {
+    $errors[] = 'module.yaml must identify the active site-structure backend batch.';
 }
 
 if ($errors !== []) {
@@ -209,4 +221,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-fwrite(STDOUT, 'Larena Content CMS SitePack portability contract is valid.'.PHP_EOL);
+fwrite(STDOUT, 'Larena Content site-structure backend contract is valid.'.PHP_EOL);

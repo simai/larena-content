@@ -35,6 +35,7 @@ use Larena\Content\Contracts\CmsSitePackService;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
 use Larena\Content\Filesystem\FilesystemContentLogicalFileInspector;
 use Larena\Content\Persistence\DatabaseContentRepository;
+use Larena\Content\Persistence\DatabaseSiteStructureRepository;
 use Larena\Content\Runtime\ContentCanonicalJson;
 use Larena\Content\Runtime\ContentInputGuard;
 use Larena\Content\Runtime\ContentParticipantGuard;
@@ -46,6 +47,8 @@ use Larena\Content\Services\DatabaseContentItemService;
 use Larena\Content\Services\DatabaseContentTypeService;
 use Larena\Content\Services\DatabasePublishedContentReader;
 use Larena\Content\Services\DatabaseCmsSitePackService;
+use Larena\Content\Services\DatabaseManagedContentRedirectReader;
+use Larena\Content\Services\DatabaseSiteStructureService;
 use Larena\Content\SitePack\CmsSitePackArchive;
 use Larena\Content\SitePack\CmsSitePackCodec;
 use Larena\Content\Storage\ContentStorageGateway;
@@ -82,6 +85,10 @@ final class ContentRuntimeHarness
     public readonly DatabaseContentTypeService $types;
 
     public readonly DatabaseContentItemService $items;
+
+    public readonly DatabaseSiteStructureService $siteStructure;
+
+    public readonly DatabaseManagedContentRedirectReader $redirects;
 
     public readonly CmsSitePackService $sitePacks;
 
@@ -254,6 +261,7 @@ final class ContentRuntimeHarness
             $contentAudit,
             $clock,
         );
+        $siteStructureRepository = new DatabaseSiteStructureRepository($this->connection);
         $this->items = new DatabaseContentItemService(
             $this->repository,
             $contentAuthorizer,
@@ -267,6 +275,7 @@ final class ContentRuntimeHarness
             $contentAudit,
             $clock,
             new ContentFixtureIdGenerator(),
+            $siteStructureRepository,
             $this->searchDelegations,
         );
         $portableFiles = new DatabasePortableLogicalFileStore(
@@ -284,6 +293,7 @@ final class ContentRuntimeHarness
         );
         $this->sitePacks = new DatabaseCmsSitePackService(
             $this->repository,
+            $siteStructureRepository,
             $contentAuthorizer,
             $participants,
             $this->storage,
@@ -301,6 +311,18 @@ final class ContentRuntimeHarness
             $this->storage,
             $schemas,
             $projections,
+        );
+        $this->siteStructure = new DatabaseSiteStructureService(
+            $siteStructureRepository,
+            $contentAuthorizer,
+            $this->published,
+            $canonicalJson,
+            $contentAudit,
+            $clock,
+        );
+        $this->redirects = new DatabaseManagedContentRedirectReader(
+            $siteStructureRepository,
+            $this->repository,
         );
         $this->searchSource = new DatabaseContentSearchSourceProvider(
             $this->repository,

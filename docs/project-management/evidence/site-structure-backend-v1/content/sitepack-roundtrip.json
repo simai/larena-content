@@ -1,0 +1,10 @@
+{
+  "schema": "larena.content.sitepack_structure_roundtrip_evidence.v1",
+  "status": "pass",
+  "source": {"structure_count": 1, "structure_revision_count": 3, "redirect_count": 1},
+  "clean_destination": {"created_count": 7, "structure_revision_count": 3, "redirect_count": 1},
+  "exact_replay": {"created_count": 0, "unchanged_count": 7},
+  "preserved": ["content_item_uuid", "node_uuid", "revision_order", "published_pointer", "seo_metadata", "redirect_source", "redirect_target_uuid"],
+  "databases": ["sqlite", "mysql"],
+  "active_application_database_touched": false
+}
