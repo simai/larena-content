@@ -48,15 +48,65 @@ final readonly class PublishedContentController
         }
         $page = $projection->toArray();
         $contract = $projection->projectionContract();
+        $publishedStructure = null;
+        try {
+            $publishedStructure = $this->structures?->published();
+        } catch (ContentNotPublic|ContentRejected) {
+            // A published Content item remains readable before site structure exists.
+        }
+        $metadata = is_array($publishedStructure)
+            && is_array($publishedStructure['seo'][$projection->itemRef->value] ?? null)
+            ? $publishedStructure['seo'][$projection->itemRef->value]
+            : [];
+        $contentTitle = (string) ($page['public_fields'][$contract->titleField] ?? $page['slug']);
+        $contentDescription = $contract->snippetField === null
+            ? null
+            : ($page['public_fields'][$contract->snippetField] ?? null);
+        $canonicalPath = $metadata['canonical_path'] ?? null;
 
         return $this->views->make('larena-content::public.page', [
             'page' => $page,
             'titleField' => $contract->titleField,
-            'title' => (string) ($page['public_fields'][$contract->titleField] ?? $page['slug']),
-            'description' => $contract->snippetField === null
-                ? null
-                : ($page['public_fields'][$contract->snippetField] ?? null),
+            'title' => is_string($metadata['seo_title'] ?? null) && $metadata['seo_title'] !== ''
+                ? $metadata['seo_title']
+                : $contentTitle,
+            'heading' => $contentTitle,
+            'description' => is_string($metadata['description'] ?? null) && $metadata['description'] !== ''
+                ? $metadata['description']
+                : $contentDescription,
+            'canonicalUrl' => is_string($canonicalPath) && str_starts_with($canonicalPath, '/')
+                ? $request->getSchemeAndHttpHost().$canonicalPath
+                : null,
+            'robots' => is_string($metadata['robots'] ?? null) ? $metadata['robots'] : null,
+            'navigation' => $this->pageNavigation(is_array($publishedStructure) ? $publishedStructure['nodes'] ?? [] : []),
         ]);
+    }
+
+    /**
+     * @param mixed $nodes
+     * @return list<array{label:string,url:string}>
+     */
+    private function pageNavigation(mixed $nodes): array
+    {
+        if (!is_array($nodes)) {
+            return [];
+        }
+        $navigation = [];
+        foreach ($nodes as $node) {
+            if (!is_array($node) || !is_string($node['label'] ?? null) || !is_array($node['target'] ?? null)) {
+                continue;
+            }
+            $url = $node['target']['url'] ?? null;
+            if (!is_string($url) || $url === '') {
+                continue;
+            }
+            if (($node['target']['type'] ?? null) === 'content' && str_starts_with($url, '/content/')) {
+                $url = '/pages/'.substr($url, strlen('/content/'));
+            }
+            $navigation[] = ['label' => $node['label'], 'url' => $url];
+        }
+
+        return $navigation;
     }
 
     public function show(

@@ -55,6 +55,9 @@ final class ContentAdminRouteTest extends TestCase
 
         self::assertStringContainsString("->name('larena.content.public.page')", $route);
         self::assertStringContainsString("\$page['public_fields']", $view);
+        self::assertStringContainsString('rel="canonical"', $view);
+        self::assertStringContainsString('name="robots"', $view);
+        self::assertStringContainsString('aria-label="Site navigation"', $view);
         self::assertStringNotContainsString('{!!', $view);
         self::assertStringNotContainsString('<script', $view);
     }
