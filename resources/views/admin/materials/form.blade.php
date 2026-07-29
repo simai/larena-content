@@ -7,6 +7,7 @@
 
 @section('content')
 @if($errors->has('material')){!! $ui->alert($errors->first('material'), 'danger') !!}@endif
+@if($fileIntegrationFailed)<div data-larena-state="system-error" role="alert">{!! $ui->alert(__('larena-content::admin.materials.filesystem_unavailable'), 'danger') !!}</div>@endif
 @if(!$type)
 <section class="larena-admin-card"><h2>{{ __('larena-content::admin.materials.choose_type') }}</h2>@if($types === []){!! $ui->alert(__('larena-content::admin.materials.no_types'), 'warning') !!}@else<form method="get" action="{{ route('larena.content.admin.materials.create') }}" class="larena-admin-form"><label>{{ __('larena-content::admin.fields.type') }}<select name="type_key" required>@foreach($types as $option)<option value="{{ $option['key'] }}">{{ $option['label'] }}</option>@endforeach</select></label><div class="larena-admin-form-actions">{!! $ui->button('actions.continue', 'primary') !!}</div></form>@endif</section>
 @else

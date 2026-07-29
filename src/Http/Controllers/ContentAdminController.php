@@ -285,11 +285,15 @@ final readonly class ContentAdminController
     private function formData(ActorContext $actor, ?ContentTypeKey $typeKey, ?ContentItem $item): array
     {
         $type = $typeKey === null ? null : $this->currentType($typeKey, $actor);
+        $fileOptions = $type === null
+            ? ['options' => [], 'failed' => false]
+            : $this->fileOptions();
 
         return [
             'types' => $this->typeOptions($actor),
             'type' => $type,
-            'files' => $type === null ? [] : $this->fileOptions(),
+            'files' => $fileOptions['options'],
+            'fileIntegrationFailed' => $fileOptions['failed'],
             'relations' => $type === null ? [] : $this->relationOptions($actor, $item?->itemRef),
         ];
     }
@@ -371,7 +375,7 @@ final readonly class ContentAdminController
         return $options;
     }
 
-    /** @return list<array{ref:string,label:string}> */
+    /** @return array{options:list<array{ref:string,label:string}>,failed:bool} */
     private function fileOptions(): array
     {
         $options = [];
@@ -380,10 +384,10 @@ final readonly class ContentAdminController
                 $options[] = ['ref' => $file->logicalRef, 'label' => $file->mimeType . ' · ' . $file->logicalRef];
             }
         } catch (Throwable) {
-            return [];
+            return ['options' => [], 'failed' => true];
         }
 
-        return $options;
+        return ['options' => $options, 'failed' => false];
     }
 
     private function currentType(ContentTypeKey $key, ActorContext $actor): ContentTypeVersion

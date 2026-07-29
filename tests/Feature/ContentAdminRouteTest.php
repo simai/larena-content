@@ -48,6 +48,23 @@ final class ContentAdminRouteTest extends TestCase
         );
     }
 
+    public function testManagedFileFailureRendersSafeSystemErrorInsteadOfSilentEmptyState(): void
+    {
+        $controller = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Http/Controllers/ContentAdminController.php');
+        $view = (string) file_get_contents(dirname(__DIR__, 2) . '/resources/views/admin/materials/form.blade.php');
+        $english = require dirname(__DIR__, 2) . '/resources/lang/en/admin.php';
+        $russian = require dirname(__DIR__, 2) . '/resources/lang/ru/admin.php';
+
+        self::assertStringContainsString("['options' => [], 'failed' => true]", $controller);
+        self::assertStringContainsString("'fileIntegrationFailed' => \$fileOptions['failed']", $controller);
+        self::assertStringContainsString('data-larena-state="system-error"', $view);
+        self::assertStringContainsString('materials.filesystem_unavailable', $view);
+        self::assertArrayHasKey('filesystem_unavailable', $english['materials']);
+        self::assertArrayHasKey('filesystem_unavailable', $russian['materials']);
+        self::assertStringNotContainsString('exception', strtolower($english['materials']['filesystem_unavailable']));
+        self::assertStringNotContainsString('exception', strtolower($russian['materials']['filesystem_unavailable']));
+    }
+
     public function testPublicPageRendersProjectionDataWithoutPersistedHtml(): void
     {
         $route = (string) file_get_contents(dirname(__DIR__, 2) . '/routes/public.php');
