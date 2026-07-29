@@ -3,6 +3,9 @@
 - PHP 8.4.20 syntax lint: passed for package PHP sources.
 - PHPStan: passed with no errors.
 - Focused HTTP/static presentation tests: passed.
+- Exact Root integration browser test passed 70 assertions, including a real
+  Filesystem upload, UUID-valued relation, Editor workflow, Reader denial,
+  Administrator publication/unpublication/restore and anonymous HTML output.
 - SQLite suite: 217 existing/new tests passed; the sole initial failure was a
   stale launch-context expectation and was updated to this launch record.
 - MySQL group is present and remains part of the final marker-owned disposable

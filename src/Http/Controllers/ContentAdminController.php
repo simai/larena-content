@@ -365,7 +365,7 @@ final readonly class ContentAdminController
             if ($exclude?->value === $item->itemRef->value) {
                 continue;
             }
-            $options[] = ['ref' => $item->itemRef->value, 'label' => $this->title($this->reads->item($item, $actor))];
+            $options[] = ['ref' => $item->itemRef->uuid(), 'label' => $this->title($this->reads->item($item, $actor))];
         }
 
         return $options;

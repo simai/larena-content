@@ -42,6 +42,10 @@ final class ContentAdminRouteTest extends TestCase
         foreach (['string', 'text', 'number', 'boolean', 'date', 'file', 'relation'] as $type) {
             self::assertStringContainsString("'{$type}'", (string) file_get_contents(dirname(__DIR__, 2) . '/src/Http/Controllers/ContentAdminController.php'));
         }
+        self::assertStringContainsString(
+            "itemRef->uuid()",
+            (string) file_get_contents(dirname(__DIR__, 2) . '/src/Http/Controllers/ContentAdminController.php'),
+        );
     }
 
     public function testPublicPageRendersProjectionDataWithoutPersistedHtml(): void
