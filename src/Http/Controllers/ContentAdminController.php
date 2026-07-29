@@ -461,6 +461,9 @@ final readonly class ContentAdminController
     private function rejected(Throwable $exception, string $key): RedirectResponse
     {
         $reason = $exception instanceof ContentRejected ? $exception->reasonCode() : 'input_invalid';
+        $reasonKey = 'larena-content::admin.messages.reasons.' . $reason;
+        $translatedReason = (string) $this->translator->get($reasonKey);
+        $reason = $translatedReason === $reasonKey ? $reason : $translatedReason;
 
         return $this->redirector->back()->withErrors([$key => $this->text('messages.rejected', ['reason' => $reason])]);
     }
