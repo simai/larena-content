@@ -1,0 +1,12 @@
+{
+  "schema": "larena.graph_sync_proposal.v1",
+  "status": "proposal_only",
+  "owner_package": "larena/content",
+  "capabilities": [
+    "content_type_browser_admin",
+    "material_browser_admin",
+    "editorial_workflow_browser_admin",
+    "published_content_html_page"
+  ],
+  "canonical_graph_write": false
+}

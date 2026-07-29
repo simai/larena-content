@@ -3,18 +3,18 @@
   "package": "larena/content",
   "repository_class": "continuation_repository",
   "repository_contains_prior_implementation": true,
-  "launch_record_ref": "docs/project-management/launch-records/site-structure-http-v1.json",
-  "root_launch_record_ref": "specs/implementation-planning/launch-records/content-site-structure-backend-v1.json",
+  "launch_record_ref": "docs/project-management/launch-records/cms-operator-content-admin.json",
+  "root_launch_record_ref": "source/workflow/2026-07-29-larena-cms-operator-vertical-slice-v1-done-when-main-disposable-runtime-larena.t.launch.yaml",
   "specs_repo": "simai/larena-specs",
   "specs_commit": "f13cb540b2bb3c658ee760816b1539c9ebb616dc",
-  "base_commit": "c5e251729ced49ad38fca7102c32760e47145ccb",
+  "base_commit": "a67f44d30f4878b606245ac79d700b1a63606008",
   "branch": "main",
-  "selected_features": ["content.site_structure_v1", "content.seo_metadata_v1", "content.managed_redirects_v1"],
+  "selected_features": ["content.type.browser_admin", "content.material.browser_admin", "content.editorial_workflow.browser_admin", "content.public_page"],
   "dependency_revisions": {
     "larena/access": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad",
     "larena/admin": "63b822dd334ed6ab02c666f2017e39883cd95b6f",
     "larena/audit": "cc6ba3ccf279eefdef3fa3973249629a3a100feb",
-    "larena/auth": "92a32fa8bfb2a8b67676a64253a92490fc4a3874",
+    "larena/auth": "8b146c3ae31cb736ebd08e5d92c994105562190e",
     "larena/core": "68ee3f79ed6313ca9c819340e6be3ff471957f91",
     "larena/dataview": "b84e964b4ed78e1ca08a46c88e7651b02744ee47",
     "larena/filesystem": "5e54a971201f51cf35417b922559f3e52369472d",
@@ -26,8 +26,8 @@
   "allowed_files": [
     ".larena/*", "README.md", "CHANGELOG.md", "access.yaml", "api.yaml", "audit.yaml",
     "composer.json", "composer.lock", "module.yaml", "scripts/*", "tools/*", "database/migrations/*",
-    "config/*", "resources/*", "routes/*", "src/*", "tests/*", "docs/project-management/launch-records/site-structure-http-v1.json",
-    "docs/project-management/evidence/site-structure-http-v1/content/*"
+    "config/*", "resources/*", "routes/*", "src/*", "tests/*", "docs/project-management/launch-records/cms-operator-content-admin.json",
+    "docs/project-management/evidence/cms-operator-content-admin/content/*"
   ],
   "forbidden_files": ["../link/*", "../layout/*", "../backup/*", "../../larena.test/*"],
   "forbidden_behavior": [
@@ -36,8 +36,8 @@
     "frontend_completion_claim", "all_42_packages_readiness_claim"
   ],
   "required_evidence_files": ["implementation-summary.md", "tests.md", "browser-acceptance.md", "simplicity-verdict.json"],
-  "evidence_path": "docs/project-management/evidence/site-structure-http-v1/content/",
-  "graph_sync_proposal_path": "docs/project-management/evidence/site-structure-http-v1/content/graph-sync-proposal.json",
+  "evidence_path": "docs/project-management/evidence/cms-operator-content-admin/content/",
+  "graph_sync_proposal_path": "docs/project-management/evidence/cms-operator-content-admin/content/graph-sync-proposal.json",
   "status": "package_verification_passed",
   "coding_allowed": true,
   "coding_started": true,
@@ -51,17 +51,17 @@
     "existing_application_database": "forbidden",
     "cleanup": "required"
   },
-  "next_transition": "exact_root_integration",
+  "next_transition": "package_verification",
   "action_gate": {
     "phase": "preflight",
     "status": "success",
-    "evidence_ref": "source/output/action-gates/action-gate-report-20260728115502.json",
+    "evidence_ref": "source/output/action-gates/action-gate-report-20260729171427.json",
     "blockers": []
   },
   "runtime_toolchain": {
     "status": "ok",
     "php_version": "8.4.20",
-    "report_ref": "docs/project-management/evidence/site-structure-http-v1/content/tests.md"
+    "report_ref": "docs/project-management/evidence/cms-operator-content-admin/content/tests.md"
   },
   "remote_push_status": "branch_not_pushed"
 }

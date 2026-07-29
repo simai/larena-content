@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-http-v1/content/';
+const EVIDENCE_PATH = 'docs/project-management/evidence/cms-operator-content-admin/content/';
 
 $errors = [];
 $context = json_decode((string) file_get_contents('.larena/launch-context.json'), true, 512, JSON_THROW_ON_ERROR);
 if (!is_array($context) || ($context['evidence_path'] ?? null) !== EVIDENCE_PATH) {
-    $errors[] = 'Launch context does not point to the site-structure HTTP evidence bundle.';
+    $errors[] = 'Launch context does not point to the CMS operator Content evidence bundle.';
 }
 
 foreach (['implementation-summary.md', 'tests.md', 'browser-acceptance.md', 'simplicity-verdict.json', 'graph-sync-proposal.json'] as $file) {
@@ -50,4 +50,4 @@ if ($errors !== []) {
     exit(1);
 }
 
-fwrite(STDOUT, 'Site-structure HTTP evidence bundle is structurally complete.'.PHP_EOL);
+fwrite(STDOUT, 'CMS operator Content evidence bundle is structurally complete.'.PHP_EOL);

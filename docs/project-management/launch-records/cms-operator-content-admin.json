@@ -1,0 +1,30 @@
+{
+  "schema": "larena.package_launch_record.v1",
+  "id": "larena.content.cms_operator_content_admin",
+  "status": "package_verification_passed",
+  "target_package": "larena/content",
+  "base_commit": "a67f44d30f4878b606245ac79d700b1a63606008",
+  "branch": "main",
+  "selected_features": [
+    "content.type.browser_admin",
+    "content.material.browser_admin",
+    "content.editorial_workflow.browser_admin",
+    "content.public_page"
+  ],
+  "implementation_slice": "package_owned_cms_operator_browser_surface",
+  "dependency_revisions": {
+    "larena/access": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad",
+    "larena/admin": "63b822dd334ed6ab02c666f2017e39883cd95b6f",
+    "larena/auth": "8b146c3ae31cb736ebd08e5d92c994105562190e",
+    "larena/filesystem": "5e54a971201f51cf35417b922559f3e52369472d",
+    "larena/ui": "bd181eda92f2de22130904884e18680587ee10db"
+  },
+  "evidence_path": "docs/project-management/evidence/cms-operator-content-admin/content/",
+  "review_completed": true,
+  "independent_review_verdict": "accepted_with_nonclaims",
+  "nonclaims": {
+    "production_ready": false,
+    "frontend_complete": false,
+    "all_42_packages_ready": false
+  }
+}

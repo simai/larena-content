@@ -7,6 +7,7 @@ namespace Larena\Content\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Contracts\View\Factory;
 use Larena\Content\Contracts\ManagedContentRedirectReader;
 use Larena\Content\Contracts\PublishedContentReader;
 use Larena\Content\Contracts\SiteStructureService;
@@ -23,7 +24,39 @@ final readonly class PublishedContentController
         private PublishedContentReader $reader,
         private ?ManagedContentRedirectReader $redirects = null,
         private ?SiteStructureService $structures = null,
+        private ?Factory $views = null,
     ) {
+    }
+
+    public function page(Request $request, string $typeKey, string $slug): mixed
+    {
+        $locale = $request->query('locale', 'en');
+        if (!is_string($locale)) {
+            throw new NotFoundHttpException();
+        }
+        try {
+            $projection = $this->reader->read(
+                new ContentTypeKey($typeKey),
+                new ContentSlug($slug),
+                new ContentLocale($locale),
+            );
+        } catch (ContentNotPublic|\InvalidArgumentException) {
+            throw new NotFoundHttpException();
+        }
+        if (!$this->views instanceof Factory) {
+            throw new \LogicException('The public Content page view factory is unavailable.');
+        }
+        $page = $projection->toArray();
+        $contract = $projection->projectionContract();
+
+        return $this->views->make('larena-content::public.page', [
+            'page' => $page,
+            'titleField' => $contract->titleField,
+            'title' => (string) ($page['public_fields'][$contract->titleField] ?? $page['slug']),
+            'description' => $contract->snippetField === null
+                ? null
+                : ($page['public_fields'][$contract->snippetField] ?? null),
+        ]);
     }
 
     public function show(

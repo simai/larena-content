@@ -1,0 +1,11 @@
+{
+  "schema": "larena.simplicity_verdict.v1",
+  "verdict": "accepted_with_nonclaims",
+  "duplicate_store": false,
+  "root_business_logic": false,
+  "internal_api_dependency": false,
+  "new_versioned_product_identifier": false,
+  "production_ready": false,
+  "frontend_complete": false,
+  "all_42_packages_ready": false
+}

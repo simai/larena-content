@@ -25,3 +25,10 @@ Route::get('/content/{typeKey}/{slug}', [PublishedContentController::class, 'sho
         'slug' => '[a-z0-9]+(?:-[a-z0-9]+)*',
     ])
     ->name('larena.content.public.show');
+
+Route::get('/pages/{typeKey}/{slug}', [PublishedContentController::class, 'page'])
+    ->where([
+        'typeKey' => '[a-z][a-z0-9_.]{0,63}',
+        'slug' => '[a-z0-9]+(?:-[a-z0-9]+)*',
+    ])
+    ->name('larena.content.public.page');

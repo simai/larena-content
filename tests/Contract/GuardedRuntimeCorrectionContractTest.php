@@ -161,7 +161,7 @@ final class GuardedRuntimeCorrectionContractTest extends TestCase
         self::assertFalse(str_starts_with($actionGateRef, '/'));
         self::assertFalse(str_starts_with($toolchainRef, '/'));
         self::assertSame(
-            'docs/project-management/evidence/site-structure-http-v1/content/tests.md',
+            'docs/project-management/evidence/cms-operator-content-admin/content/tests.md',
             $toolchainRef,
         );
         self::assertFileExists($root.'/'.$toolchainRef);

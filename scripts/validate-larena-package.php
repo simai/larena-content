@@ -12,9 +12,9 @@ use Symfony\Component\Yaml\Yaml;
 
 const PACKAGE = 'larena/content';
 const SPECS_COMMIT = 'f13cb540b2bb3c658ee760816b1539c9ebb616dc';
-const BASE_COMMIT = 'c5e251729ced49ad38fca7102c32760e47145ccb';
-const LAUNCH_RECORD = 'docs/project-management/launch-records/site-structure-http-v1.json';
-const EVIDENCE_PATH = 'docs/project-management/evidence/site-structure-http-v1/content/';
+const BASE_COMMIT = 'a67f44d30f4878b606245ac79d700b1a63606008';
+const LAUNCH_RECORD = 'docs/project-management/launch-records/cms-operator-content-admin.json';
+const EVIDENCE_PATH = 'docs/project-management/evidence/cms-operator-content-admin/content/';
 
 $errors = [];
 
@@ -78,9 +78,17 @@ foreach ([
     'routes/admin.php',
     'config/admin.php',
     'resources/views/admin/site-structure.blade.php',
+    'resources/views/admin/types/index.blade.php',
+    'resources/views/admin/types/create.blade.php',
+    'resources/views/admin/materials/index.blade.php',
+    'resources/views/admin/materials/form.blade.php',
+    'resources/views/admin/materials/preview.blade.php',
+    'resources/views/public/page.blade.php',
+    'src/Http/Controllers/ContentAdminController.php',
     'src/Http/Controllers/SiteStructureAdminController.php',
     'src/Http/Controllers/PublishedSiteMetadataController.php',
     'src/Navigation/ContentAdminNavigationContributor.php',
+    'tests/Feature/ContentAdminRouteTest.php',
     'tests/Feature/SiteStructureRuntimeTest.php',
     'tests/Feature/CmsSitePackPortabilityRuntimeTest.php',
     'tests/Integration/CmsSitePackPortabilityMySqlTest.php',
@@ -137,9 +145,9 @@ if (!is_string($gateRef) || $gateRef === '' || str_ends_with($gateRef, '/pending
     $errors[] = 'The successful action gate must point to its durable report.';
 }
 
-$requiredFeatures = ['content.site_structure_v1', 'content.seo_metadata_v1', 'content.managed_redirects_v1'];
+$requiredFeatures = ['content.type.browser_admin', 'content.material.browser_admin', 'content.editorial_workflow.browser_admin', 'content.public_page'];
 if (($context['selected_features'] ?? null) !== $requiredFeatures) {
-    $errors[] = 'Launch context must contain the exact CMS SitePack portability feature set.';
+    $errors[] = 'Launch context must contain the exact CMS operator Content feature set.';
 }
 
 $expectedRevisions = $context['dependency_revisions'] ?? null;

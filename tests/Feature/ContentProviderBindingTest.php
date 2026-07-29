@@ -182,6 +182,10 @@ final class ContentProviderBindingTest extends TestCase
         self::assertNotNull($route);
         self::assertSame(['GET', 'HEAD'], $route->methods());
         self::assertSame([], $route->gatherMiddleware());
+        $pageRoute = $router->getRoutes()->getByName('larena.content.public.page');
+        self::assertNotNull($pageRoute);
+        self::assertSame(['GET', 'HEAD'], $pageRoute->methods());
+        self::assertSame([], $pageRoute->gatherMiddleware());
         $structureRoute = $router->getRoutes()->getByName('larena.content.structure.public');
         self::assertNotNull($structureRoute);
         self::assertSame(['GET', 'HEAD'], $structureRoute->methods());

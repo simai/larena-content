@@ -120,7 +120,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-auth.git",
-          "reference": "92a32fa8bfb2a8b67676a64253a92490fc4a3874"
+          "reference": "8b146c3ae31cb736ebd08e5d92c994105562190e"
         }
       }
     },

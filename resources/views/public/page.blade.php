@@ -1,0 +1,3 @@
+<!doctype html>
+<html lang="{{ $page['locale'] }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ $title }}</title>@if($description)<meta name="description" content="{{ $description }}">@endif</head>
+<body><main><article><header><p>{{ $page['safe_type_metadata']['label'] ?? $page['type_key'] }}</p><h1>{{ $title }}</h1></header>@foreach($page['public_fields'] as $key => $value)@if($key !== $titleField && $value !== null)<section><h2>{{ $key }}</h2><p>@if(is_bool($value)){{ $value ? 'Yes' : 'No' }}@else{{ $value }}@endif</p></section>@endif @endforeach</article></main></body></html>
