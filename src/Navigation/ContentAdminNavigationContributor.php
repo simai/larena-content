@@ -17,6 +17,23 @@ final class ContentAdminNavigationContributor implements AdminNavigationContribu
     public function navigationDescriptors(): array
     {
         return [new AdminNavigationDescriptor(
+            id: 'content.workspace',
+            ownerPackage: $this->ownerPackage(),
+            label: 'Site workspace',
+            routeName: 'larena.content.admin.workspace',
+            routeUri: '/admin/content',
+            category: 'content',
+            state: 'operator_slice',
+            accessScope: 'content.item.list',
+            auditEvent: 'content.workspace.viewed',
+            statusCap: 'editorial_workspace_v1',
+            order: 5,
+            group: 'content',
+            knownLimitations: ['not_production_ready', 'frontend_not_complete'],
+            surface: 'product',
+            labelKey: 'larena-content::admin.navigation.workspace',
+            activeRoutePattern: 'larena.content.admin.workspace',
+        ), new AdminNavigationDescriptor(
             id: 'content.materials',
             ownerPackage: $this->ownerPackage(),
             label: 'Materials',

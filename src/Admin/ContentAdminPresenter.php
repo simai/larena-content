@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Larena\Content\Admin;
 
 use Illuminate\Contracts\Translation\Translator;
+use Illuminate\Support\Str;
 use Larena\Ui\Smart;
 
 final readonly class ContentAdminPresenter
@@ -39,6 +40,15 @@ final readonly class ContentAdminPresenter
             'type' => $type,
             'supporting-text' => $text,
         ])->html;
+    }
+
+    public function fieldLabel(string $key): string
+    {
+        $translation = 'larena-content::admin.field_labels.' . $key;
+
+        $label = (string) $this->translator->get($translation);
+
+        return $label === $translation ? Str::headline($key) : $label;
     }
 
     private function text(string $key): string

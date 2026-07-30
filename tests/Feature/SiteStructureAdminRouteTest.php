@@ -35,5 +35,7 @@ final class SiteStructureAdminRouteTest extends TestCase
         self::assertStringNotContainsString('<script', $blade);
         self::assertStringNotContainsString('@php', $blade);
         self::assertStringContainsString('SfActionLink::render', $blade);
+        self::assertStringContainsString('$contentOptions as $option', $blade);
+        self::assertStringNotContainsString('placeholder="content:item:uuid"', $blade);
     }
 }

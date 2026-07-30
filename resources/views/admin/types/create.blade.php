@@ -6,6 +6,7 @@
 @section('actions'){!! \Larena\Ui\SfActionLink::render(route('larena.content.admin.types.index'), __('larena-content::admin.actions.back'))->html !!}@endsection
 
 @section('content')
+@include('larena-content::admin.partials.editorial-steps')
 <form method="post" action="{{ route('larena.content.admin.types.store') }}" class="larena-admin-form">@csrf
 <section class="larena-admin-card"><div class="larena-admin-form-grid">
   <label>{{ __('larena-content::admin.fields.type_key') }}<input name="type_key" value="{{ old('type_key') }}" required pattern="[a-z][a-z0-9_.]{0,63}"></label>

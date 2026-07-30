@@ -13,7 +13,9 @@ use Illuminate\Support\Str;
 use Larena\Access\Runtime\AccessOperationAuthorizer;
 use Larena\Content\Admin\ContentAdminPresenter;
 use Larena\Content\Contracts\ContentItemService;
+use Larena\Content\Contracts\ContentLogicalFileInspector;
 use Larena\Content\Contracts\ContentTypeService;
+use Larena\Content\Contracts\SiteStructureService;
 use Larena\Content\Enums\ContentFieldVisibility;
 use Larena\Content\Enums\ContentVisibility;
 use Larena\Content\Exceptions\ContentConflict;
@@ -44,12 +46,47 @@ final readonly class ContentAdminController
         private ContentItemService $items,
         private ContentAdminReadModel $reads,
         private ManagedFileSnapshotSource $files,
+        private ContentLogicalFileInspector $fileInspector,
+        private SiteStructureService $structures,
         private Factory $views,
         private Redirector $redirector,
         private AccessOperationAuthorizer $access,
         private ContentAdminPresenter $ui,
         private Translator $translator,
     ) {
+    }
+
+    public function workspace(Request $request): mixed
+    {
+        $actor = $this->actor($request);
+        $types = $this->typeOptions($actor);
+        $materials = $this->items->list(new ContentItemQuery(limit: 100), $actor)->items;
+        $published = count(array_filter(
+            $materials,
+            static fn (ContentItem $item): bool => $item->publishedRevision !== null,
+        ));
+        $structure = null;
+        try {
+            $structure = $this->structures->read($actor);
+        } catch (ContentRejected) {
+            // A clean installation has no site-structure draft yet.
+        }
+        $fileOptions = $this->fileOptions();
+
+        return $this->views->make('larena-content::admin.workspace', [
+            'counts' => [
+                'types' => count($types),
+                'materials' => count($materials),
+                'published' => $published,
+                'files' => count($fileOptions['options']),
+                'navigation' => $structure === null ? 0 : count($structure->nodes),
+            ],
+            'canCreateType' => $this->allowed($request, 'content.type.create'),
+            'canCreateMaterial' => $this->allowed($request, 'content.item.create'),
+            'canEditStructure' => $this->allowed($request, 'content.structure.update'),
+            'fileIntegrationFailed' => $fileOptions['failed'],
+            'ui' => $this->ui,
+        ]);
     }
 
     public function types(Request $request): mixed
@@ -381,7 +418,12 @@ final readonly class ContentAdminController
         $options = [];
         try {
             foreach ($this->files->snapshots() as $file) {
-                $options[] = ['ref' => $file->logicalRef, 'label' => $file->mimeType . ' · ' . $file->logicalRef];
+                $inspection = $this->fileInspector->inspect($file->logicalRef);
+                $name = $inspection->safeMetadata['display_name'] ?? $this->text('materials.unnamed_file');
+                $options[] = [
+                    'ref' => $file->logicalRef,
+                    'label' => $name . ' · ' . $file->mimeType,
+                ];
             }
         } catch (Throwable) {
             return ['options' => [], 'failed' => true];

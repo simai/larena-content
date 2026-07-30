@@ -10,6 +10,8 @@ Route::prefix((string) config('larena-content.admin.cms_prefix', 'admin/content'
     ->middleware((array) config('larena-content.admin.middleware', []))
     ->name('larena.content.admin.')
     ->group(static function (): void {
+        Route::get('/', [ContentAdminController::class, 'workspace'])
+            ->middleware((array) config('larena-content.admin.item_list_middleware', []))->name('workspace');
         Route::prefix('types')->name('types.')->group(static function (): void {
             Route::get('/', [ContentAdminController::class, 'types'])
                 ->middleware((array) config('larena-content.admin.type_list_middleware', []))->name('index');

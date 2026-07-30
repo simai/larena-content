@@ -12,11 +12,13 @@ use Illuminate\Routing\Redirector;
 use Illuminate\Support\Str;
 use Larena\Access\Runtime\AccessOperationAuthorizer;
 use Larena\Content\Admin\SiteStructureAdminPresenter;
+use Larena\Content\Contracts\ContentItemService;
 use Larena\Content\Contracts\SiteStructureService;
 use Larena\Content\Exceptions\ContentConflict;
 use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\ValueObjects\ActorContext;
 use Larena\Content\ValueObjects\ContentItemRef;
+use Larena\Content\ValueObjects\ContentItemQuery;
 use Larena\Content\ValueObjects\SiteSeoMetadata;
 use Larena\Content\ValueObjects\SiteStructureNode;
 use Larena\Content\ValueObjects\SiteStructureRevision;
@@ -25,6 +27,8 @@ final readonly class SiteStructureAdminController
 {
     public function __construct(
         private SiteStructureService $structures,
+        private ContentItemService $items,
+        private \Larena\Content\Rest\ContentAdminReadModel $reads,
         private Factory $views,
         private Redirector $redirector,
         private AccessOperationAuthorizer $access,
@@ -66,8 +70,8 @@ final readonly class SiteStructureAdminController
             'nodes.*.label' => ['required', 'string', 'max:200'],
             'nodes.*.visible' => ['required', 'boolean'],
             'nodes.*.target_type' => ['required', 'in:content,external'],
-            'nodes.*.content_item_ref' => ['nullable', 'string', 'max:64'],
-            'nodes.*.external_url' => ['nullable', 'url:https', 'max:2048'],
+            'nodes.*.content_item_ref' => ['nullable', 'required_if:nodes.*.target_type,content', 'string', 'max:64'],
+            'nodes.*.external_url' => ['nullable', 'required_if:nodes.*.target_type,external', 'url:https', 'max:2048'],
             'nodes.*.remove' => ['sometimes', 'boolean'],
             'seo' => ['sometimes', 'array', 'max:500'],
             'seo.*.item_ref' => ['required', 'string', 'max:64'],
@@ -118,18 +122,22 @@ final readonly class SiteStructureAdminController
 
     private function render(Request $request, ActorContext $actor, ?SiteStructureRevision $revision, bool $historical): mixed
     {
+        $contentOptions = $this->contentOptions($actor);
         $nodes = array_map(static fn (SiteStructureNode $node): array => $node->toArray(), $revision instanceof SiteStructureRevision ? $revision->nodes : []);
         $seo = array_map(static fn (SiteSeoMetadata $entry): array => $entry->toArray(), $revision instanceof SiteStructureRevision ? $revision->seo : []);
         if (!$historical && $request->boolean('add_node')) {
             $nodes[] = [
                 'node_ref' => (string) Str::uuid(), 'parent_ref' => null,
                 'position' => count(array_filter($nodes, static fn (array $node): bool => $node['parent_ref'] === null)),
-                'label' => '', 'visible' => true, 'target_type' => 'external',
-                'content_item_ref' => null, 'external_url' => 'https://example.com',
+                'label' => '', 'visible' => true, 'target_type' => $contentOptions === [] ? 'external' : 'content',
+                'content_item_ref' => $contentOptions[0]['ref'] ?? null,
+                'external_url' => $contentOptions === [] ? 'https://example.com' : null,
             ];
         }
         if (!$historical && $request->boolean('add_seo')) {
-            $seo[] = ['item_ref' => '', 'canonical_path' => null, 'seo_title' => null, 'description' => null, 'robots' => 'index,follow'];
+            $used = array_column($seo, 'item_ref');
+            $candidate = current(array_filter($contentOptions, static fn (array $option): bool => !in_array($option['ref'], $used, true)));
+            $seo[] = ['item_ref' => is_array($candidate) ? $candidate['ref'] : '', 'canonical_path' => null, 'seo_title' => null, 'description' => null, 'robots' => 'index,follow'];
         }
         $canRedirects = $this->allowed($request, 'content.redirect.list');
 
@@ -137,6 +145,8 @@ final readonly class SiteStructureAdminController
             'revision' => $revision,
             'nodes' => $nodes,
             'seo' => $seo,
+            'contentOptions' => $contentOptions,
+            'contentLabels' => array_column($contentOptions, 'label', 'ref'),
             'revisions' => $this->structures->revisions($actor),
             'redirects' => $canRedirects ? $this->structures->redirects($actor) : [],
             'canRedirects' => $canRedirects,
@@ -147,6 +157,32 @@ final readonly class SiteStructureAdminController
             'historical' => $historical,
             'ui' => $this->ui,
         ]);
+    }
+
+    /** @return list<array{ref:string,label:string,published:bool}> */
+    private function contentOptions(ActorContext $actor): array
+    {
+        $options = [];
+        foreach ($this->items->list(new ContentItemQuery(limit: 100), $actor)->items as $item) {
+            $data = $this->reads->item($item, $actor);
+            $values = [];
+            foreach (($data['revision']['values'] ?? []) as $entry) {
+                if (is_array($entry) && is_string($entry['key'] ?? null)) {
+                    $values[$entry['key']] = $entry['value'] ?? null;
+                }
+            }
+            $title = $values['title'] ?? reset($values);
+            $label = is_scalar($title) && trim((string) $title) !== ''
+                ? trim((string) $title)
+                : $item->currentSlug->value;
+            $options[] = [
+                'ref' => $item->itemRef->value,
+                'label' => $label . ' · /' . $item->currentSlug->value,
+                'published' => $item->publishedRevision !== null,
+            ];
+        }
+
+        return $options;
     }
 
     private function transition(Request $request, callable $operation, string $message): RedirectResponse

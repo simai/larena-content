@@ -1,0 +1,1 @@
+@foreach($items as $node)<li><a href="{{ $node['url'] }}">{{ $node['label'] }}</a>@if($node['children'] !== [])<ul>@include('larena-content::public.partials.navigation-items', ['items' => $node['children']])</ul>@endif</li>@endforeach

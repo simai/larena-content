@@ -133,6 +133,28 @@ final class PublishedContentHttpTest extends TestCase
         self::assertFalse($response->headers->has('Set-Cookie'));
     }
 
+    public function testOldBrowserPageLocatorRedirectsToTheCurrentBrowserPage(): void
+    {
+        $reader = new class implements PublishedContentReader {
+            public function read(ContentTypeKey $typeKey, ContentSlug $slug, ContentLocale $locale): PublishedContentProjection
+            {
+                throw new ContentNotPublic();
+            }
+        };
+        $redirects = new class implements ManagedContentRedirectReader {
+            public function resolve(ContentTypeKey $typeKey, ContentSlug $slug, ContentLocale $locale): array
+            {
+                return ['type_key' => 'page', 'locale' => 'en', 'slug' => 'current-page', 'status' => 301];
+            }
+        };
+
+        $response = $this->router($reader, $redirects)->dispatch(Request::create('/pages/page/old-page', 'GET'));
+
+        self::assertSame(301, $response->getStatusCode());
+        self::assertSame('/pages/page/current-page', $response->headers->get('Location'));
+        self::assertFalse($response->headers->has('Set-Cookie'));
+    }
+
     public function testAnonymousSiteStructureRouteReturnsOnlyPublishedProjection(): void
     {
         $reader = $this->createStub(PublishedContentReader::class);

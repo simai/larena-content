@@ -13,7 +13,7 @@ final class ContentAdminRouteTest extends TestCase
         $routes = (string) file_get_contents(dirname(__DIR__, 2) . '/routes/admin.php');
         $config = (string) file_get_contents(dirname(__DIR__, 2) . '/config/admin.php');
 
-        foreach (['types', 'createType', 'storeType', 'materials', 'createMaterial', 'storeMaterial',
+        foreach (['workspace', 'types', 'createType', 'storeType', 'materials', 'createMaterial', 'storeMaterial',
             'editMaterial', 'previewMaterial', 'updateMaterial', 'submit', 'publish', 'unpublish', 'restore'] as $surface) {
             self::assertStringContainsString($surface, $routes);
         }
@@ -71,11 +71,29 @@ final class ContentAdminRouteTest extends TestCase
         $view = (string) file_get_contents(dirname(__DIR__, 2) . '/resources/views/public/page.blade.php');
 
         self::assertStringContainsString("->name('larena.content.public.page')", $route);
-        self::assertStringContainsString("\$page['public_fields']", $view);
+        self::assertStringContainsString('$fields as $field', $view);
+        self::assertStringContainsString("\$field['type'] === 'file'", $view);
+        self::assertStringContainsString("\$field['type'] === 'relation'", $view);
         self::assertStringContainsString('rel="canonical"', $view);
         self::assertStringContainsString('name="robots"', $view);
         self::assertStringContainsString('aria-label="Site navigation"', $view);
         self::assertStringNotContainsString('{!!', $view);
         self::assertStringNotContainsString('<script', $view);
+    }
+
+    public function testEditorialWorkspaceConnectsThePackageOwnedBrowserJourney(): void
+    {
+        $view = (string) file_get_contents(dirname(__DIR__, 2) . '/resources/views/admin/workspace.blade.php');
+        $steps = (string) file_get_contents(dirname(__DIR__, 2) . '/resources/views/admin/partials/editorial-steps.blade.php');
+        $controller = (string) file_get_contents(dirname(__DIR__, 2) . '/src/Http/Controllers/ContentAdminController.php');
+
+        self::assertStringContainsString('larena.content.admin.workspace', $steps);
+        self::assertStringContainsString('larena.file_manager.admin.files', $steps);
+        self::assertStringContainsString('larena.content.admin.materials', $steps);
+        self::assertStringContainsString('larena.content.admin.structure', $steps);
+        self::assertStringContainsString('larena.search.public', $steps);
+        self::assertStringContainsString('data-larena-state="system-error"', $view);
+        self::assertStringContainsString('ContentLogicalFileInspector', $controller);
+        self::assertStringContainsString("safeMetadata['display_name']", $controller);
     }
 }
