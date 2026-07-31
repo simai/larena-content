@@ -1,6 +1,7 @@
 @extends('larena-admin::layouts.app')
 
 @section('title', __('larena-content::admin.types.create'))
+@section('heading', __('larena-content::admin.types.create'))
 @section('eyebrow', __('larena-content::admin.eyebrow'))
 @section('description', __('larena-content::admin.types.create_description'))
 @section('actions'){!! \Larena\Ui\SfActionLink::render(route('larena.content.admin.types.index'), __('larena-content::admin.actions.back'))->html !!}@endsection

@@ -96,4 +96,19 @@ final class ContentAdminRouteTest extends TestCase
         self::assertStringContainsString('ContentLogicalFileInspector', $controller);
         self::assertStringContainsString("safeMetadata['display_name']", $controller);
     }
+
+    public function testEditorialScreensOwnHumanPageHeadingsInsteadOfShellFallback(): void
+    {
+        $root = dirname(__DIR__, 2) . '/resources/views/admin';
+        foreach ([
+            '/materials/index.blade.php',
+            '/materials/form.blade.php',
+            '/materials/preview.blade.php',
+            '/types/index.blade.php',
+            '/types/create.blade.php',
+        ] as $relative) {
+            $view = (string) file_get_contents($root . $relative);
+            self::assertStringContainsString("@section('heading'", $view, $relative);
+        }
+    }
 }

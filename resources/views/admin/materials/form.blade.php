@@ -1,6 +1,7 @@
 @extends('larena-admin::layouts.app')
 
 @section('title', $material ? __('larena-content::admin.materials.edit') : __('larena-content::admin.materials.create'))
+@section('heading', $material ? __('larena-content::admin.materials.edit') : __('larena-content::admin.materials.create'))
 @section('eyebrow', __('larena-content::admin.eyebrow'))
 @section('description', __('larena-content::admin.materials.form_description'))
 @section('actions'){!! \Larena\Ui\SfActionLink::render(route('larena.content.admin.materials.index'), __('larena-content::admin.actions.back'))->html !!} @if($material){!! \Larena\Ui\SfActionLink::render(route('larena.content.admin.materials.preview', $material->itemRef->uuid()), __('larena-content::admin.actions.preview'), 'secondary', 'outline')->html !!}@endif @endsection
