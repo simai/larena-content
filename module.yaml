@@ -2,7 +2,7 @@ package: larena/content
 title: Larena Content
 status: implementation_verification_ready
 cluster: data-content
-batch: site-structure-http-v1
+batch: first-run-site-wizard-v1
 features:
   - content.type_registry
   - content.type_schema_versioning
@@ -18,6 +18,7 @@ features:
   - content.site_structure_v1
   - content.seo_metadata_v1
   - content.managed_redirects_v1
+  - content.first_run_starter_site
 runtime:
   php: "^8.3"
   laravel: "^13.0"

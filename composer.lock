@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a151bda34de61d491692c377b5dff16",
+    "content-hash": "6e9341ebd3dded37e95d966bca492dea",
     "packages": [
         {
             "name": "brick/math",
@@ -1974,7 +1974,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/simai/larena-core.git",
-                "reference": "68ee3f79ed6313ca9c819340e6be3ff471957f91"
+                "reference": "02b8f7e21c28974ae90d6293da074f6d542903ff"
             },
             "require": {
                 "illuminate/console": "^13.0",

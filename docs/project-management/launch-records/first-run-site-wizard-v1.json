@@ -1,0 +1,14 @@
+{
+  "schema": "larena.package_launch_record.v1",
+  "id": "content-first-run-site-wizard-v1",
+  "goal": "larena-first-run-site-wizard-v1",
+  "package": "larena/content",
+  "branch": "main",
+  "base_commit": "9dc555c",
+  "scope": "Create an unpublished starter homepage and navigation through Content-owned services.",
+  "runtime_boundary": "marker-owned disposable only",
+  "production_ready": false,
+  "frontend_complete": false,
+  "all_42_packages_ready": false,
+  "status": "coding_started"
+}

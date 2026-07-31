@@ -13,7 +13,7 @@ use Symfony\Component\Yaml\Yaml;
 const PACKAGE = 'larena/content';
 const SPECS_COMMIT = 'f13cb540b2bb3c658ee760816b1539c9ebb616dc';
 const BASE_COMMIT = 'a67f44d30f4878b606245ac79d700b1a63606008';
-const LAUNCH_RECORD = 'docs/project-management/launch-records/cms-operator-content-admin.json';
+const LAUNCH_RECORD = 'docs/project-management/launch-records/first-run-site-wizard-v1.json';
 const EVIDENCE_PATH = 'docs/project-management/evidence/cms-operator-content-admin/content/';
 
 $errors = [];
@@ -93,6 +93,11 @@ foreach ([
     'tests/Feature/CmsSitePackPortabilityRuntimeTest.php',
     'tests/Integration/CmsSitePackPortabilityMySqlTest.php',
     'tests/Integration/SiteStructureMigrationShapeTest.php',
+    'docs/project-management/launch-records/first-run-site-wizard-v1.json',
+    'src/Contracts/StarterSiteInitializer.php',
+    'src/FirstRun/ContentFirstRunContributor.php',
+    'src/FirstRun/ContentStarterSiteService.php',
+    'tests/Contract/ContentFirstRunContributorContractTest.php',
 ] as $required) {
     if (!is_file($required)) {
         $errors[] = "Missing CMS content model v1 file: {$required}";
@@ -145,7 +150,7 @@ if (!is_string($gateRef) || $gateRef === '' || str_ends_with($gateRef, '/pending
     $errors[] = 'The successful action gate must point to its durable report.';
 }
 
-$requiredFeatures = ['content.type.browser_admin', 'content.material.browser_admin', 'content.editorial_workflow.browser_admin', 'content.public_page'];
+$requiredFeatures = ['content.type.browser_admin', 'content.material.browser_admin', 'content.editorial_workflow.browser_admin', 'content.public_page', 'content.first_run_starter_site'];
 if (($context['selected_features'] ?? null) !== $requiredFeatures) {
     $errors[] = 'Launch context must contain the exact CMS operator Content feature set.';
 }
@@ -226,8 +231,8 @@ foreach (['production_ready', 'frontend_ready', 'frontend_complete', 'all_packag
 if (($context['status'] ?? null) !== 'package_verification_passed') {
     $errors[] = 'Launch context must record package HTTP verification.';
 }
-if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'site-structure-http-v1') {
-    $errors[] = 'module.yaml must identify the active site-structure HTTP batch.';
+if (($module['status'] ?? null) !== 'implementation_verification_ready' || ($module['batch'] ?? null) !== 'first-run-site-wizard-v1') {
+    $errors[] = 'module.yaml must identify the active first-run site wizard batch.';
 }
 
 if ($errors !== []) {

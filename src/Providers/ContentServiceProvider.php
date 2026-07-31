@@ -28,6 +28,7 @@ use Larena\Content\Contracts\PublishedContentReader;
 use Larena\Content\Contracts\PublishedContentItemReader;
 use Larena\Content\Contracts\ManagedContentRedirectReader;
 use Larena\Content\Contracts\SiteStructureService;
+use Larena\Content\Contracts\StarterSiteInitializer;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
 use Larena\Content\Filesystem\FilesystemContentLogicalFileInspector;
 use Larena\Content\Persistence\DatabaseContentRepository;
@@ -39,6 +40,9 @@ use Larena\Content\Runtime\ContentSchemaMapper;
 use Larena\Content\Runtime\PublishedContentProjectionBuilder;
 use Larena\Content\Runtime\SystemContentClock;
 use Larena\Content\Runtime\SystemContentIdGenerator;
+use Larena\Content\FirstRun\ContentFirstRunContributor;
+use Larena\Content\FirstRun\ContentStarterSiteService;
+use Larena\Core\Contracts\FirstRunContributor;
 use Larena\Content\Rest\ContentAdminApiOperationHandler;
 use Larena\Content\Rest\CmsSitePackApiOperationHandler;
 use Larena\Content\Rest\SiteStructureApiOperationHandler;
@@ -253,6 +257,17 @@ final class ContentServiceProvider extends ServiceProvider
         $this->app->alias(DatabasePublishedContentReader::class, PublishedContentItemReader::class);
         $this->app->scoped(DatabaseSiteStructureService::class);
         $this->app->alias(DatabaseSiteStructureService::class, SiteStructureService::class);
+        $this->app->scoped(ContentStarterSiteService::class, static fn (Container $app): ContentStarterSiteService => new ContentStarterSiteService(
+            $app->make(DatabaseManager::class)->connection(),
+            $app->make(ContentTypeService::class),
+            $app->make(ContentItemService::class),
+            $app->make(SiteStructureService::class),
+        ));
+        $this->app->alias(ContentStarterSiteService::class, StarterSiteInitializer::class);
+        $this->app->scoped(ContentFirstRunContributor::class, static fn (Container $app): ContentFirstRunContributor => new ContentFirstRunContributor(
+            $app->make(StarterSiteInitializer::class),
+        ));
+        $this->app->tag(ContentFirstRunContributor::class, FirstRunContributor::class);
         $this->app->scoped(DatabaseManagedContentRedirectReader::class);
         $this->app->alias(DatabaseManagedContentRedirectReader::class, ManagedContentRedirectReader::class);
         $this->app->scoped(DefaultContentDataviewSourceFactory::class);
