@@ -4,6 +4,13 @@
 
 ### Added
 
+- Responsive package-owned editorial screens built only from published
+  Larena Admin/UI selectors, including stacked mobile tables and human labels.
+- MIME-aware public attachment presentation: verified raster images render as
+  images while documents, text and active image formats render as safe links.
+- Populated SQLite/MySQL migration replay tests that preserve Content and site
+  structure semantic identity through a test-owned snapshot/down/up/restore
+  wrapper without weakening the destructive rollback guards.
 - Package-owned CMS SitePack export, integrity verification, dry-run and
   transactional import with deterministic manifests and exact replay no-op.
 - Portable preservation of Content types, schema versions, item UUIDs,
@@ -46,5 +53,6 @@
 
 - Destructive schema evolution, field rename/reorder/type changes, required
   field additions or a separately durable Content migration-plan ledger.
-- Blob upload/delete or a visual frontend/admin interface.
+- Blob upload/delete, a universal visual builder or a complete frontend/admin
+  rollout.
 - Production, release, update-server or all-packages readiness.

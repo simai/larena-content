@@ -180,12 +180,15 @@ final readonly class ContentAdminController
     {
         $actor = $this->actor($request);
         $typeKey = $this->optionalTypeKey($request->query('type_key'));
+        $typeOptions = $this->typeOptions($actor);
+        $typeLabels = array_column($typeOptions, 'label', 'key');
         $rows = [];
         foreach ($this->items->list(new ContentItemQuery(typeKey: $typeKey, limit: 100), $actor)->items as $item) {
             $data = $this->reads->item($item, $actor);
             $rows[] = [
                 'item' => $item,
                 'title' => $this->title($data),
+                'type_label' => $typeLabels[$item->typeKey->value] ?? Str::headline($item->typeKey->value),
                 'public_url' => $item->publishedSlug === null ? null : '/pages/'
                     . rawurlencode($item->typeKey->value) . '/'
                     . rawurlencode($item->publishedSlug->value)
@@ -195,7 +198,7 @@ final readonly class ContentAdminController
 
         return $this->views->make('larena-content::admin.materials.index', [
             'materials' => $rows,
-            'types' => $this->typeOptions($actor),
+            'types' => $typeOptions,
             'selectedType' => $typeKey?->value,
             'canCreate' => $this->allowed($request, 'content.item.create'),
             'ui' => $this->ui,
@@ -264,11 +267,17 @@ final readonly class ContentAdminController
         $actor = $this->actor($request);
         $item = $this->items->read(ContentItemRef::fromUuid($itemRef), $actor);
         $data = $this->reads->item($item, $actor);
+        $type = $this->currentType($item->typeKey, $actor);
+        $labels = [];
+        foreach ($type->fieldDefinitions as $field) {
+            $labels[$field->key] = $this->ui->fieldLabel($field->key);
+        }
 
         return $this->views->make('larena-content::admin.materials.preview', [
             'material' => $item,
             'title' => $this->title($data),
             'values' => $this->valueMap($data),
+            'labels' => $labels,
             'ui' => $this->ui,
         ]);
     }

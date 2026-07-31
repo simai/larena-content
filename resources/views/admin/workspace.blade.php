@@ -12,16 +12,16 @@
     <div data-larena-state="system-error" role="alert">{!! $ui->alert(__('larena-content::admin.materials.filesystem_unavailable'), 'danger') !!}</div>
 @endif
 
-<div class="larena-admin-summary-grid" aria-label="{{ __('larena-content::admin.workspace.summary_label') }}">
+<div class="larena-role-summary" aria-label="{{ __('larena-content::admin.workspace.summary_label') }}">
     @foreach(['types', 'files', 'materials', 'published', 'navigation'] as $key)
-        <article class="larena-admin-summary-card">
+        <article>
             <span>{{ __('larena-content::admin.workspace.counts.'.$key) }}</span>
             <strong>{{ $counts[$key] }}</strong>
         </article>
     @endforeach
 </div>
 
-<section class="larena-admin-card">
+<section class="larena-panel larena-home-panel">
     <h2>{{ __('larena-content::admin.workspace.next_title') }}</h2>
     <ol>
         <li>

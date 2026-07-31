@@ -25,6 +25,15 @@ use Throwable;
 
 final readonly class PublishedContentController
 {
+    /** @var list<string> */
+    private const PUBLIC_RASTER_IMAGE_MIME_TYPES = [
+        'image/avif',
+        'image/gif',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+    ];
+
     public function __construct(
         private PublishedContentReader $reader,
         private ?ManagedContentRedirectReader $redirects = null,
@@ -149,30 +158,47 @@ final readonly class PublishedContentController
         return $build();
     }
 
-    /** @return list<array{key:string,label:string,type:string,value:mixed,url:?string,alt:?string}> */
+    /** @return list<array{key:string,label:string,type:string,value:mixed,url:?string,alt:?string,render_as:?string,mime_type:?string,size_bytes:?int}> */
     private function presentFields(\Larena\Content\ValueObjects\PublishedContentProjection $projection): array
     {
         $fields = [];
         $contract = $projection->projectionContract();
+        $attachments = [];
+        foreach ($projection->publicAttachments as $attachment) {
+            $attachments[$attachment->logicalFileRef] = $attachment->toArray();
+        }
+        $presentedAttachments = [];
         foreach ($projection->publicFields as $key => $value) {
             if ($key === $contract->titleField || $value === null) {
                 continue;
             }
             $type = $contract->fieldType($key);
-            $presented = ['key' => $key, 'label' => Str::headline($key), 'type' => $type, 'value' => $value, 'url' => null, 'alt' => null];
+            $presented = [
+                'key' => $key,
+                'label' => Str::headline($key),
+                'type' => $type,
+                'value' => $value,
+                'url' => null,
+                'alt' => null,
+                'render_as' => null,
+                'mime_type' => null,
+                'size_bytes' => null,
+            ];
             try {
-                if ($type === 'file' && is_string($value) && $this->files !== null) {
-                    $inspection = $this->files->inspect($value);
-                    if (!$inspection->isPubliclyProjectable()) {
+                if ($type === 'file' && is_string($value)) {
+                    $attachment = $attachments[$value] ?? null;
+                    if (is_array($attachment)) {
+                        $presented = $this->presentFile($presented, $attachment['metadata']);
+                        $presentedAttachments[$value] = true;
+                    } elseif ($this->files !== null) {
+                        $inspection = $this->files->inspect($value);
+                        if (!$inspection->isPubliclyProjectable()) {
+                            continue;
+                        }
+                        $presented = $this->presentFile($presented, $inspection->safeMetadata);
+                    } else {
                         continue;
                     }
-                    $metadata = $inspection->safeMetadata;
-                    if ($metadata === []) {
-                        continue;
-                    }
-                    $presented['value'] = $metadata['display_name'];
-                    $presented['alt'] = $metadata['alt_text'] ?? $metadata['display_name'];
-                    $presented['url'] = '/files/'.$metadata['public_id'].'/'.rawurlencode(Str::slug($metadata['display_name']).'.'.$metadata['extension']);
                 } elseif ($type === 'relation' && is_string($value) && $this->publishedItems !== null) {
                     $related = $this->publishedItems->readItem(ContentItemRef::fromUuid($value));
                     $relatedContract = $related->projectionContract();
@@ -186,7 +212,43 @@ final readonly class PublishedContentController
             $fields[] = $presented;
         }
 
+        foreach ($attachments as $logicalFileRef => $attachment) {
+            if (isset($presentedAttachments[$logicalFileRef])) {
+                continue;
+            }
+            $fields[] = $this->presentFile([
+                'key' => $attachment['role'],
+                'label' => Str::headline($attachment['role']),
+                'type' => 'file',
+                'value' => null,
+                'url' => null,
+                'alt' => null,
+                'render_as' => null,
+                'mime_type' => null,
+                'size_bytes' => null,
+            ], $attachment['metadata']);
+        }
+
         return $fields;
+    }
+
+    /**
+     * @param array{key:string,label:string,type:string,value:mixed,url:?string,alt:?string,render_as:?string,mime_type:?string,size_bytes:?int} $presented
+     * @param array<string, mixed> $metadata
+     * @return array{key:string,label:string,type:string,value:mixed,url:?string,alt:?string,render_as:?string,mime_type:?string,size_bytes:?int}
+     */
+    private function presentFile(array $presented, array $metadata): array
+    {
+        $presented['value'] = $metadata['display_name'];
+        $presented['alt'] = $metadata['alt_text'] ?? $metadata['display_name'];
+        $presented['mime_type'] = strtolower($metadata['mime_type']);
+        $presented['size_bytes'] = $metadata['size_bytes'];
+        $presented['render_as'] = in_array($presented['mime_type'], self::PUBLIC_RASTER_IMAGE_MIME_TYPES, true)
+            ? 'image'
+            : 'download';
+        $presented['url'] = '/files/'.$metadata['public_id'].'/'.rawurlencode(Str::slug($metadata['display_name']).'.'.$metadata['extension']);
+
+        return $presented;
     }
 
     public function show(

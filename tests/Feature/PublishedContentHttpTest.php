@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Larena\Content\Tests\Feature;
 
 use Illuminate\Container\Container;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
@@ -14,6 +16,7 @@ use Larena\Content\Contracts\PublishedContentReader;
 use Larena\Content\Contracts\ManagedContentRedirectReader;
 use Larena\Content\Contracts\SiteStructureService;
 use Larena\Content\Exceptions\ContentNotPublic;
+use Larena\Content\Http\Controllers\PublishedContentController;
 use Larena\Content\Tests\Fixtures\ContentPlatformV1Fixture;
 use Larena\Content\ValueObjects\ContentLocale;
 use Larena\Content\ValueObjects\ContentSlug;
@@ -253,6 +256,44 @@ final class PublishedContentHttpTest extends TestCase
         self::assertSame('<https://example.test/knowledge/first-article>; rel="canonical"', $response->headers->get('Link'));
         self::assertSame('index,nofollow', $response->headers->get('X-Robots-Tag'));
         self::assertFalse($response->headers->has('Set-Cookie'));
+    }
+
+    public function testPublicFilePresentationIsMimeAwareAndNeverTreatsTextAsAnImage(): void
+    {
+        foreach ([
+            ['mime' => 'image/png', 'extension' => 'png', 'render_as' => 'image'],
+            ['mime' => 'text/plain', 'extension' => 'txt', 'render_as' => 'download'],
+            ['mime' => 'image/svg+xml', 'extension' => 'svg', 'render_as' => 'download'],
+        ] as $case) {
+            $projection = ContentPlatformV1Fixture::publishedArticleWithAttachmentMime($case['mime'], $case['extension']);
+            $reader = new class($projection) implements PublishedContentReader {
+                public function __construct(private readonly PublishedContentProjection $projection) {}
+                public function read(ContentTypeKey $typeKey, ContentSlug $slug, ContentLocale $locale): PublishedContentProjection { return $this->projection; }
+            };
+            $captured = [];
+            $view = $this->createStub(View::class);
+            $views = $this->createMock(Factory::class);
+            $views->expects(self::once())
+                ->method('make')
+                ->willReturnCallback(function (string $name, array $data) use (&$captured, $view): View {
+                    self::assertSame('larena-content::public.page', $name);
+                    $captured = $data;
+
+                    return $view;
+                });
+            (new PublishedContentController(
+                reader: $reader,
+                views: $views,
+            ))->page(Request::create('/pages/article/first-article', 'GET'), 'article', 'first-article');
+
+            $file = array_values(array_filter(
+                $captured['fields'],
+                static fn (array $field): bool => $field['type'] === 'file',
+            ))[0];
+            self::assertSame($case['render_as'], $file['render_as']);
+            self::assertSame($case['mime'], $file['mime_type']);
+            self::assertSame(1024, $file['size_bytes']);
+        }
     }
 
     private function router(

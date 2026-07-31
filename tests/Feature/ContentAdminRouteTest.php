@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Larena\Content\Tests\Feature;
 
+use Larena\Admin\Providers\AdminServiceProvider;
 use Larena\Content\Tests\TestCase;
 
 final class ContentAdminRouteTest extends TestCase
@@ -110,5 +111,39 @@ final class ContentAdminRouteTest extends TestCase
             $view = (string) file_get_contents($root . $relative);
             self::assertStringContainsString("@section('heading'", $view, $relative);
         }
+    }
+
+    public function testEditorialViewsUseOnlyPublishedAdminCssSelectors(): void
+    {
+        $viewsRoot = dirname(__DIR__, 2) . '/resources/views/admin';
+        $providerPath = (new \ReflectionClass(AdminServiceProvider::class))->getFileName();
+        self::assertIsString($providerPath);
+        $adminRoot = dirname($providerPath, 3);
+        $stylesheet = (string) file_get_contents($adminRoot . '/resources/css/admin-shell.css');
+        $defined = [];
+        preg_match_all('/\.(larena-[a-z0-9-]+)/', $stylesheet, $matches);
+        foreach ($matches[1] as $selector) {
+            $defined[$selector] = true;
+        }
+
+        $undefined = [];
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($viewsRoot)) as $file) {
+            if (!$file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+            $source = (string) file_get_contents($file->getPathname());
+            preg_match_all('/class="([^"]*)"/', $source, $classAttributes);
+            foreach ($classAttributes[1] as $classAttribute) {
+                preg_match_all('/\b(larena-[a-z0-9-]+)\b/', $classAttribute, $used);
+                foreach (array_unique($used[1]) as $selector) {
+                    if (!isset($defined[$selector])) {
+                        $undefined[] = $file->getFilename() . ':' . $selector;
+                    }
+                }
+            }
+        }
+
+        self::assertSame([], $undefined, 'Content admin referenced undefined Admin CSS selectors.');
+        self::assertStringContainsString('larena-table-stack', $stylesheet);
     }
 }

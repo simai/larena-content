@@ -112,6 +112,11 @@ final class ContentPlatformV1Fixture
 
     public static function publishedArticle(): PublishedContentProjection
     {
+        return self::publishedArticleWithAttachmentMime('image/png', 'png');
+    }
+
+    public static function publishedArticleWithAttachmentMime(string $mimeType, string $extension): PublishedContentProjection
+    {
         return PublishedContentProjection::fromPublishedRevision(
             typeVersion: self::articleTypeVersion(),
             item: self::publishedArticleItem(),
@@ -134,8 +139,8 @@ final class ContentPlatformV1Fixture
                         safeMetadata: [
                             'public_id' => '018f62c6-9d27-7d19-b9b1-7cddfbd9a3e3',
                             'display_name' => 'Hero image',
-                            'mime_type' => 'image/png',
-                            'extension' => 'png',
+                            'mime_type' => $mimeType,
+                            'extension' => $extension,
                             'size_bytes' => 1024,
                             'alt_text' => null,
                         ],

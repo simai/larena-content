@@ -1,5 +1,5 @@
-<nav class="larena-admin-card" aria-label="{{ __('larena-content::admin.workspace.journey_label') }}">
-    <div class="larena-admin-form-actions">
+<nav class="larena-panel larena-home-panel" aria-label="{{ __('larena-content::admin.workspace.journey_label') }}">
+    <div class="larena-page-actions">
         {!! \Larena\Ui\SfActionLink::render(route('larena.content.admin.workspace'), __('larena-content::admin.workspace.steps.overview'), 'secondary', 'outline')->html !!}
         {!! \Larena\Ui\SfActionLink::render(route('larena.content.admin.types.index'), __('larena-content::admin.workspace.steps.model'), 'secondary', 'outline')->html !!}
         @if(\Illuminate\Support\Facades\Route::has('larena.file_manager.admin.files.index'))
