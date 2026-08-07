@@ -30,7 +30,11 @@
     "config/*", "resources/*", "routes/*", "src/*", "tests/*", "docs/project-management/launch-records/cms-operator-content-admin.json", "docs/project-management/launch-records/first-run-site-wizard-v1.json",
     "docs/project-management/evidence/cms-operator-content-admin/content/*",
     "docs/project-management/launch-records/g-storage-page-foundation-content.json",
-    "docs/project-management/evidence/g-storage-page-foundation/content/*"
+    "docs/project-management/evidence/g-storage-page-foundation/content/*",
+    "docs/project-management/evidence/g-storage-page-foundation/content/README.md",
+    "docs/project-management/evidence/g-storage-page-foundation/content/verification.json",
+    "docs/project-management/evidence/g-storage-page-foundation/content/file-map.json",
+    "docs/project-management/evidence/g-storage-page-foundation/content/graph-sync-proposal.json"
   ],
   "forbidden_files": ["../link/*", "../layout/*", "../backup/*", "../../larena.test/*"],
   "forbidden_behavior": [
@@ -77,7 +81,7 @@
     "selected_features": ["content.block_document", "content.block_registry", "content.block_document_projection", "content.block_document_migration"],
     "evidence_path": "docs/project-management/evidence/g-storage-page-foundation/content/",
     "action_gate": {"status": "success", "evidence_ref": "source/output/action-gates/action-gate-report-20260807223945.json"},
-    "status": "coding_started",
+    "status": "tested_pending_independent_audit",
     "readiness_ceiling": "TESTED"
   }
 }

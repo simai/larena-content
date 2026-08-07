@@ -1,0 +1,14 @@
+{
+  "schema": "larena.evidence_file_map.v1",
+  "batch": "S-CONTENT-01",
+  "runtime": [
+    "src/Contracts/BlockDocumentService.php",
+    "src/Providers/ContentServiceProvider.php",
+    "src/Runtime/BlockDocumentNormalizer.php",
+    "src/Runtime/BlockDocumentRegistry.php",
+    "src/Services/StorageBackedBlockDocumentService.php",
+    "src/ValueObjects/BlockDocumentRevision.php"
+  ],
+  "tests": ["tests/Integration/BlockDocumentStorageTest.php"],
+  "launch": [".larena/launch-context.json", "docs/project-management/launch-records/g-storage-page-foundation-content.json"]
+}

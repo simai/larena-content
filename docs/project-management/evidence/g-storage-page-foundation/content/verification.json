@@ -1,0 +1,26 @@
+{
+  "schema": "larena.package_batch_verification.v1",
+  "goal_id": "G-STORAGE-PAGE-FOUNDATION-01",
+  "batch": "S-CONTENT-01",
+  "package": "larena/content",
+  "status": "tested_pending_independent_audit",
+  "claim": "TESTED",
+  "base_revision": "15d0ddec6e4f18a348b9aed035568dd94ffa3be7",
+  "launch_commit": "c145fb021ec3823058787ef479549ff4b4558bb5",
+  "implementation_commit": "df8008ca1ef53f0ff33ac1ce8a47b0a8d9c2195c",
+  "scope_correction_commit": "e4ef35fa93fd06b26409bb2e890ffa7f7a449c81",
+  "implementation_tree": "4c9f00114e91ac8620586c28a2192d975dac1d85",
+  "dependency_revisions": {
+    "larena/storage": "17c4fc6d0f88a148e5c14ab2af904236e483bf50",
+    "larena/filesystem_runtime": "a36db4db5a9724b8c7db2a998f927509fa93a88e"
+  },
+  "checks": [
+    {"name":"static_analysis","command":"composer analyse","exit_code":0,"result":"zero_errors"},
+    {"name":"package_tests","command":"composer test","exit_code":0,"result":"236_tests_1949_assertions_5_environment_opt_in_skips"},
+    {"name":"full_quality_gate","command":"git commit hook quality gate","exit_code":0,"result":"183_php_files_phpstan_zero_236_tests_1949_assertions"},
+    {"name":"no_local_clone","command":"git clone --no-local <content-worktree> /tmp/larena-g-storage-clean.iMJ028/content","exit_code":0,"result":"exact_head_e4ef35fa93fd06b26409bb2e890ffa7f7a449c81"},
+    {"name":"clean_clone_gate","command":"composer validate --strict --no-check-publish && composer quality:gate","exit_code":0,"result":"passed_at_tree_4c9f00114e91ac8620586c28a2192d975dac1d85"}
+  ],
+  "independent_audit": "pending",
+  "nonclaims": ["Root integration", "adoption", "merge readiness", "visual editor", "production readiness"]
+}

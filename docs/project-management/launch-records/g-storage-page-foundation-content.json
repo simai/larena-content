@@ -12,6 +12,10 @@
   "evidence_path": "docs/project-management/evidence/g-storage-page-foundation/content/",
   "action_gate": {"status": "success", "evidence_ref": "source/output/action-gates/action-gate-report-20260807223945.json"},
   "readiness_ceiling": "TESTED",
-  "status": "coding_started",
+  "status": "tested_pending_independent_audit",
+  "launch_commit": "c145fb021ec3823058787ef479549ff4b4558bb5",
+  "implementation_commit": "df8008ca1ef53f0ff33ac1ce8a47b0a8d9c2195c",
+  "scope_correction_commit": "e4ef35fa93fd06b26409bb2e890ffa7f7a449c81",
+  "final_after_binding": "containing_git_commit",
   "stop_conditions": ["Access Root Specs or another read-only owner change required", "canonical graph adoption required", "merge push deploy live runtime or user data required"]
 }
