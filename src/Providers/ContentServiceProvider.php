@@ -29,6 +29,7 @@ use Larena\Content\Contracts\PublishedContentItemReader;
 use Larena\Content\Contracts\ManagedContentRedirectReader;
 use Larena\Content\Contracts\SiteStructureService;
 use Larena\Content\Contracts\StarterSiteInitializer;
+use Larena\Content\Contracts\BlockDocumentService;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
 use Larena\Content\Filesystem\FilesystemContentLogicalFileInspector;
 use Larena\Content\Persistence\DatabaseContentRepository;
@@ -55,6 +56,7 @@ use Larena\Content\Services\DatabasePublishedContentReader;
 use Larena\Content\Services\DatabaseCmsSitePackService;
 use Larena\Content\Services\DatabaseManagedContentRedirectReader;
 use Larena\Content\Services\DatabaseSiteStructureService;
+use Larena\Content\Services\StorageBackedBlockDocumentService;
 use Larena\Content\SitePack\CmsSitePackArchive;
 use Larena\Content\SitePack\CmsSitePackCodec;
 use Larena\Content\Storage\ContentStorageGateway;
@@ -187,6 +189,13 @@ final class ContentServiceProvider extends ServiceProvider
                 $schemaEvolutionAuthority,
             ),
         );
+        $this->app->scoped(
+            StorageBackedBlockDocumentService::class,
+            static fn (Container $app): StorageBackedBlockDocumentService => new StorageBackedBlockDocumentService(
+                $app->make(VersionedStorage::class),
+            ),
+        );
+        $this->app->alias(StorageBackedBlockDocumentService::class, BlockDocumentService::class);
         $this->app->scoped(
             ContentAuditEmitter::class,
             static fn (Container $app): ContentAuditEmitter => new ContentAuditEmitter(
