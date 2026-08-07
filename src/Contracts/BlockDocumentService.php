@@ -18,8 +18,8 @@ interface BlockDocumentService
     /** @param array<string, mixed> $document */
     public function update(array $document, StorageRecordVersionRef $expected, string $actor): BlockDocumentRevision;
 
-    public function read(string $documentId, string $actor): ?BlockDocumentRevision;
+    public function read(string $documentId, string $scopeRef, string $actor): ?BlockDocumentRevision;
 
     /** @return array<string, mixed> */
-    public function project(string $documentId, string $actor): array;
+    public function project(string $documentId, string $scopeRef, string $actor): array;
 }

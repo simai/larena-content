@@ -23,8 +23,8 @@ final class BlockDocumentStorageTest extends TestCase
             self::assertSame(1, $created->storageRef->revision);
             self::assertSame('Hello world', $created->document['blocks'][0]['data']['text']);
             self::assertSame(1, $created->document['blocks'][0]['data_version']);
-            self::assertSame($created->semanticHash, $service->project('page.home', $runtime->admin->actorRef)['semantic_hash']);
-            self::assertStringNotContainsString('<b>', json_encode($service->project('page.home', $runtime->admin->actorRef), JSON_THROW_ON_ERROR));
+            self::assertSame($created->semanticHash, $service->project('page.home', 'scope:global', $runtime->admin->actorRef)['semantic_hash']);
+            self::assertStringNotContainsString('<b>', json_encode($service->project('page.home', 'scope:global', $runtime->admin->actorRef), JSON_THROW_ON_ERROR));
 
             $updatedDocument = $this->document();
             $updatedDocument['blocks'][0]['data']['body'] = 'Updated';
@@ -38,7 +38,7 @@ final class BlockDocumentStorageTest extends TestCase
             } catch (StorageRejected $exception) {
                 self::assertSame('storage_record_revision_conflict', $exception->reasonCode);
             }
-            self::assertSame(2, $service->read('page.home', $runtime->admin->actorRef)?->storageRef->revision);
+            self::assertSame(2, $service->read('page.home', 'scope:global', $runtime->admin->actorRef)?->storageRef->revision);
         } finally {
             $runtime->close();
         }
@@ -55,6 +55,7 @@ final class BlockDocumentStorageTest extends TestCase
             'schema' => $document['schema'],
             'registry' => $document['registry'],
             'document_id' => $document['document_id'],
+            'scope_ref' => $document['scope_ref'],
             'blocks' => array_map(static fn (array $block): array => [
                 'type' => $block['type'],
                 'id' => $block['id'],
@@ -115,7 +116,7 @@ final class BlockDocumentStorageTest extends TestCase
             $service = new StorageBackedBlockDocumentService($runtime->ownerStorage);
             $created = $service->create($this->document(), $runtime->admin->actorRef);
             foreach ([
-                fn () => $service->read('page.home', 'user:admin_identity:999'),
+                fn () => $service->read('page.home', 'scope:global', 'user:admin_identity:999'),
                 fn () => $service->create(array_replace($this->document(), ['document_id' => 'page.denied']), 'user:admin_identity:999'),
             ] as $operation) {
                 try {
@@ -124,8 +125,35 @@ final class BlockDocumentStorageTest extends TestCase
                 } catch (StorageRejected|AccessMutationRejected) {
                 }
             }
-            self::assertSame($created->storageRef->key(), $service->read('page.home', $runtime->admin->actorRef)?->storageRef->key());
+            self::assertSame($created->storageRef->key(), $service->read('page.home', 'scope:global', $runtime->admin->actorRef)?->storageRef->key());
             self::assertSame(1, (int) $runtime->connection->table('larena_storage_records')->count());
+        } finally {
+            $runtime->close();
+        }
+    }
+
+    public function test_same_document_id_is_isolated_by_explicit_scope(): void
+    {
+        $runtime = ContentRuntimeHarness::create();
+        try {
+            $service = new StorageBackedBlockDocumentService($runtime->ownerStorage);
+            $global = $service->create($this->document(), $runtime->admin->actorRef);
+            self::assertNull($service->read('page.home', 'scope:tenant-beta', $runtime->admin->actorRef));
+
+            $tenant = $this->document();
+            $tenant['scope_ref'] = 'scope:tenant-beta';
+            $tenant['blocks'][0]['data']['body'] = 'Tenant beta';
+            $beta = $service->create($tenant, $runtime->admin->actorRef);
+            $betaService = new StorageBackedBlockDocumentService($runtime->ownerStorage);
+
+            self::assertNotSame($global->storageRef->recordId, $beta->storageRef->recordId);
+            $globalRead = $service->read('page.home', 'scope:global', $runtime->admin->actorRef);
+            $betaRead = $betaService->read('page.home', 'scope:tenant-beta', $runtime->admin->actorRef);
+            self::assertNotNull($globalRead);
+            self::assertNotNull($betaRead);
+            self::assertSame('scope:global', $globalRead->document['scope_ref']);
+            self::assertSame('scope:tenant-beta', $betaRead->document['scope_ref']);
+            self::assertSame(2, (int) $runtime->connection->table('larena_storage_records')->count());
         } finally {
             $runtime->close();
         }
@@ -138,6 +166,7 @@ final class BlockDocumentStorageTest extends TestCase
             'schema' => 'larena.content.block_document',
             'schema_version' => 0,
             'document_id' => 'page.home',
+            'scope_ref' => 'scope:global',
             'registry' => 'larena.content.blocks',
             'version' => '2.28.2',
             'time' => 1_786_147_200_000,

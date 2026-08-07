@@ -50,7 +50,7 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
         $document = $this->normalizer->normalize($document);
         $schema = $this->installSchema($actor);
         $result = $this->storage->create(
-            $this->ownerRef((string) $document['document_id']),
+            $this->ownerRef((string) $document['document_id'], (string) $document['scope_ref']),
             $schema,
             $this->values($document),
             $actor,
@@ -66,7 +66,7 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
             throw $this->reject('content_document_revision_invalid');
         }
         $result = $this->storage->compareAndSwap(
-            $this->ownerRef((string) $document['document_id']),
+            $this->ownerRef((string) $document['document_id'], (string) $document['scope_ref']),
             $expected,
             $this->installSchema($actor),
             $this->values($document),
@@ -76,20 +76,20 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
         return $this->hydrate($result->version);
     }
 
-    public function read(string $documentId, string $actor): ?BlockDocumentRevision
+    public function read(string $documentId, string $scopeRef, string $actor): ?BlockDocumentRevision
     {
         $record = $this->storage->readAdminCurrentVersion(
             self::STORAGE_SCHEMA_ID,
-            $this->ownerRef($documentId),
+            $this->ownerRef($documentId, $scopeRef),
             $actor,
         );
 
         return $record === null ? null : $this->hydrate($record);
     }
 
-    public function project(string $documentId, string $actor): array
+    public function project(string $documentId, string $scopeRef, string $actor): array
     {
-        $revision = $this->read($documentId, $actor);
+        $revision = $this->read($documentId, $scopeRef, $actor);
         if ($revision === null) {
             throw $this->reject('content_document_missing');
         }
@@ -106,6 +106,7 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
             'fields' => [
                 ['key' => 'document_json', 'type' => 'text', 'type_version' => 1, 'required' => true, 'visibility' => 'protected', 'constraints' => ['max_length' => BlockDocumentNormalizer::MAX_BYTES]],
                 ['key' => 'semantic_hash', 'type' => 'string', 'type_version' => 2, 'required' => true, 'visibility' => 'protected', 'constraints' => ['min_length' => 64, 'max_length' => 64]],
+                ['key' => 'scope_ref', 'type' => 'string', 'type_version' => 2, 'required' => true, 'visibility' => 'protected', 'constraints' => ['min_length' => 7, 'max_length' => 126]],
             ],
         ];
     }
@@ -119,6 +120,7 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
         return [
             'document_json' => $this->json->encode($document),
             'semantic_hash' => $this->normalizer->semanticHash($document),
+            'scope_ref' => (string) $document['scope_ref'],
         ];
     }
 
@@ -135,20 +137,24 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
         $document = $this->normalizer->normalize($document);
         $hash = $this->normalizer->semanticHash($document);
         if (!is_string($record->values['semantic_hash'] ?? null)
-            || !hash_equals($hash, $record->values['semantic_hash'])) {
+            || !hash_equals($hash, $record->values['semantic_hash'])
+            || ($record->values['scope_ref'] ?? null) !== $document['scope_ref']) {
             throw $this->reject('content_document_persisted_hash_mismatch');
         }
 
         return new BlockDocumentRevision((string) $document['document_id'], $document, $hash, $record->ref);
     }
 
-    private function ownerRef(string $documentId): string
+    private function ownerRef(string $documentId, string $scopeRef): string
     {
         if (preg_match('/^[a-z][a-z0-9_.:-]{1,119}$/', $documentId) !== 1) {
             throw $this->reject('content_document_id_invalid');
         }
+        if (preg_match('/^scope:[a-z][a-z0-9_.:-]{1,119}$/', $scopeRef) !== 1) {
+            throw $this->reject('content_document_scope_invalid');
+        }
 
-        return 'content.document:'.$documentId;
+        return 'content.document:'.substr(hash('sha256', $scopeRef), 0, 16).':'.$documentId;
     }
 
     private function reject(string $reason): ContentRejected

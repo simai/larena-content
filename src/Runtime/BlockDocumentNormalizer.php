@@ -27,10 +27,14 @@ final readonly class BlockDocumentNormalizer
     public function normalize(array $input): array
     {
         $this->assertDepth($input, 0);
-        $this->exactKeys($input, ['blocks', 'document_id', 'registry', 'schema', 'schema_version', 'time', 'version']);
+        $this->exactKeys($input, ['blocks', 'document_id', 'registry', 'schema', 'schema_version', 'scope_ref', 'time', 'version']);
         $documentId = $input['document_id'] ?? null;
         if (!is_string($documentId) || preg_match('/^[a-z][a-z0-9_.:-]{1,119}$/', $documentId) !== 1) {
             throw $this->reject('content_document_id_invalid');
+        }
+        $scopeRef = $input['scope_ref'] ?? null;
+        if (!is_string($scopeRef) || preg_match('/^scope:[a-z][a-z0-9_.:-]{1,119}$/', $scopeRef) !== 1) {
+            throw $this->reject('content_document_scope_invalid');
         }
         if (($input['schema'] ?? null) !== self::SCHEMA
             || !in_array($input['schema_version'] ?? null, [0, self::SCHEMA_VERSION], true)
@@ -79,6 +83,7 @@ final readonly class BlockDocumentNormalizer
             'schema' => self::SCHEMA,
             'schema_version' => self::SCHEMA_VERSION,
             'document_id' => $documentId,
+            'scope_ref' => $scopeRef,
             'registry' => BlockDocumentRegistry::ID,
             'version' => $input['version'],
             'time' => $input['time'],
@@ -98,6 +103,7 @@ final readonly class BlockDocumentNormalizer
             'schema' => $document['schema'],
             'schema_version' => $document['schema_version'],
             'registry' => $document['registry'],
+            'scope_ref' => $document['scope_ref'],
             'blocks' => $document['blocks'],
         ]));
     }
@@ -115,6 +121,7 @@ final readonly class BlockDocumentNormalizer
             'schema' => $document['schema'],
             'schema_version' => $document['schema_version'],
             'registry' => $document['registry'],
+            'scope_ref' => $document['scope_ref'],
             'blocks' => $document['blocks'],
             'semantic_hash' => $this->semanticHash($document),
         ];
