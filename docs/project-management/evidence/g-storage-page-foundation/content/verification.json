@@ -22,8 +22,8 @@
     {"name":"focused_correction","command":"vendor/bin/phpunit tests/Integration/BlockDocumentStorageTest.php tests/Contract/AccessDescriptorContractTest.php tests/Feature/ContentProviderBindingTest.php","exit_code":0,"result":"11_tests_296_assertions"},
     {"name":"package_tests","command":"composer test","exit_code":0,"result":"237_tests_1968_assertions_5_environment_opt_in_skips"},
     {"name":"full_quality_gate","command":"composer quality:gate","exit_code":0,"result":"185_php_files_phpstan_zero_237_tests_1968_assertions"},
-    {"name":"no_local_clone","command":"recorded_in_goal_evidence","exit_code":0,"result":"pending_final_evidence_binding"},
-    {"name":"clean_clone_gate","command":"recorded_in_goal_evidence","exit_code":0,"result":"pending_final_evidence_binding"}
+    {"name":"no_local_clone","command":"git clone --no-local <content-worktree> /tmp/larena-content-correction-clean.e74t2I/repo","exit_code":0,"result":"exact_head_07dad6ab1c95ba21e7d7bb44ade794bba6651424_tree_8d052923679310ba2d4956fe454dd70b1019e426_clean"},
+    {"name":"clean_clone_gate","command":"composer validate --strict --no-check-publish && composer quality:gate","exit_code":0,"result":"passed_185_php_phpstan_zero_237_tests_1968_assertions_5_opt_in_skips"}
   ],
   "independent_audit": "pending",
   "nonclaims": ["Root integration", "adoption", "merge readiness", "visual editor", "production readiness"]
