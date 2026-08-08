@@ -10,6 +10,7 @@
     }
   ],
   "require": {
+    "ext-mbstring": "*",
     "larena/access": "dev-main",
     "larena/admin": "dev-main",
     "larena/audit": "dev-main",

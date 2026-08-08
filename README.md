@@ -4,6 +4,13 @@ Generic CMS content types, item identity, immutable revisions, route
 reservations, publication state, logical-file attachment associations and
 exact published safe projections for Larena.
 
+The package also owns a versioned EditorJS-compatible JSON block-document
+service. Every create, update, read and projection is authorized against the
+actor, operation and requested scope before access or mutation. Image blocks
+carry logical UUIDs only: Content validates current Filesystem eligibility on
+write and revalidates it before every projection, so missing, deleted,
+temporary or reassigned files fail closed without exposing disk or blob keys.
+
 The current development checkpoint is a bounded implementation candidate built
 on the accepted guarded runtime. It implements six Content-owned tables,
 Storage-backed immutable revisions, Access and connection-bound Audit

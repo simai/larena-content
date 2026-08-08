@@ -27,9 +27,12 @@ use Larena\Audit\Runtime\DatabaseAuditEventPipeline;
 use Larena\Audit\Runtime\DefaultAuditRedactor;
 use Larena\Audit\Sinks\DatabaseAuditSink;
 use Larena\Content\Access\ContentAccessOperationCatalog;
+use Larena\Content\Access\AccessBlockDocumentAuthorization;
 use Larena\Content\Access\ContentAuthorizer;
 use Larena\Content\Audit\ContentAuditEmitter;
 use Larena\Content\Contracts\ContentClock;
+use Larena\Content\Contracts\BlockDocumentService;
+use Larena\Content\Contracts\ContentLogicalFileInspector;
 use Larena\Content\Contracts\ContentIdGenerator;
 use Larena\Content\Contracts\CmsSitePackService;
 use Larena\Content\Dataview\DefaultContentDataviewSourceFactory;
@@ -49,6 +52,7 @@ use Larena\Content\Services\DatabasePublishedContentReader;
 use Larena\Content\Services\DatabaseCmsSitePackService;
 use Larena\Content\Services\DatabaseManagedContentRedirectReader;
 use Larena\Content\Services\DatabaseSiteStructureService;
+use Larena\Content\Services\StorageBackedBlockDocumentService;
 use Larena\Content\SitePack\CmsSitePackArchive;
 use Larena\Content\SitePack\CmsSitePackCodec;
 use Larena\Content\Storage\ContentStorageGateway;
@@ -103,6 +107,10 @@ final class ContentRuntimeHarness
     public readonly DefaultContentDataviewSourceFactory $dataview;
 
     public readonly VersionedStorage $ownerStorage;
+
+    public readonly ContentLogicalFileInspector $logicalFiles;
+
+    public readonly BlockDocumentService $blockDocuments;
 
     public readonly ContentStorageGateway $storage;
 
@@ -236,6 +244,12 @@ final class ContentRuntimeHarness
             $filesystems,
         );
         $files = new FilesystemContentLogicalFileInspector($ownerFiles, $input);
+        $this->logicalFiles = $files;
+        $this->blockDocuments = new StorageBackedBlockDocumentService(
+            $this->ownerStorage,
+            new AccessBlockDocumentAuthorization($this->ownerAuthorizer, $queryScopes),
+            $files,
+        );
         $contentAudit = new ContentAuditEmitter($contentAuditPipeline, $clock);
         $participants = new ContentParticipantGuard(
             $this->connection,

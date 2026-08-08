@@ -73,14 +73,14 @@
   "remote_push_status": "branch_not_pushed",
   "active_goal_launch": {
     "goal_id": "G-STORAGE-PAGE-FOUNDATION-01",
-    "batch": "S-CONTENT-01",
-    "branch": "codex/g-storage-page-content",
-    "base_commit": "15d0ddec6e4f18a348b9aed035568dd94ffa3be7",
+    "batch": "S-CONTENT-01-CORRECTION",
+    "branch": "codex/g-storage-page-content-correction",
+    "base_commit": "259cc7398177d9e0439a1f0929ef3b6312b1f268",
     "specs_commit": "97b91cecafa36343f11166afb9db7c7036dac803",
     "storage_revision": "17c4fc6d0f88a148e5c14ab2af904236e483bf50",
-    "selected_features": ["content.block_document", "content.block_registry", "content.block_document_projection", "content.block_document_migration"],
+    "selected_features": ["content.block_document", "content.block_registry", "content.block_document_projection", "content.block_document_migration", "content.block_document_scope_authorization", "content.block_document_logical_file_revalidation"],
     "evidence_path": "docs/project-management/evidence/g-storage-page-foundation/content/",
-    "action_gate": {"status": "success", "evidence_ref": "source/output/action-gates/action-gate-report-20260807223945.json"},
+    "action_gate": {"status": "success", "evidence_ref": "source/output/action-gates/action-gate-report-20260807234737.json"},
     "status": "tested_pending_independent_audit",
     "readiness_ceiling": "TESTED"
   }

@@ -1,8 +1,10 @@
 {
   "schema": "larena.evidence_file_map.v1",
-  "batch": "S-CONTENT-01",
+  "batch": "S-CONTENT-01-CORRECTION",
   "runtime": [
     "src/Contracts/BlockDocumentService.php",
+    "src/Contracts/BlockDocumentAuthorization.php",
+    "src/Access/AccessBlockDocumentAuthorization.php",
     "src/Providers/ContentServiceProvider.php",
     "src/Runtime/BlockDocumentNormalizer.php",
     "src/Runtime/BlockDocumentRegistry.php",

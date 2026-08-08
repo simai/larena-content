@@ -19,6 +19,9 @@ features:
   - content.seo_metadata_v1
   - content.managed_redirects_v1
   - content.first_run_starter_site
+  - content.versioned_block_document
+  - content.block_document_scope_authorization
+  - content.block_document_logical_file_revalidation
 runtime:
   php: "^8.3"
   laravel: "^13.0"

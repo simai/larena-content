@@ -6,6 +6,8 @@ namespace Larena\Content\Services;
 
 use JsonException;
 use Larena\Content\Contracts\BlockDocumentService;
+use Larena\Content\Contracts\BlockDocumentAuthorization;
+use Larena\Content\Contracts\ContentLogicalFileInspector;
 use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\Runtime\BlockDocumentNormalizer;
 use Larena\Content\Runtime\ContentCanonicalJson;
@@ -15,6 +17,7 @@ use Larena\Storage\Contracts\StorageRecordVersionRef;
 use Larena\Storage\Contracts\StorageSchemaVersionRef;
 use Larena\Storage\Contracts\VersionedStorage;
 use Larena\Storage\Exceptions\StorageRejected;
+use Throwable;
 
 final readonly class StorageBackedBlockDocumentService implements BlockDocumentService
 {
@@ -22,6 +25,8 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
 
     public function __construct(
         private VersionedStorage $storage,
+        private BlockDocumentAuthorization $authorization,
+        private ContentLogicalFileInspector $logicalFiles,
         private BlockDocumentNormalizer $normalizer = new BlockDocumentNormalizer(),
         private ContentCanonicalJson $json = new ContentCanonicalJson(),
     ) {
@@ -48,6 +53,8 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
     public function create(array $document, string $actor): BlockDocumentRevision
     {
         $document = $this->normalizer->normalize($document);
+        $this->authorization->assertAllowed($actor, BlockDocumentAuthorization::CREATE, (string) $document['scope_ref']);
+        $this->assertLogicalFiles($document, $actor);
         $schema = $this->installSchema($actor);
         $result = $this->storage->create(
             $this->ownerRef((string) $document['document_id'], (string) $document['scope_ref']),
@@ -62,6 +69,8 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
     public function update(array $document, StorageRecordVersionRef $expected, string $actor): BlockDocumentRevision
     {
         $document = $this->normalizer->normalize($document);
+        $this->authorization->assertAllowed($actor, BlockDocumentAuthorization::UPDATE, (string) $document['scope_ref']);
+        $this->assertLogicalFiles($document, $actor);
         if ($expected->schemaId !== self::STORAGE_SCHEMA_ID) {
             throw $this->reject('content_document_revision_invalid');
         }
@@ -78,6 +87,7 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
 
     public function read(string $documentId, string $scopeRef, string $actor): ?BlockDocumentRevision
     {
+        $this->authorization->assertAllowed($actor, BlockDocumentAuthorization::READ, $scopeRef);
         $record = $this->storage->readAdminCurrentVersion(
             self::STORAGE_SCHEMA_ID,
             $this->ownerRef($documentId, $scopeRef),
@@ -89,10 +99,17 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
 
     public function project(string $documentId, string $scopeRef, string $actor): array
     {
-        $revision = $this->read($documentId, $scopeRef, $actor);
+        $this->authorization->assertAllowed($actor, BlockDocumentAuthorization::PROJECT, $scopeRef);
+        $record = $this->storage->readAdminCurrentVersion(
+            self::STORAGE_SCHEMA_ID,
+            $this->ownerRef($documentId, $scopeRef),
+            $actor,
+        );
+        $revision = $record === null ? null : $this->hydrate($record);
         if ($revision === null) {
             throw $this->reject('content_document_missing');
         }
+        $this->assertLogicalFiles($revision->document, $actor);
 
         return $this->normalizer->publicProjection($revision->document);
     }
@@ -155,6 +172,30 @@ final readonly class StorageBackedBlockDocumentService implements BlockDocumentS
         }
 
         return 'content.document:'.substr(hash('sha256', $scopeRef), 0, 16).':'.$documentId;
+    }
+
+    /** @param array<string, mixed> $document */
+    private function assertLogicalFiles(array $document, string $actor): void
+    {
+        $scopeRef = (string) $document['scope_ref'];
+        foreach ($document['blocks'] as $block) {
+            if (($block['type'] ?? null) !== 'image') {
+                continue;
+            }
+            $logicalFileRef = $block['data']['logical_file_ref'] ?? null;
+            if (!is_string($logicalFileRef)) {
+                throw $this->reject('content_block_file_ref_invalid');
+            }
+            $this->authorization->assertLogicalFileAllowed($actor, $scopeRef, $logicalFileRef);
+            try {
+                $inspection = $this->logicalFiles->inspect($logicalFileRef);
+            } catch (Throwable) {
+                throw $this->reject('content_block_file_unavailable');
+            }
+            if ($inspection->logicalFileRef !== $logicalFileRef || !$inspection->isContentAttachable()) {
+                throw $this->reject('content_block_file_unavailable');
+            }
+        }
     }
 
     private function reject(string $reason): ContentRejected

@@ -15,6 +15,7 @@ use Larena\Access\Runtime\PersistentGlobalRoleQueryScopeProvider;
 use Larena\Audit\Contracts\ConnectionBoundAuditEventPipeline;
 use Larena\Content\Access\ContentAccessOperationCatalog;
 use Larena\Content\Access\ContentAuthorizer;
+use Larena\Content\Access\AccessBlockDocumentAuthorization;
 use Larena\Content\Audit\ContentAuditEmitter;
 use Larena\Content\Contracts\ContentClock;
 use Larena\Content\Contracts\CmsSitePackService;
@@ -22,6 +23,7 @@ use Larena\Content\Contracts\ContentDataviewSourceFactory;
 use Larena\Content\Contracts\ContentIdGenerator;
 use Larena\Content\Contracts\ContentItemService;
 use Larena\Content\Contracts\ContentLogicalFileInspector;
+use Larena\Content\Contracts\BlockDocumentAuthorization;
 use Larena\Content\Contracts\ContentSearchSourceProvider;
 use Larena\Content\Contracts\ContentTypeService;
 use Larena\Content\Contracts\PublishedContentReader;
@@ -190,9 +192,18 @@ final class ContentServiceProvider extends ServiceProvider
             ),
         );
         $this->app->scoped(
+            BlockDocumentAuthorization::class,
+            static fn (Container $app): BlockDocumentAuthorization => new AccessBlockDocumentAuthorization(
+                $app->make(ActorOperationAuthorizer::class),
+                $app->make(PersistentGlobalRoleQueryScopeProvider::class),
+            ),
+        );
+        $this->app->scoped(
             StorageBackedBlockDocumentService::class,
             static fn (Container $app): StorageBackedBlockDocumentService => new StorageBackedBlockDocumentService(
                 $app->make(VersionedStorage::class),
+                $app->make(BlockDocumentAuthorization::class),
+                $app->make(ContentLogicalFileInspector::class),
             ),
         );
         $this->app->alias(StorageBackedBlockDocumentService::class, BlockDocumentService::class);

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Larena\Content\Tests\Integration;
 
+use Larena\Access\Contracts\QueryScopeProvider;
 use Larena\Access\Exceptions\AccessMutationRejected;
+use Larena\Access\ValueObjects\AccessDecision;
+use Larena\Content\Access\AccessBlockDocumentAuthorization;
 use Larena\Content\Exceptions\ContentRejected;
 use Larena\Content\Runtime\BlockDocumentNormalizer;
 use Larena\Content\Services\StorageBackedBlockDocumentService;
@@ -18,7 +21,8 @@ final class BlockDocumentStorageTest extends TestCase
     {
         $runtime = ContentRuntimeHarness::create();
         try {
-            $service = new StorageBackedBlockDocumentService($runtime->ownerStorage);
+            $runtime->insertFile('550e8400-e29b-41d4-a716-446655440000');
+            $service = $runtime->blockDocuments;
             $created = $service->create($this->document(), $runtime->admin->actorRef);
             self::assertSame(1, $created->storageRef->revision);
             self::assertSame('Hello world', $created->document['blocks'][0]['data']['text']);
@@ -77,7 +81,7 @@ final class BlockDocumentStorageTest extends TestCase
     {
         $runtime = ContentRuntimeHarness::create();
         try {
-            $service = new StorageBackedBlockDocumentService($runtime->ownerStorage);
+            $service = $runtime->blockDocuments;
             $cases = [];
             $unknown = $this->document();
             $unknown['blocks'][0]['type'] = 'unknown';
@@ -113,7 +117,8 @@ final class BlockDocumentStorageTest extends TestCase
     {
         $runtime = ContentRuntimeHarness::create();
         try {
-            $service = new StorageBackedBlockDocumentService($runtime->ownerStorage);
+            $runtime->insertFile('550e8400-e29b-41d4-a716-446655440000');
+            $service = $runtime->blockDocuments;
             $created = $service->create($this->document(), $runtime->admin->actorRef);
             foreach ([
                 fn () => $service->read('page.home', 'scope:global', 'user:admin_identity:999'),
@@ -132,30 +137,129 @@ final class BlockDocumentStorageTest extends TestCase
         }
     }
 
-    public function test_same_document_id_is_isolated_by_explicit_scope(): void
+    public function test_real_access_identities_are_isolated_by_actor_and_requested_scope(): void
     {
         $runtime = ContentRuntimeHarness::create();
         try {
-            $service = new StorageBackedBlockDocumentService($runtime->ownerStorage);
-            $global = $service->create($this->document(), $runtime->admin->actorRef);
-            self::assertNull($service->read('page.home', 'scope:tenant-beta', $runtime->admin->actorRef));
+            $runtime->insertFile('550e8400-e29b-41d4-a716-446655440000');
+            $scopes = new BlockDocumentScopeFixture(
+                [
+                    $runtime->admin->actorRef => 'scope:tenant-alpha',
+                    $runtime->reader->actorRef => 'scope:tenant-beta',
+                    $runtime->editor->actorRef => 'scope:tenant-beta',
+                ],
+                ['550e8400-e29b-41d4-a716-446655440000' => 'scope:tenant-alpha'],
+            );
+            $service = new StorageBackedBlockDocumentService(
+                $runtime->ownerStorage,
+                new AccessBlockDocumentAuthorization($runtime->ownerAuthorizer, $scopes),
+                $runtime->logicalFiles,
+            );
+            $alphaDocument = $this->document();
+            $alphaDocument['scope_ref'] = 'scope:tenant-alpha';
+            $alpha = $service->create($alphaDocument, $runtime->admin->actorRef);
 
             $tenant = $this->document();
             $tenant['scope_ref'] = 'scope:tenant-beta';
+            $tenant['document_id'] = 'page.beta';
+            $tenant['blocks'] = [$tenant['blocks'][0]];
             $tenant['blocks'][0]['data']['body'] = 'Tenant beta';
-            $beta = $service->create($tenant, $runtime->admin->actorRef);
-            $betaService = new StorageBackedBlockDocumentService($runtime->ownerStorage);
+            $beta = $service->create($tenant, $runtime->editor->actorRef);
 
-            self::assertNotSame($global->storageRef->recordId, $beta->storageRef->recordId);
-            $globalRead = $service->read('page.home', 'scope:global', $runtime->admin->actorRef);
-            $betaRead = $betaService->read('page.home', 'scope:tenant-beta', $runtime->admin->actorRef);
-            self::assertNotNull($globalRead);
-            self::assertNotNull($betaRead);
-            self::assertSame('scope:global', $globalRead->document['scope_ref']);
-            self::assertSame('scope:tenant-beta', $betaRead->document['scope_ref']);
+            self::assertNotSame($alpha->storageRef->recordId, $beta->storageRef->recordId);
+            self::assertSame($alpha->semanticHash, $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef)['semantic_hash']);
+            self::assertSame(1, $service->read('page.beta', 'scope:tenant-beta', $runtime->editor->actorRef)?->storageRef->revision);
+
+            foreach ([
+                fn () => $service->read('page.home', 'scope:tenant-alpha', $runtime->reader->actorRef),
+                fn () => $service->project('page.home', 'scope:tenant-alpha', $runtime->reader->actorRef),
+                fn () => $service->update($alphaDocument, $alpha->storageRef, $runtime->editor->actorRef),
+                fn () => $service->create(array_replace($alphaDocument, ['document_id' => 'page.foreign']), $runtime->editor->actorRef),
+            ] as $operation) {
+                try {
+                    $operation();
+                    self::fail('A foreign-scope Content operation was accepted.');
+                } catch (ContentRejected $exception) {
+                    self::assertSame('content_document_scope_denied', $exception->reasonCode());
+                    self::assertNull($exception->getPrevious());
+                }
+            }
+            self::assertSame(1, $service->read('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef)?->storageRef->revision);
             self::assertSame(2, (int) $runtime->connection->table('larena_storage_records')->count());
         } finally {
             $runtime->close();
+        }
+    }
+
+    public function test_missing_deleted_ineligible_and_stale_scope_files_fail_closed(): void
+    {
+        $runtime = ContentRuntimeHarness::create();
+        try {
+            $file = '550e8400-e29b-41d4-a716-446655440000';
+            $runtime->insertFile($file);
+            $scopes = new BlockDocumentScopeFixture(
+                [$runtime->admin->actorRef => 'scope:tenant-alpha'],
+                [$file => 'scope:tenant-alpha'],
+            );
+            $service = new StorageBackedBlockDocumentService(
+                $runtime->ownerStorage,
+                new AccessBlockDocumentAuthorization($runtime->ownerAuthorizer, $scopes),
+                $runtime->logicalFiles,
+            );
+            $document = $this->document();
+            $document['scope_ref'] = 'scope:tenant-alpha';
+            $created = $service->create($document, $runtime->admin->actorRef);
+            self::assertSame($created->semanticHash, $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef)['semantic_hash']);
+
+            $runtime->connection->table('larena_files')->where('logical_ref', $file)->update(['deleted_at' => '2026-08-08 00:00:00']);
+            $this->assertFileRejected(fn () => $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef));
+            $runtime->connection->table('larena_files')->where('logical_ref', $file)->update(['deleted_at' => null, 'lifecycle_class' => 'temporary']);
+            $this->assertFileRejected(fn () => $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef));
+            $runtime->connection->table('larena_files')->where('logical_ref', $file)->update(['lifecycle_class' => 'persistent']);
+            $scopes->fileScopes[$file] = 'scope:tenant-beta';
+            $this->assertScopeRejected(fn () => $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef));
+
+            $missing = $document;
+            $missing['document_id'] = 'page.missing';
+            $missing['blocks'][1]['data']['file_ref'] = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+            $scopes->fileScopes['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'] = 'scope:tenant-alpha';
+            $this->assertFileRejected(fn () => $service->create($missing, $runtime->admin->actorRef));
+            $missingUpdate = $document;
+            $missingUpdate['blocks'][1]['data']['file_ref'] = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+            $beforeUpdate = [
+                (int) $runtime->connection->table('larena_storage_records')->count(),
+                (int) $runtime->connection->table('larena_storage_record_versions')->count(),
+            ];
+            $this->assertFileRejected(fn () => $service->update($missingUpdate, $created->storageRef, $runtime->admin->actorRef));
+            self::assertSame($beforeUpdate, [
+                (int) $runtime->connection->table('larena_storage_records')->count(),
+                (int) $runtime->connection->table('larena_storage_record_versions')->count(),
+            ]);
+            self::assertSame(1, (int) $runtime->connection->table('larena_storage_records')->count());
+        } finally {
+            $runtime->close();
+        }
+    }
+
+    private function assertFileRejected(callable $operation): void
+    {
+        try {
+            $operation();
+            self::fail('An unavailable logical file was accepted.');
+        } catch (ContentRejected $exception) {
+            self::assertSame('content_block_file_unavailable', $exception->reasonCode());
+            self::assertNull($exception->getPrevious());
+        }
+    }
+
+    private function assertScopeRejected(callable $operation): void
+    {
+        try {
+            $operation();
+            self::fail('A stale-scope logical file was accepted.');
+        } catch (ContentRejected $exception) {
+            self::assertSame('content_document_scope_denied', $exception->reasonCode());
+            self::assertNull($exception->getPrevious());
         }
     }
 
@@ -175,5 +279,45 @@ final class BlockDocumentStorageTest extends TestCase
                 ['id' => 'image_1', 'type' => 'image', 'data_version' => 0, 'data' => ['file_ref' => '550e8400-e29b-41d4-a716-446655440000', 'caption' => 'Image', 'alt' => 'Safe']],
             ],
         ];
+    }
+}
+
+final class BlockDocumentScopeFixture implements QueryScopeProvider
+{
+    /**
+     * @param array<string, string> $actorScopes
+     * @param array<string, string> $fileScopes
+     */
+    public function __construct(
+        public array $actorScopes,
+        public array $fileScopes,
+    ) {
+    }
+
+    public function supports(string $resourceType, string $operation): bool
+    {
+        return $resourceType === 'content.item' && $operation === 'content.item.list';
+    }
+
+    public function scope(array $query, string $actor, string $operation, array $context = []): array
+    {
+        $scope = $this->actorScopes[$actor] ?? 'scope:denied';
+        $result = ['resource_type' => 'content.item', 'scope_ref' => $scope];
+        if (isset($query['logical_file_ref'])) {
+            $file = (string) $query['logical_file_ref'];
+            $result = [
+                'resource_type' => 'content.item',
+                'scope_ref' => $scope,
+                'logical_file_ref' => $file,
+                'logical_file_authorized' => ($this->fileScopes[$file] ?? null) === $scope,
+            ];
+        }
+
+        return $result;
+    }
+
+    public function explain(string $resourceType, string $actor, string $operation, array $context = []): AccessDecision
+    {
+        return AccessDecision::deny($operation, $actor, $resourceType.':all', 'fixture_scoped');
     }
 }
