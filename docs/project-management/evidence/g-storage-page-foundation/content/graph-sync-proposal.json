@@ -3,8 +3,8 @@
   "mode": "proposal_only",
   "goal_id": "G-STORAGE-PAGE-FOUNDATION-01",
   "package": "larena/content",
-  "proposed_capabilities": ["content.versioned_block_document", "content.editorjs_compatible_json", "content.scope_isolated_storage_document"],
-  "evidence_revision": "e4ef35fa93fd06b26409bb2e890ffa7f7a449c81",
+  "proposed_capabilities": ["content.versioned_block_document", "content.editorjs_compatible_json", "content.scope_isolated_storage_document", "content.actor_operation_scope_authorization", "content.current_logical_file_revalidation"],
+  "evidence_revision": "containing_git_commit",
   "apply_status": "not_applied",
   "acceptance_status": "pending_independent_audit"
 }

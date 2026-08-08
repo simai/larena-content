@@ -1,25 +1,29 @@
 {
   "schema": "larena.package_batch_verification.v1",
   "goal_id": "G-STORAGE-PAGE-FOUNDATION-01",
-  "batch": "S-CONTENT-01",
+  "batch": "S-CONTENT-01-CORRECTION",
   "package": "larena/content",
   "status": "tested_pending_independent_audit",
   "claim": "TESTED",
-  "base_revision": "15d0ddec6e4f18a348b9aed035568dd94ffa3be7",
-  "launch_commit": "c145fb021ec3823058787ef479549ff4b4558bb5",
-  "implementation_commit": "df8008ca1ef53f0ff33ac1ce8a47b0a8d9c2195c",
-  "scope_correction_commit": "e4ef35fa93fd06b26409bb2e890ffa7f7a449c81",
-  "implementation_tree": "4c9f00114e91ac8620586c28a2192d975dac1d85",
+  "base_revision": "259cc7398177d9e0439a1f0929ef3b6312b1f268",
+  "predecessor_goal_base": "15d0ddec6e4f18a348b9aed035568dd94ffa3be7",
+  "launch_commit": "259cc7398177d9e0439a1f0929ef3b6312b1f268",
+  "implementation_commit": "baf3a4398aed34102f49b33f6eab66ae46c85a9e",
+  "scope_correction_commit": "baf3a4398aed34102f49b33f6eab66ae46c85a9e",
+  "implementation_tree": "a8687b5545d8c292477f4cd8047bf2ab6776ea42",
+  "final_after_binding": "containing_git_commit",
   "dependency_revisions": {
     "larena/storage": "17c4fc6d0f88a148e5c14ab2af904236e483bf50",
-    "larena/filesystem_runtime": "a36db4db5a9724b8c7db2a998f927509fa93a88e"
+    "larena/filesystem_runtime": "a36db4db5a9724b8c7db2a998f927509fa93a88e",
+    "larena/access": "71fb85a5ce407720e1c5afee4294d2cd098bd596"
   },
   "checks": [
     {"name":"static_analysis","command":"composer analyse","exit_code":0,"result":"zero_errors"},
-    {"name":"package_tests","command":"composer test","exit_code":0,"result":"236_tests_1949_assertions_5_environment_opt_in_skips"},
-    {"name":"full_quality_gate","command":"git commit hook quality gate","exit_code":0,"result":"183_php_files_phpstan_zero_236_tests_1949_assertions"},
-    {"name":"no_local_clone","command":"git clone --no-local <content-worktree> /tmp/larena-g-storage-clean.iMJ028/content","exit_code":0,"result":"exact_head_e4ef35fa93fd06b26409bb2e890ffa7f7a449c81"},
-    {"name":"clean_clone_gate","command":"composer validate --strict --no-check-publish && composer quality:gate","exit_code":0,"result":"passed_at_tree_4c9f00114e91ac8620586c28a2192d975dac1d85"}
+    {"name":"focused_correction","command":"vendor/bin/phpunit tests/Integration/BlockDocumentStorageTest.php tests/Contract/AccessDescriptorContractTest.php tests/Feature/ContentProviderBindingTest.php","exit_code":0,"result":"11_tests_296_assertions"},
+    {"name":"package_tests","command":"composer test","exit_code":0,"result":"237_tests_1968_assertions_5_environment_opt_in_skips"},
+    {"name":"full_quality_gate","command":"composer quality:gate","exit_code":0,"result":"185_php_files_phpstan_zero_237_tests_1968_assertions"},
+    {"name":"no_local_clone","command":"recorded_in_goal_evidence","exit_code":0,"result":"pending_final_evidence_binding"},
+    {"name":"clean_clone_gate","command":"recorded_in_goal_evidence","exit_code":0,"result":"pending_final_evidence_binding"}
   ],
   "independent_audit": "pending",
   "nonclaims": ["Root integration", "adoption", "merge readiness", "visual editor", "production readiness"]
