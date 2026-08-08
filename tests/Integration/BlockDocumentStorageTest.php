@@ -213,8 +213,16 @@ final class BlockDocumentStorageTest extends TestCase
 
             $runtime->connection->table('larena_files')->where('logical_ref', $file)->update(['deleted_at' => '2026-08-08 00:00:00']);
             $this->assertFileRejected(fn () => $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef));
+            $deletedCreate = $document;
+            $deletedCreate['document_id'] = 'page.deleted';
+            $this->assertFileRejected(fn () => $service->create($deletedCreate, $runtime->admin->actorRef));
+            $this->assertFileRejected(fn () => $service->update($document, $created->storageRef, $runtime->admin->actorRef));
             $runtime->connection->table('larena_files')->where('logical_ref', $file)->update(['deleted_at' => null, 'lifecycle_class' => 'temporary']);
             $this->assertFileRejected(fn () => $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef));
+            $ineligibleCreate = $document;
+            $ineligibleCreate['document_id'] = 'page.ineligible';
+            $this->assertFileRejected(fn () => $service->create($ineligibleCreate, $runtime->admin->actorRef));
+            $this->assertFileRejected(fn () => $service->update($document, $created->storageRef, $runtime->admin->actorRef));
             $runtime->connection->table('larena_files')->where('logical_ref', $file)->update(['lifecycle_class' => 'persistent']);
             $scopes->fileScopes[$file] = 'scope:tenant-beta';
             $this->assertScopeRejected(fn () => $service->project('page.home', 'scope:tenant-alpha', $runtime->admin->actorRef));
