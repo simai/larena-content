@@ -25,21 +25,21 @@ use ReflectionMethod;
 final class DependencyCompatibilityContractTest extends TestCase
 {
     private const EXACT_REVISIONS = [
-        'larena/access' => '28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad',
+        'larena/access' => '71fb85a5ce407720e1c5afee4294d2cd098bd596',
         'larena/admin' => '63b822dd334ed6ab02c666f2017e39883cd95b6f',
         'larena/audit' => 'cc6ba3ccf279eefdef3fa3973249629a3a100feb',
         'larena/auth' => '8b146c3ae31cb736ebd08e5d92c994105562190e',
         'larena/cockpit' => 'd8074d30727d5c124928b8e47466f063eb746dbf',
         'larena/core' => '02b8f7e21c28974ae90d6293da074f6d542903ff',
         'larena/dataview' => 'b84e964b4ed78e1ca08a46c88e7651b02744ee47',
-        'larena/filesystem' => '5e54a971201f51cf35417b922559f3e52369472d',
+        'larena/filesystem' => '6b7c240c88391338022e800231104c94279badaa',
         'larena/layout' => 'cb5bdadf588cb8480972279bea3888500dbf9d6e',
         'larena/licensing' => '52d1215a25369cca17d5170bbfcae82d1f6c86d2',
         'larena/link' => 'affc02abad5f3be568ae02c3678abe51d14575a9',
         'larena/property' => '7773692a9e1cf60f641a050e4ebf99e1fe37c159',
         'larena/rest' => 'b11f4338bb2536ee8627c1f2097915876b8afeb6',
         'larena/search' => '9f5c1cf5d2b112751328520eee34826c19dd2535',
-        'larena/storage' => '7c606e092591dbcb40fbe7c45ef30bb917f1df68',
+        'larena/storage' => '17c4fc6d0f88a148e5c14ab2af904236e483bf50',
         'larena/ui' => '07fff2579344d7c77a28716a74071fb53f0bbfc9',
         'larena/update' => '4c56bb8d26b6259ae71e58512ccadc2529accfec',
     ];
@@ -77,6 +77,7 @@ final class DependencyCompatibilityContractTest extends TestCase
                 'compareAndSwap',
                 'connection',
                 'create',
+                'listCurrentRecords',
                 'projectPublicVersion',
                 'readAdminCurrentVersion',
                 'readAdminVersion',

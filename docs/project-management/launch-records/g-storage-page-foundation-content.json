@@ -1,22 +1,31 @@
 {
   "schema": "larena.package_launch_record.v1",
   "goal_id": "G-STORAGE-PAGE-FOUNDATION-01",
-  "batch": "S-CONTENT-01-CORRECTION",
+  "batch": "S-CONTENT-01-DEPENDENCY-CORRECTION",
   "package": "larena/content",
   "goal": "Own a versioned EditorJS-compatible JSON block document stored through the exact generic larena/storage candidate.",
   "base_revision": "259cc7398177d9e0439a1f0929ef3b6312b1f268",
   "predecessor_goal_base": "15d0ddec6e4f18a348b9aed035568dd94ffa3be7",
   "branch": "codex/g-storage-page-content-correction",
   "specs_revision": "97b91cecafa36343f11166afb9db7c7036dac803",
-  "storage_revision": "17c4fc6d0f88a148e5c14ab2af904236e483bf50",
+  "dependency_revisions": {
+    "larena/access": "71fb85a5ce407720e1c5afee4294d2cd098bd596",
+    "larena/filesystem": "6b7c240c88391338022e800231104c94279badaa",
+    "larena/storage": "17c4fc6d0f88a148e5c14ab2af904236e483bf50"
+  },
   "allowed_files_ref": ".larena/launch-context.json#allowed_files",
   "evidence_path": "docs/project-management/evidence/g-storage-page-foundation/content/",
   "action_gate": {"status": "success", "evidence_ref": "source/output/action-gates/action-gate-report-20260807234737.json"},
   "readiness_ceiling": "TESTED",
-  "status": "tested_pending_independent_audit",
+  "status": "tested_pending_dependency_correction_reaudit",
   "launch_commit": "259cc7398177d9e0439a1f0929ef3b6312b1f268",
   "implementation_commit": "baf3a4398aed34102f49b33f6eab66ae46c85a9e",
   "scope_correction_commit": "baf3a4398aed34102f49b33f6eab66ae46c85a9e",
+  "dependency_correction_base": "f1c177b9825a1bfe1a8ac6ba17e448c035a11cfe",
+  "dependency_correction_audit": {
+    "path": "source/qa/2026-08-07-larena-revision-bound-reverse-outcome-audit/g-storage-page-foundation/INDEPENDENT-CORRECTION-AUDIT-2026-08-08.md",
+    "sha256": "15fd43cd16f3890b01e25201b3a44bdbb62590e1edfb3115cbc613d36288003e"
+  },
   "final_after_binding": "containing_git_commit",
   "stop_conditions": ["Access Root Specs or another read-only owner change required", "canonical graph adoption required", "merge push deploy live runtime or user data required"]
 }

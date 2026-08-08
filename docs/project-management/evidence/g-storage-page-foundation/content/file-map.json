@@ -1,6 +1,6 @@
 {
   "schema": "larena.evidence_file_map.v1",
-  "batch": "S-CONTENT-01-CORRECTION",
+  "batch": "S-CONTENT-01-DEPENDENCY-CORRECTION",
   "runtime": [
     "src/Contracts/BlockDocumentService.php",
     "src/Contracts/BlockDocumentAuthorization.php",
@@ -11,6 +11,7 @@
     "src/Services/StorageBackedBlockDocumentService.php",
     "src/ValueObjects/BlockDocumentRevision.php"
   ],
-  "tests": ["tests/Integration/BlockDocumentStorageTest.php"],
+  "dependency_contract": ["composer.json", "composer.lock", "tests/Contract/DependencyCompatibilityContractTest.php"],
+  "tests": ["tests/Integration/BlockDocumentStorageTest.php", "tests/Contract/DependencyCompatibilityContractTest.php"],
   "launch": [".larena/launch-context.json", "docs/project-management/launch-records/g-storage-page-foundation-content.json"]
 }

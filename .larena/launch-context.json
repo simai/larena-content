@@ -12,17 +12,17 @@
   "branch": "main",
   "selected_features": ["content.type.browser_admin", "content.material.browser_admin", "content.editorial_workflow.browser_admin", "content.public_page", "content.first_run_starter_site"],
   "dependency_revisions": {
-    "larena/access": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad",
+    "larena/access": "71fb85a5ce407720e1c5afee4294d2cd098bd596",
     "larena/admin": "63b822dd334ed6ab02c666f2017e39883cd95b6f",
     "larena/audit": "cc6ba3ccf279eefdef3fa3973249629a3a100feb",
     "larena/auth": "8b146c3ae31cb736ebd08e5d92c994105562190e",
     "larena/core": "02b8f7e21c28974ae90d6293da074f6d542903ff",
     "larena/dataview": "b84e964b4ed78e1ca08a46c88e7651b02744ee47",
-    "larena/filesystem": "5e54a971201f51cf35417b922559f3e52369472d",
+    "larena/filesystem": "6b7c240c88391338022e800231104c94279badaa",
     "larena/property": "7773692a9e1cf60f641a050e4ebf99e1fe37c159",
     "larena/rest": "b11f4338bb2536ee8627c1f2097915876b8afeb6",
     "larena/search": "9f5c1cf5d2b112751328520eee34826c19dd2535",
-    "larena/storage": "7c606e092591dbcb40fbe7c45ef30bb917f1df68"
+    "larena/storage": "17c4fc6d0f88a148e5c14ab2af904236e483bf50"
   },
   "allowed_files": [
     ".larena/*", "README.md", "CHANGELOG.md", "access.yaml", "api.yaml", "audit.yaml",
@@ -73,15 +73,17 @@
   "remote_push_status": "branch_not_pushed",
   "active_goal_launch": {
     "goal_id": "G-STORAGE-PAGE-FOUNDATION-01",
-    "batch": "S-CONTENT-01-CORRECTION",
+    "batch": "S-CONTENT-01-DEPENDENCY-CORRECTION",
     "branch": "codex/g-storage-page-content-correction",
     "base_commit": "259cc7398177d9e0439a1f0929ef3b6312b1f268",
     "specs_commit": "97b91cecafa36343f11166afb9db7c7036dac803",
+    "access_revision": "71fb85a5ce407720e1c5afee4294d2cd098bd596",
+    "filesystem_revision": "6b7c240c88391338022e800231104c94279badaa",
     "storage_revision": "17c4fc6d0f88a148e5c14ab2af904236e483bf50",
     "selected_features": ["content.block_document", "content.block_registry", "content.block_document_projection", "content.block_document_migration", "content.block_document_scope_authorization", "content.block_document_logical_file_revalidation"],
     "evidence_path": "docs/project-management/evidence/g-storage-page-foundation/content/",
     "action_gate": {"status": "success", "evidence_ref": "source/output/action-gates/action-gate-report-20260807234737.json"},
-    "status": "tested_pending_independent_audit",
+    "status": "tested_pending_dependency_correction_reaudit",
     "readiness_ceiling": "TESTED"
   }
 }

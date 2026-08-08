@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "98cf7209534666297f4e9ae62c849933",
+    "content-hash": "c4fb51b87354f67d27534bde834c0994",
     "packages": [
         {
             "name": "brick/math",
@@ -1836,7 +1836,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/simai/larena-access.git",
-                "reference": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad"
+                "reference": "71fb85a5ce407720e1c5afee4294d2cd098bd596"
             },
             "require": {
                 "illuminate/console": "^13.0",
@@ -1849,6 +1849,13 @@
                 "php": "^8.3"
             },
             "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Larena\\Access\\Providers\\AccessServiceProvider"
+                    ]
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Larena\\Access\\": "src/"
@@ -2016,7 +2023,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/simai/larena-filesystem.git",
-                "reference": "5e54a971201f51cf35417b922559f3e52369472d"
+                "reference": "6b7c240c88391338022e800231104c94279badaa"
             },
             "require": {
                 "illuminate/database": "^13.0",
@@ -2027,6 +2034,13 @@
                 "php": "^8.3"
             },
             "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Larena\\Filesystem\\Providers\\FilesystemServiceProvider"
+                    ]
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Larena\\Filesystem\\": "src/"
@@ -2178,7 +2192,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/simai/larena-storage.git",
-                "reference": "7c606e092591dbcb40fbe7c45ef30bb917f1df68"
+                "reference": "17c4fc6d0f88a148e5c14ab2af904236e483bf50"
             },
             "require": {
                 "illuminate/database": "^13.0",
@@ -2189,6 +2203,13 @@
                 "php": "^8.3"
             },
             "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Larena\\Storage\\Providers\\StorageServiceProvider"
+                    ]
+                }
+            },
             "autoload": {
                 "psr-4": {
                     "Larena\\Storage\\": "src/"

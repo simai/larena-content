@@ -47,10 +47,17 @@
             "Larena\\Access\\": "src/"
           }
         },
+        "extra": {
+          "laravel": {
+            "providers": [
+              "Larena\\Access\\Providers\\AccessServiceProvider"
+            ]
+          }
+        },
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-access.git",
-          "reference": "28cae5ad9bb5b401dc95a4d79becaaeb8d8ea5ad"
+          "reference": "71fb85a5ce407720e1c5afee4294d2cd098bd596"
         }
       }
     },
@@ -334,10 +341,17 @@
             "Larena\\Filesystem\\": "src/"
           }
         },
+        "extra": {
+          "laravel": {
+            "providers": [
+              "Larena\\Filesystem\\Providers\\FilesystemServiceProvider"
+            ]
+          }
+        },
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-filesystem.git",
-          "reference": "5e54a971201f51cf35417b922559f3e52369472d"
+          "reference": "6b7c240c88391338022e800231104c94279badaa"
         }
       }
     },
@@ -457,10 +471,17 @@
             "Larena\\Storage\\": "src/"
           }
         },
+        "extra": {
+          "laravel": {
+            "providers": [
+              "Larena\\Storage\\Providers\\StorageServiceProvider"
+            ]
+          }
+        },
         "source": {
           "type": "git",
           "url": "https://github.com/simai/larena-storage.git",
-          "reference": "7c606e092591dbcb40fbe7c45ef30bb917f1df68"
+          "reference": "17c4fc6d0f88a148e5c14ab2af904236e483bf50"
         }
       }
     },
