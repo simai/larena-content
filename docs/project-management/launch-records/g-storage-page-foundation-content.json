@@ -22,6 +22,8 @@
   "implementation_commit": "baf3a4398aed34102f49b33f6eab66ae46c85a9e",
   "scope_correction_commit": "baf3a4398aed34102f49b33f6eab66ae46c85a9e",
   "dependency_correction_base": "f1c177b9825a1bfe1a8ac6ba17e448c035a11cfe",
+  "dependency_correction_commit": "99ec9725a0d8d630d00bc66c265f5ecc537210d7",
+  "dependency_correction_tree": "e73b8225472fea3fb4df26f4b2b96245247ad7dd",
   "dependency_correction_audit": {
     "path": "source/qa/2026-08-07-larena-revision-bound-reverse-outcome-audit/g-storage-page-foundation/INDEPENDENT-CORRECTION-AUDIT-2026-08-08.md",
     "sha256": "15fd43cd16f3890b01e25201b3a44bdbb62590e1edfb3115cbc613d36288003e"

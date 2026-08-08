@@ -13,6 +13,8 @@
   "implementation_tree": "a8687b5545d8c292477f4cd8047bf2ab6776ea42",
   "final_after_binding": "containing_git_commit",
   "dependency_correction_base": "f1c177b9825a1bfe1a8ac6ba17e448c035a11cfe",
+  "dependency_correction_commit": "99ec9725a0d8d630d00bc66c265f5ecc537210d7",
+  "dependency_correction_tree": "e73b8225472fea3fb4df26f4b2b96245247ad7dd",
   "dependency_correction_audit": {
     "sha256": "15fd43cd16f3890b01e25201b3a44bdbb62590e1edfb3115cbc613d36288003e"
   },
@@ -27,8 +29,9 @@
     {"name":"focused_exact_dependency_closure","command":"vendor/bin/phpunit tests/Contract/DependencyCompatibilityContractTest.php tests/Integration/BlockDocumentStorageTest.php tests/Contract/AccessDescriptorContractTest.php tests/Feature/ContentProviderBindingTest.php","exit_code":0,"result":"15_tests_324_assertions"},
     {"name":"package_tests","command":"composer test","exit_code":0,"result":"237_tests_1976_assertions_5_environment_opt_in_skips"},
     {"name":"full_quality_gate","command":"composer quality:gate","exit_code":0,"result":"185_php_files_phpstan_zero_237_tests_1976_assertions"},
-    {"name":"no_local_clone","command":"recorded_in_goal_evidence","exit_code":0,"result":"pending_exact_dependency_successor_binding"},
-    {"name":"clean_clone_gate","command":"recorded_in_goal_evidence","exit_code":0,"result":"pending_exact_dependency_successor_binding"}
+    {"name":"no_local_clone","command":"git clone --no-local <content-worktree> /tmp/larena-content-exact-deps-clean.BKGkAD/content","exit_code":0,"result":"exact_head_99ec9725a0d8d630d00bc66c265f5ecc537210d7_tree_e73b8225472fea3fb4df26f4b2b96245247ad7dd_clean_before_and_after"},
+    {"name":"exact_candidate_heads","command":"print Access Filesystem Storage full HEAD and tree immediately before gate","exit_code":0,"result":"access_71fb85a5_tree_f0deaaaa_filesystem_6b7c240c_tree_cbdbe2e4_storage_17c4fc6d_tree_b784190c"},
+    {"name":"clean_clone_gate","command":"composer validate --strict --no-check-publish && composer quality:gate","exit_code":0,"result":"passed_185_php_phpstan_zero_237_tests_1976_assertions_5_opt_in_skips_log_sha256_bcbd6407a694b1b83914c4caa7ac77210d909722553877e3d8035500ec63dfe9"}
   ],
   "independent_audit": "correction_required_then_pending_reaudit",
   "nonclaims": ["Root integration", "adoption", "merge readiness", "visual editor", "production readiness"]
