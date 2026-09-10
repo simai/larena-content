@@ -25,23 +25,23 @@ use ReflectionMethod;
 final class DependencyCompatibilityContractTest extends TestCase
 {
     private const EXACT_REVISIONS = [
-        'larena/access' => '71fb85a5ce407720e1c5afee4294d2cd098bd596',
-        'larena/admin' => '63b822dd334ed6ab02c666f2017e39883cd95b6f',
+        'larena/access' => '0c504fc86a02cd499664a8233d24c54a6854b788',
+        'larena/admin' => '7c5b877c1dcd495d52cbd55b7d0e961986c2f85d',
         'larena/audit' => 'cc6ba3ccf279eefdef3fa3973249629a3a100feb',
-        'larena/auth' => '8b146c3ae31cb736ebd08e5d92c994105562190e',
+        'larena/auth' => 'a6c44a7e1145b502bc3d8d6805e6e23f8f09e420',
         'larena/cockpit' => 'd8074d30727d5c124928b8e47466f063eb746dbf',
-        'larena/core' => '02b8f7e21c28974ae90d6293da074f6d542903ff',
-        'larena/dataview' => 'b84e964b4ed78e1ca08a46c88e7651b02744ee47',
-        'larena/filesystem' => '6b7c240c88391338022e800231104c94279badaa',
-        'larena/layout' => 'cb5bdadf588cb8480972279bea3888500dbf9d6e',
+        'larena/core' => '47123f2e79fd8852c91af7eafb4b03754425ac4a',
+        'larena/dataview' => '685919570a7a57654528c4577bd119e436189e23',
+        'larena/filesystem' => '996093e547237f740af8c2cb2a0fca96cabd4c96',
+        'larena/layout' => '30c4ab5f452584d7c95d6186ed4d4b9ab999a5f5',
         'larena/licensing' => '52d1215a25369cca17d5170bbfcae82d1f6c86d2',
         'larena/link' => 'affc02abad5f3be568ae02c3678abe51d14575a9',
-        'larena/property' => '7773692a9e1cf60f641a050e4ebf99e1fe37c159',
+        'larena/property' => 'b0253f5f2546ea8bcb8e52b47f31f9f71ae627c7',
         'larena/rest' => 'b11f4338bb2536ee8627c1f2097915876b8afeb6',
-        'larena/search' => '9f5c1cf5d2b112751328520eee34826c19dd2535',
-        'larena/storage' => '17c4fc6d0f88a148e5c14ab2af904236e483bf50',
-        'larena/ui' => '07fff2579344d7c77a28716a74071fb53f0bbfc9',
-        'larena/update' => '4c56bb8d26b6259ae71e58512ccadc2529accfec',
+        'larena/search' => '6eac910455057daeab4eab01efd5208a2163da04',
+        'larena/storage' => 'b361f6e16ed8b5e18d78b47b9d9fa6620b588a16',
+        'larena/ui' => 'cd7757b3d761a869b7f94226f78215499e6946ed',
+        'larena/update' => 'd9fda5157964d600c0311502bd36daac5aed38d5',
     ];
 
     public function test_lock_contains_the_exact_accepted_dependency_closure(): void
@@ -83,6 +83,7 @@ final class DependencyCompatibilityContractTest extends TestCase
                 'readAdminVersion',
                 'registerSchemaVersion',
                 'schemaVersion',
+                'transition',
             ],
             $this->publicMethodNames(VersionedStorage::class),
         );

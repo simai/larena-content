@@ -33,6 +33,7 @@ final class ContentAdminNavigationContributor implements AdminNavigationContribu
             surface: 'product',
             labelKey: 'larena-content::admin.navigation.workspace',
             activeRoutePattern: 'larena.content.admin.workspace',
+            icon: 'dashboard',
         ), new AdminNavigationDescriptor(
             id: 'content.materials',
             ownerPackage: $this->ownerPackage(),
@@ -50,6 +51,7 @@ final class ContentAdminNavigationContributor implements AdminNavigationContribu
             surface: 'product',
             labelKey: 'larena-content::admin.navigation.materials',
             activeRoutePattern: 'larena.content.admin.materials.*',
+            icon: 'article',
         ), new AdminNavigationDescriptor(
             id: 'content.types',
             ownerPackage: $this->ownerPackage(),
@@ -67,6 +69,7 @@ final class ContentAdminNavigationContributor implements AdminNavigationContribu
             surface: 'product',
             labelKey: 'larena-content::admin.navigation.types',
             activeRoutePattern: 'larena.content.admin.types.*',
+            icon: 'category',
         ), new AdminNavigationDescriptor(
             id: 'content.site_structure',
             ownerPackage: $this->ownerPackage(),
@@ -85,6 +88,7 @@ final class ContentAdminNavigationContributor implements AdminNavigationContribu
             surface: 'product',
             labelKey: 'larena-content::admin.navigation.site_structure',
             activeRoutePattern: 'larena.content.admin.structure.*',
+            icon: 'account_tree',
         )];
     }
 }
