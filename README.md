@@ -1,5 +1,20 @@
 # Larena Content
 
+> **Retired from Minimal CMS v1.1 (2026-09-23).** This package is no longer part
+> of the Minimal CMS runtime, its first run or its distribution. Storage owns
+> dynamic content: site structure is `site_node` records, and the block-document
+> service described below moved to `larena/storage` as
+> `Larena\Storage\BlockDocuments` with its data and schema id unchanged.
+>
+> The package, its tables and its repository are kept on purpose. It stays
+> installable in the extended contour for forensic replay of an installation that
+> ran with it. It is not deleted, and nothing here should be read as permission to
+> delete it: that is a separate, reversible decision.
+>
+> Installing it beside Minimal CMS is refused at first run, by design. Its
+> first-run contributor and Storage's `site` contributor would both be present, and
+> the first-run composition is exact.
+
 Generic CMS content types, item identity, immutable revisions, route
 reservations, publication state, logical-file attachment associations and
 exact published safe projections for Larena.
