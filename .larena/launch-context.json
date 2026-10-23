@@ -59,7 +59,12 @@
     "src/Navigation/ContentAdminNavigationContributor.php",
     "tests/*",
     "tools/*",
-    "tests/Contract/DependencyCompatibilityContractTest.php"
+    "tests/Contract/DependencyCompatibilityContractTest.php",
+    "LICENSE",
+    "NOTICE",
+    "AUTHORS",
+    "CITATION.cff",
+    "REUSE.toml"
   ],
   "forbidden_files": [
     "../link/*",
